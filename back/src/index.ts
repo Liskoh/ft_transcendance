@@ -1,6 +1,3 @@
-import {Post} from "./entity/Post"
-import {Category} from "./entity/Category"
-import {AppDataSource} from "./data-source"
 import {User} from "./users/entity/user.entity";
 import {NestFactory} from "@nestjs/core";
 import {AppModule} from "./app/app.module";

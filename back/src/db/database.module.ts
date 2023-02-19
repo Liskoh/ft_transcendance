@@ -2,9 +2,6 @@ import {Module} from '@nestjs/common';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
-import {Post} from "../entity/Post";
-import {Category} from "../entity/Category";
-import {User} from "../users/entity/user.entity";
 
 @Module({
     imports: [
