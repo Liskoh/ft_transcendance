@@ -1,0 +1,39 @@
+{
+  "name": "ft_transcendence",
+  "version": "0.0.1",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "author": {
+    "name": "Umed Khudoiberdiev",
+    "email": "pleerock.me@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Liskoh/ft_transcendance.git"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.21",
+    "typescript": "^4.6.2",
+    "prettier": "^2.5.1"
+  },
+  "dependencies": {
+    "@nestjs/common": "^9.3.9",
+    "@nestjs/config": "^2.3.1",
+    "@nestjs/core": "^9.3.9",
+    "@nestjs/platform-express": "^9.3.9",
+    "@nestjs/typeorm": "^9.0.1",
+    "class-validator": "^0.14.0",
+    "mysql2": "^3.1.2",
+    "nestjs": "0.0.1",
+    "pg": "^8.7.3",
+    "postgres": "^3.3.3",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.0",
+    "typeorm": "^0.3.12"
+  },
+  "scripts": {
+    "watch": "tsc -w",
+    "start": "tsc && node src/index.js",
+    "typeorm": "./node_modules/.bin/typeorm"
+  }
+}
