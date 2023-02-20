@@ -1,8 +1,8 @@
 import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {User} from "../../users/entity/user.entity";
 
-@Entity({name: "mutes"})
-export class Mute {
+@Entity({name: "bans"})
+export class Ban {
 
     @PrimaryGeneratedColumn()
     id: number;

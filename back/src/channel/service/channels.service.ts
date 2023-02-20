@@ -6,6 +6,7 @@ import {User} from "../../users/entity/user.entity";
 import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
 import {validate} from "class-validator";
+import {Message} from "../entity/message.entity";
 
 
 @Injectable()
@@ -45,7 +46,9 @@ export class ChannelsService {
         channel.owner = owner;
         channel.users = [owner];
         channel.channelType = type.toString();
-        // channel.messages = [];
+        channel.messages = [];
+        channel.mutes = [];
+        channel.bans = [];
 
         return await this.channelsRepository.save(channel);
     }
@@ -107,6 +110,86 @@ export class ChannelsService {
         }
     }
 
+    /**
+     * give the admin role to user
+     * @param {Channel} channel
+     * @param {User} owner
+     * @param {User} user
+     * @returns {Promise<Channel>}
+     */
+    async giveAdminRole(channel: Channel, owner: User, user: User): Promise<Channel> {
+
+        //in case of user is not in channel
+        if (!this.isMember(channel, user)) {
+            // throw new Error('User is not member of this channel');
+            return null;
+        }
+
+        //in case user is already admin
+        if (this.isAdministrator(channel, user)) {
+            // throw new Error('User is already administrator of this channel');
+            return null;
+        }
+
+        //in case 'owner' is not admin
+        if (channel.owner !== owner) {
+            // throw new Error('You are not administrator of this channel');
+            return null;
+        }
+
+        channel.admins.push(user.id);
+
+        return await this.channelsRepository.save(channel);
+    }
+
+    /**
+     * invite someone to channel
+     * @param {Channel} channel
+     * @param {User} owner
+     * @param {User} user
+     * @returns {Promise<Channel>}
+     */
+    async inviteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
+
+        if (channel.channelType !== ChannelType.PRIVATE) {
+            // throw new Error('You can invite only to private channel');
+            return null;
+        }
+
+        if (!this.isAdministrator(channel, owner)) {
+            // throw new Error('You are not administrator of this channel');
+            return null;
+        }
+
+        if (this.isMember(channel, user)) {
+            // throw new Error('User is already member of this channel');
+            return null;
+        }
+
+        channel.users.push(user);
+
+        return await this.channelsRepository.save(channel);
+    }
+
+    /**
+     * send message to channel
+     * @param {Channel} channel
+     * @param {User} user
+     * @param {string} text
+     * @returns {Promise<Channel>}
+     */
+    async sendMessage(channel: Channel, user: User, text: string): Promise<Channel> {
+        if (!this.isMember(channel, user)) {
+            // throw new Error('You are not member of this channel');
+            return null;
+        }
+
+        const message = new Message(user, text);
+        channel.messages.push(message);
+
+        return await this.channelsRepository.save(channel);
+    }
+
     /*
      * NON ASYNC METHODS
      */
@@ -122,7 +205,7 @@ export class ChannelsService {
             return true;
         }
 
-        return channel.adminsId.includes(user.id);
+        return channel.admins.includes(user.id);
     }
 
     /**
@@ -140,6 +223,16 @@ export class ChannelsService {
         }
 
         return false;
+    }
+
+    /**
+     * check if user is member of channel
+     * @param {Channel} channel
+     * @param {User} user
+     * @returns {boolean}
+     */
+    isMember(channel: Channel, user: User): boolean {
+        return channel.users.includes(user);
     }
 
 

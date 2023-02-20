@@ -33,6 +33,8 @@ async function test(app: any) {
 
     console.log("users of channel: ", channel.users);
 
+    await channelsService.sendMessage(channel, user, "Hello world!");
+
     console.log(channel);
 
 }

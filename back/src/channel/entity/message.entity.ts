@@ -4,6 +4,11 @@ import {User} from "../../users/entity/user.entity";
 @Entity({name: "messages"})
 export class Message {
 
+    constructor(user: User, text: string) {
+        this.user = user;
+        this.text = text;
+    }
+
     @PrimaryGeneratedColumn()
     id: number;
 
