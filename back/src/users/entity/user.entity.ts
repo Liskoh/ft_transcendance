@@ -5,8 +5,13 @@ import {Channel} from "../../channel/entity/channel.entity";
 @Entity({name: "users"})
 export class User {
 
-    constructor(login: string) {
+    // constructor(login: string) {
+    //     this.login = login;
+    // }
+
+    constructor(login: string, email: string) {
         this.login = login;
+        this.email = email;
     }
 
     @PrimaryGeneratedColumn()
@@ -14,6 +19,9 @@ export class User {
 
     @Column( {unique: true, length: 8} )
     login: string;
+
+    @Column( {unique: true} )
+    email: string;
 
     @Column('int', { array: true, default: [] })
     friendsList: number[];

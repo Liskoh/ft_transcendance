@@ -8,3 +8,5 @@ export const POSTGRES_NAME = "postgres";
 
 //create a list of all entities in the project:
 export const TYPEORM_ENTITIES = [User, Channel];
+
+export const MAX_SIZE_LOGIN_ERROR = "Login is too long";

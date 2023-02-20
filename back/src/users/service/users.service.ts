@@ -3,6 +3,9 @@ import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {User} from "../entity/user.entity";
 import {Injectable} from "@nestjs/common";
+import {RegisterUserDto} from "../dto/register-user.dto";
+import {validate} from "class-validator";
+import {ChangeLoginUserDto} from "../dto/change-login-user.dto";
 
 @Injectable()
 export class UsersService {
@@ -65,22 +68,62 @@ export class UsersService {
     }
 
     /**
-     * Create and return user
-     * @param {string} login
+     * save and return new user (using dto)
      * @returns {Promise<User>}
+     * @param user
      **/
-    async createUser(login: string): Promise<User> {
-        let existingUser = await this.getUserByLogin(login);
+    async saveNewUser(user: User): Promise<User> {
+        let existingUser = await this.getUserByLogin(user.login);
 
         if (existingUser !== null) {
             // throw new Error("User with this login already exists"); //TODO: check what we have to do here ?
             return null;
         }
 
-        const user = new User(login);
-        await this.usersRepository.save(user);
+        const dto = new RegisterUserDto(user.login, user.email);
 
-        return user;
+        try {
+            await validate(dto);
+            console.log("validation succeed");
+            await this.usersRepository.save(user);
+            return user;
+        } catch (errors) {
+            console.log("validation failed. errors: ", errors);
+            return null;
+        }
+    }
+
+    /**
+     * Change user login and check if it is unique
+     * @param user
+     * @param newLogin
+     * @returns {Promise<User | undefined>}
+     */
+    async changeLogin(user: User, newLogin: string): Promise<User | undefined> {
+
+        const dto = new ChangeLoginUserDto(newLogin);
+
+        try {
+            await validate(dto);
+            console.log("validation succeed");
+
+
+            for (const u of await this.getUsers()) {
+                if (u.login === newLogin && u.id !== user.id) {
+                    console.log("login already exists");
+                    return null;
+                }
+            }
+
+
+            user.login = newLogin;
+            await this.usersRepository.save(user);
+
+            return user;
+        } catch (errors) {
+            console.log("validation failed. errors: ", errors);
+            return null;
+        }
     }
 
     /**
@@ -89,7 +132,7 @@ export class UsersService {
      * @param {User} to
      * @returns {Promise<void>}
      **/
-    async sendFriendRequest(from: User, to: User) : Promise<void> {
+    async sendFriendRequest(from: User, to: User): Promise<void> {
         if (this.isSameUser(from, to)) {
             // throw new Error("You can't send friend request to yourself");
             return;
@@ -115,7 +158,7 @@ export class UsersService {
      * @param {User} to
      * @returns {Promise<void>}
      */
-    async acceptFriendRequest(from: User, to: User) : Promise<void> {
+    async acceptFriendRequest(from: User, to: User): Promise<void> {
         if (this.isSameUser(from, to)) {
             // throw new Error("You can't accept friend request from yourself");
             return;
@@ -138,6 +181,7 @@ export class UsersService {
         //remove pending friend requests
         from.pendingFriendRequests.splice(from.pendingFriendRequests.indexOf(to.id), 1);
 
+        //saving from and to
         await this.usersRepository.save(from);
         await this.usersRepository.save(to);
     }
@@ -148,8 +192,18 @@ export class UsersService {
      * @param user2
      * @returns {boolean}
      **/
-    isSameUser(user1: User, user2: User) : boolean {
+    isSameUser(user1: User, user2: User): boolean {
         return user1.id === user2.id;
+    }
+
+    /**
+     * Create and return user
+     * @param login
+     * @param mail
+     * @returns {User}
+     **/
+    createUser(login: string, mail: string): User {
+        return new User(login, mail);
     }
 
 }

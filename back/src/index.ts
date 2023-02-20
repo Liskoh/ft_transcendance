@@ -24,15 +24,22 @@ async function main() {
     // }).catch(e => console.log("Error: ", e));
 
     const usersService = app.get(UsersService);
-    const channelsService = app.get(ChannelsService);
+    // const channelsService = app.get(ChannelsService);
 
     //
-    let user = await usersService.createUser(makeid(8));
+    let user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
 
-    let channel = await channelsService.createChannel(user);
+    console.log("User created: ", user);
 
-    // console.log("User created: ", user);
-    console.log(channel);
+
+    user = await usersService.changeLogin(user, makeid(8));
+
+    console.log("User changed: ", user);
+
+    // let channel = await channelsService.createChannel(user);
+    //
+    // // console.log("User created: ", user);
+    // console.log(channel);
 }
 
 //START APP:
