@@ -1,8 +1,13 @@
 import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {User} from "../../users/entity/user.entity";
 
-@Entity({name: "bans"})
-export class Ban {
+@Entity({name: "mutes"})
+export class Mute {
+
+    constructor(user: User, endDate: Date) {
+        this.user = user;
+        this.endDate = endDate;
+    }
 
     @PrimaryGeneratedColumn()
     id: number;

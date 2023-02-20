@@ -33,7 +33,7 @@ export class ChannelsService {
     }
 
     /**
-     * Get channel by id
+     * Get channels by id
      * @param {number} id
      * @returns {Promise<Channel>}
      */
@@ -42,7 +42,7 @@ export class ChannelsService {
     }
 
     /**
-     * create private channel with another user
+     * create private channels with another user
      * @param {User} user1
      * @param {User} user2
      * @returns {Promise<Channel>}
@@ -50,7 +50,7 @@ export class ChannelsService {
     async createDirectMessageChannel(user1: User, user2: User): Promise<Channel> {
 
         if (this.isDirectChannelExist(user1, user2, await this.getChannels())) {
-            // throw new Error('Direct channel already exist');
+            // throw new Error('Direct channels already exist');
             return null;
         }
 
@@ -68,7 +68,7 @@ export class ChannelsService {
     }
 
     /**
-     * create and return channel
+     * create and return channels
      * @param {User} owner
      * @param {ChannelType} type
      * @returns {Promise<Channel>}
@@ -87,7 +87,7 @@ export class ChannelsService {
     }
 
     /**
-     * change the channel type between public and private
+     * change the channels type between public and private
      * @param {Channel} channel
      * @param {User} owner
      * @param {ChannelType} type
@@ -95,7 +95,7 @@ export class ChannelsService {
      */
     async changeChannelType(channel: Channel, owner: User, type: ChannelType): Promise<Channel> {
         if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channel');
+            // throw new Error('You are not administrator of this channels');
             return null;
         }
 
@@ -110,7 +110,7 @@ export class ChannelsService {
     }
 
     /**
-     * change the channel password using DTO validation
+     * change the channels password using DTO validation
      * @param channel
      * @param owner
      * @param password
@@ -118,11 +118,11 @@ export class ChannelsService {
      */
     async setChannelPassword(channel: Channel, owner: User, password: string): Promise<Channel> {
         if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channel');
+            // throw new Error('You are not administrator of this channels');
             return null;
         }
 
-        //remove old password and switch to public channel
+        //remove old password and switch to public channels
         if (!password) {
             channel.password = null;
 
@@ -152,21 +152,21 @@ export class ChannelsService {
      */
     async giveAdminRole(channel: Channel, owner: User, user: User): Promise<Channel> {
 
-        //in case of user is not in channel
+        //in case of user is not in channels
         if (!this.isMember(channel, user)) {
-            // throw new Error('User is not member of this channel');
+            // throw new Error('User is not member of this channels');
             return null;
         }
 
         //in case user is already admin
         if (this.isAdministrator(channel, user)) {
-            // throw new Error('User is already administrator of this channel');
+            // throw new Error('User is already administrator of this channels');
             return null;
         }
 
         //in case 'owner' is not admin
         if (channel.owner !== owner) {
-            // throw new Error('You are not administrator of this channel');
+            // throw new Error('You are not administrator of this channels');
             return null;
         }
 
@@ -176,7 +176,7 @@ export class ChannelsService {
     }
 
     /**
-     * invite someone to channel
+     * invite someone to channels
      * @param {Channel} channel
      * @param {User} owner
      * @param {User} user
@@ -185,17 +185,17 @@ export class ChannelsService {
     async inviteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
 
         if (channel.channelType !== ChannelType.PRIVATE) {
-            // throw new Error('You can invite only to private channel');
+            // throw new Error('You can invite only to private channels');
             return null;
         }
 
         if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channel');
+            // throw new Error('You are not administrator of this channels');
             return null;
         }
 
         if (this.isMember(channel, user)) {
-            // throw new Error('User is already member of this channel');
+            // throw new Error('User is already member of this channels');
             return null;
         }
 
@@ -204,24 +204,163 @@ export class ChannelsService {
         return await this.channelsRepository.save(channel);
     }
 
-    async joinChannel(channel: Channel, user: User, password?: string): Promise<Channel> {
+    /**
+     * mute an user from channels
+     * @param {Channel} channel
+     * @param {User} owner
+     * @param {User} user
+     * @param {Date} date (if null, mute is permanent)
+     * @returns {Promise<Channel>}
+     */
+    async muteUser(channel: Channel, owner: User, user: User, date: Date): Promise<Channel> {
+            if (!this.isAdministrator(channel, owner)) {
+                // throw new Error('You are not administrator of this channels');
+                return null;
+            }
 
-        if (channel.channelType === ChannelType.DM) {
-            // throw new Error('You can not join to DM channel');
+            if (!this.isMember(channel, user)) {
+                // throw new Error('User is not member of this channels');
+                return null;
+            }
+
+            if (this.isMuted(channel, user)) {
+                // throw new Error('User is already muted');
+                return null;
+            }
+
+            const mute = new Mute(user, date);
+            channel.mutes.push(mute);
+
+            await this.mutesRepository.save(mute);
+
+            return await this.channelsRepository.save(channel);
+    }
+
+    /**
+     * unmute an user from channels
+     * @param {Channel} channel
+     * @param {User} owner
+     * @param {User} user
+     * @returns {Promise<Channel>}
+     */
+    async unmuteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
+        if (!this.isAdministrator(channel, owner)) {
+            // throw new Error('You are not administrator of this channels');
             return null;
         }
 
-        if (this.isMember(channel, user)) {
-            // throw new Error('You are already member of this channel');
+        if (!this.isMember(channel, user)) {
+            // throw new Error('User is not member of this channels');
+            return null;
+        }
+
+        if (!this.isMuted(channel, user)) {
+            // throw new Error('User is not muted');
+            return null;
+        }
+
+        const mute = channel.mutes.find(mute => mute.user.id === user.id);
+
+        await this.mutesRepository.remove(mute);
+
+        return await this.channelsRepository.save(channel);
+    }
+
+
+    /**
+     * ban an user from channels
+     * @param {Channel} channel
+     * @param {User} owner
+     * @param {User} user
+     * @param {Date} date (if null, ban is permanent)
+     * @returns {Promise<Channel>}
+     */
+    async banUser(channel: Channel, owner: User, user: User, date: Date): Promise<Channel> {
+        if (!this.isAdministrator(channel, owner)) {
+            // throw new Error('You are not administrator of this channels');
+            return null;
+        }
+
+        if (!this.isMember(channel, user)) {
+            // throw new Error('User is not member of this channels');
             return null;
         }
 
         if (this.isBanned(channel, user)) {
-            // throw new Error('You are banned from this channel');
+            // throw new Error('User is already banned');
             return null;
         }
 
-        //in case of channel has password
+        const ban = new Ban(user, date);
+        channel.bans.push(ban);
+
+        return await this.channelsRepository.save(channel);
+    }
+
+    /**
+     * unban an user from channels
+     * @param {Channel} channel
+     * @param {User} owner
+     * @param {User} user
+     * @returns {Promise<Channel>}
+     */
+    async unbanUser(channel: Channel, owner: User, user: User): Promise<Channel> {
+        if (!this.isAdministrator(channel, owner)) {
+            // throw new Error('You are not administrator of this channels');
+            return null;
+        }
+
+        if (!this.isMember(channel, user)) {
+            // throw new Error('User is not member of this channels');
+            return null;
+        }
+
+        if (!this.isBanned(channel, user)) {
+            // throw new Error('User is not banned');
+            return null;
+        }
+
+        const ban = channel.bans.find(ban => ban.user.id === user.id);
+
+        await this.bansRepository.remove(ban);
+
+        return await this.channelsRepository.save(channel);
+    }
+
+    async kickUser(channel: Channel, owner: User, user: User): Promise<Channel> {
+        if (!this.isAdministrator(channel, owner)) {
+            // throw new Error('You are not administrator of this channels');
+            return null;
+        }
+
+        if (!this.isMember(channel, user)) {
+            // throw new Error('User is not member of this channels');
+            return null;
+        }
+
+        channel.users = channel.users.filter(u => u.id !== user.id);
+
+        return await this.channelsRepository.save(channel);
+    }
+
+    async joinChannel(channel: Channel, user: User, password?: string): Promise<Channel> {
+
+        if (channel.channelType === ChannelType.DM) {
+            // throw new Error('You can not join to DM channels');
+            return null;
+        }
+
+        if (this.isMember(channel, user)) {
+            // throw new Error('You are already member of this channels');
+            return null;
+        }
+
+        if (this.isBanned(channel, user)) {
+            // throw new Error('You are banned from this channels');
+            return null;
+        }
+
+        //in case of channels has password
         if (this.hasPassword(channel)) {
             //TODO: HASH PASSWORD
             if (channel.password !== password) {
@@ -233,10 +372,10 @@ export class ChannelsService {
             return await this.channelsRepository.save(channel);
         }
 
-        //in case of channel is private
+        //in case of channels is private
         if (channel.channelType === ChannelType.PRIVATE) {
             if (!this.isInvited(channel, user)) {
-                // throw new Error('You are not invited to this channel');
+                // throw new Error('You are not invited to this channels');
                 return null;
             }
 
@@ -246,7 +385,7 @@ export class ChannelsService {
             return await this.channelsRepository.save(channel);
         }
 
-        //in case of channel is public
+        //in case of channels is public
         channel.users.push(user);
 
         if (this.isInvited(channel, user)) {
@@ -257,7 +396,7 @@ export class ChannelsService {
     }
 
     /**
-     * send message to channel
+     * send message to channels
      * @param {Channel} channel
      * @param {User} user
      * @param {string} text
@@ -265,12 +404,12 @@ export class ChannelsService {
      */
     async sendMessage(channel: Channel, user: User, text: string): Promise<Channel> {
         if (!this.isMember(channel, user)) {
-            // throw new Error('You are not member of this channel');
+            // throw new Error('You are not member of this channels');
             return null;
         }
 
         if (this.isMuted(channel, user)) {
-            // throw new Error('You are muted in this channel');
+            // throw new Error('You are muted in this channels');
             return null;
         }
 
@@ -287,7 +426,7 @@ export class ChannelsService {
      */
 
     /**
-     * check if user is administrator of channel
+     * check if user is administrator of channels
      * @param channel
      * @param user
      * @returns {boolean}
@@ -301,7 +440,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if channel is private
+     * check if channels is private
      * @param channel
      * @returns {boolean}
      */
@@ -318,7 +457,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if user is invited to channel
+     * check if user is invited to channels
      * @param {Channel} channel
      * @param {User} user
      * @returns {boolean}
@@ -328,7 +467,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if channel has password
+     * check if channels has password
      * @param channel
      * @returns {boolean}
      */
@@ -337,7 +476,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if user is member of channel
+     * check if user is member of channels
      * @param {Channel} channel
      * @param {User} user
      * @returns {boolean}
@@ -347,7 +486,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if user is banned in channel
+     * check if user is banned in channels
      * @param {Channel} channel
      * @param {User} user
      * @returns {boolean}
@@ -373,7 +512,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if user is muted in channel
+     * check if user is muted in channels
      * @param {Channel} channel
      * @param {User} user
      * @returns {boolean}
@@ -400,7 +539,7 @@ export class ChannelsService {
 
 
     /**
-     * check if a direct channel already exist
+     * check if a direct channels already exist
      * @param {User} user1
      * @param {User} user2
      * @param {Channel[]} channels

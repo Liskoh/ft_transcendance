@@ -1,8 +1,8 @@
 import {NestFactory} from "@nestjs/core";
 import {AppModule} from "./app/app.module";
 import {UsersService} from "./users/service/users.service";
-import {ChannelsService} from "./channel/service/channels.service";
-import {ChannelType} from "./channel/enum/channel-type.enum";
+import {ChannelsService} from "./channels/service/channels.service";
+import {ChannelType} from "./channels/enum/channel-type.enum";
 import {User} from "./users/entity/user.entity";
 
 function makeid(length: number) {
@@ -41,7 +41,7 @@ async function test(app: any) {
         channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
     }
 
-    console.log("users of channel: ", channel.users);
+    console.log("users of channels: ", channel.users);
 
     for (const us of addMembers(10, usersService)) {
         await usersService.saveNewUser(us);

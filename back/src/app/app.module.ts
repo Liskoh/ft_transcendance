@@ -8,7 +8,7 @@ import {User} from "../users/entity/user.entity";
 import {UsersModule} from "../users/users.module";
 import {DatabaseModule} from "../db/database.module";
 import {Channel} from "diagnostics_channel";
-import {ChannelsModule} from "../channel/channels.module";
+import {ChannelsModule} from "../channels/channels.module";
 @Module({
     imports: [
         ConfigModule.forRoot(),
