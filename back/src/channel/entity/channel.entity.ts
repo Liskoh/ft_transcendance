@@ -7,10 +7,10 @@ import {
     TableInheritance
 } from "typeorm";
 import {User} from "../../users/entity/user.entity";
-
+import {Message} from "./message.entity";
+import {MAX_PASSWORD_LENGTH} from "../../consts";
 
 @Entity({name: "channels"})
-@TableInheritance({column: {type: "varchar", name: "type"}})
 export class Channel {
 
     @PrimaryGeneratedColumn()
@@ -20,25 +20,21 @@ export class Channel {
     @JoinColumn()
     owner: User;
 
-    @Column('int', { array: true, default: [] })
-    messages: number[];
+    @ManyToMany(type => Message, {eager: true})
+    @JoinTable()
+    messages: Message[];
 
-    @ManyToMany(type => User, user => user.channels)
+    @ManyToMany(type => User, user => user.channels, { eager: true, cascade: true})
     users: User[];
 
-    // @ManyToMany(() => MessageEntity)
-    // @JoinTable()
-    // messages: MessageEntity[];
+    @Column('varchar')
+    channelType: string;
 
-    // @ManyToMany(() => UserEntity)
-    // @JoinTable()
-    // blockedUsers: UserEntity[];
-    //
-    // @ManyToMany(() => UserEntity)
-    // @JoinTable()
-    // mutedUsers: UserEntity[];
+    @Column('text', {nullable: true, default: null })
+    password: string;
 
-
+    @Column('int', { array: true, default: [] })
+    adminsId: number[];
 
 }
 

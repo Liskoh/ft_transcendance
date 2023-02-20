@@ -2,6 +2,7 @@ import {Module} from "@nestjs/common";
 import {ChannelsService} from "./service/channels.service";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {Channel} from "./entity/channel.entity";
+// import {Message} from "./entity/message.entity";
 
 @Module({
     exports: [ChannelsService],

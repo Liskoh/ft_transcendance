@@ -1,9 +1,8 @@
-import {User} from "./users/entity/user.entity";
 import {NestFactory} from "@nestjs/core";
 import {AppModule} from "./app/app.module";
 import {UsersService} from "./users/service/users.service";
-import {Channel} from "./channel/entity/channel.entity";
 import {ChannelsService} from "./channel/service/channels.service";
+import {ChannelType} from "./channel/enum/channel-type.enum";
 
 function makeid(length: number) {
     let result = '';
@@ -15,16 +14,44 @@ function makeid(length: number) {
     return result;
 }
 
+async function test(app: any) {
+    const usersService = app.get(UsersService);
+    const channelsService = app.get(ChannelsService);
+
+    let user = await usersService.getUserById(1);
+    if (!user) {
+        user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+    }
+
+    // console.log("User created: ", user);
+
+    let channel = await channelsService.getChannelById(1);
+
+    if (!channel) {
+        channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
+    }
+
+    console.log("users of channel: ", channel.users);
+
+    console.log(channel);
+
+}
+
 async function main() {
     const app = await NestFactory.create(AppModule);
-    await app.listen(8000);
+    // await app.listen(8000);
+
+    if (true) {
+        await test(app);
+        return;
+    }
 
 
     // AppDataSource.initialize().then(async () => {
     // }).catch(e => console.log("Error: ", e));
 
     const usersService = app.get(UsersService);
-    // const channelsService = app.get(ChannelsService);
+    const channelsService = app.get(ChannelsService);
 
     //
     let user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
@@ -36,10 +63,10 @@ async function main() {
 
     console.log("User changed: ", user);
 
-    // let channel = await channelsService.createChannel(user);
-    //
-    // // console.log("User created: ", user);
-    // console.log(channel);
+    let channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
+
+    // console.log("User created: ", user);
+    console.log(channel);
 }
 
 //START APP:
