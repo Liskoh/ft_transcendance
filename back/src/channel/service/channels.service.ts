@@ -29,9 +29,35 @@ export class ChannelsService {
      * @param {number} id
      * @returns {Promise<Channel>}
      */
-
     async getChannelById(id: number): Promise<Channel> {
         return await this.channelsRepository.findOneBy({id: id});
+    }
+
+
+    /**
+     * create private channel with another user
+     * @param {User} user1
+     * @param {User} user2
+     * @returns {Promise<Channel>}
+     */
+    async createDirectMessageChannel(user1: User, user2: User): Promise<Channel> {
+
+        if (this.isDirectChannelExist(user1, user2, await this.getChannels())) {
+            // throw new Error('Direct channel already exist');
+            return null;
+        }
+
+        let channel = new Channel();
+
+        //TODO: SET IN CONSTRUCTOR
+        channel.owner = user1;
+        channel.users = [user1, user2];
+        channel.channelType = ChannelType.DM;
+        channel.messages = [];
+        channel.mutes = [];
+        channel.bans = [];
+
+        return await this.channelsRepository.save(channel);
     }
 
     /**
@@ -45,7 +71,7 @@ export class ChannelsService {
 
         channel.owner = owner;
         channel.users = [owner];
-        channel.channelType = type.toString();
+        channel.channelType = type;
         channel.messages = [];
         channel.mutes = [];
         channel.bans = [];
@@ -171,6 +197,53 @@ export class ChannelsService {
         return await this.channelsRepository.save(channel);
     }
 
+    async joinChannel(channel: Channel, user: User, password?: string): Promise<Channel> {
+
+        if (channel.channelType === ChannelType.DM) {
+            // throw new Error('You can not join to DM channel');
+            return null;
+        }
+
+        if (!this.isMember(channel, user)) {
+            // throw new Error('You are already member of this channel');
+            return null;
+        }
+
+        //in case of channel has password
+        if (this.hasPassword(channel)) {
+            //TODO: HASH PASSWORD
+            if (channel.password !== password) {
+                // throw new Error('Wrong password');
+                return null;
+            }
+
+            channel.users.push(user);
+            return await this.channelsRepository.save(channel);
+        }
+
+        //in case of channel is private
+        if (channel.channelType === ChannelType.PRIVATE) {
+            if (!this.isInvited(channel, user)) {
+                // throw new Error('You are not invited to this channel');
+                return null;
+            }
+
+            channel.users.push(user);
+            channel.invites = channel.invites.filter(id => id !== user.id);
+
+            return await this.channelsRepository.save(channel);
+        }
+
+        //in case of channel is public
+        channel.users.push(user);
+
+        if (this.isInvited(channel, user)) {
+            channel.invites = channel.invites.filter(id => id !== user.id);
+        }
+
+        return await this.channelsRepository.save(channel);
+    }
+
     /**
      * send message to channel
      * @param {Channel} channel
@@ -226,6 +299,25 @@ export class ChannelsService {
     }
 
     /**
+     * check if user is invited to channel
+     * @param {Channel} channel
+     * @param {User} user
+     * @returns {boolean}
+     */
+    isInvited(channel: Channel, user: User): boolean {
+        return channel.invites.includes(user.id);
+    }
+
+    /**
+     * check if channel has password
+     * @param channel
+     * @returns {boolean}
+     */
+    hasPassword(channel: Channel): boolean {
+        return channel.password ? true : false;
+    }
+
+    /**
      * check if user is member of channel
      * @param {Channel} channel
      * @param {User} user
@@ -233,6 +325,23 @@ export class ChannelsService {
      */
     isMember(channel: Channel, user: User): boolean {
         return channel.users.includes(user);
+    }
+
+    /**
+     * check if a direct channel already exist
+     * @param {User} user1
+     * @param {User} user2
+     * @param {Channel[]} channels
+     * @returns {boolean}
+     */
+    isDirectChannelExist(user1: User, user2: User, channels: Channel[]): boolean {
+        return channels.some(channel => {
+            if (channel.channelType === ChannelType.DM) {
+                if (channel.users.includes(user1) && channel.users.includes(user2)) {
+                    return true;
+                }
+            }
+        });
     }
 
 
