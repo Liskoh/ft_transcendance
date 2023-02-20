@@ -1,15 +1,15 @@
-FROM node:latest
+FROM node:lts-alpine
 LABEL authors="romainchampliau"
 
-COPY ./ /app/
+COPY ./     /app/
+
+RUN apk update
 
 WORKDIR /app
 
-RUN apk update && apk upgrade --no-cache
-
 RUN npm install
 
-ENTRYPOINT ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start"]
 
 
 
