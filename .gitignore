@@ -1,7 +1,7 @@
 .idea/
 node_modules/
-src/**/*.js
-src/**/*.js.map
+back/src/**/*.js
+back/src/**/*.js.map
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
