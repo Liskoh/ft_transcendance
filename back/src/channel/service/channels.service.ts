@@ -7,13 +7,21 @@ import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
 import {validate} from "class-validator";
 import {Message} from "../entity/message.entity";
+import {Ban} from "../entity/ban.entity";
+import {Mute} from "../entity/mute.entity";
 
 
 @Injectable()
 export class ChannelsService {
 
     constructor(@InjectRepository(Channel)
-                private channelsRepository: Repository<Channel>) {
+                private channelsRepository: Repository<Channel>,
+                @InjectRepository(Message)
+                private messagesRepository: Repository<Message>,
+                @InjectRepository(Ban)
+                private bansRepository: Repository<Ban>,
+                @InjectRepository(Mute)
+                private mutesRepository: Repository<Mute>) {
     }
 
     /**
@@ -32,7 +40,6 @@ export class ChannelsService {
     async getChannelById(id: number): Promise<Channel> {
         return await this.channelsRepository.findOneBy({id: id});
     }
-
 
     /**
      * create private channel with another user
@@ -204,8 +211,13 @@ export class ChannelsService {
             return null;
         }
 
-        if (!this.isMember(channel, user)) {
+        if (this.isMember(channel, user)) {
             // throw new Error('You are already member of this channel');
+            return null;
+        }
+
+        if (this.isBanned(channel, user)) {
+            // throw new Error('You are banned from this channel');
             return null;
         }
 
@@ -257,8 +269,15 @@ export class ChannelsService {
             return null;
         }
 
+        if (this.isMuted(channel, user)) {
+            // throw new Error('You are muted in this channel');
+            return null;
+        }
+
         const message = new Message(user, text);
         channel.messages.push(message);
+
+        await this.messagesRepository.save(message);
 
         return await this.channelsRepository.save(channel);
     }
@@ -326,6 +345,59 @@ export class ChannelsService {
     isMember(channel: Channel, user: User): boolean {
         return channel.users.includes(user);
     }
+
+    /**
+     * check if user is banned in channel
+     * @param {Channel} channel
+     * @param {User} user
+     * @returns {boolean}
+     */
+    isBanned(channel: Channel, user: User): boolean {
+        const currentDate = new Date();
+
+        for (const ban of channel.bans) {
+            if (ban.user.id === user.id) {
+                //in case ban is permanent
+                if (ban.endDate === null) {
+                    return true;
+                }
+
+                //in case ban is temporary
+                if (ban.endDate > currentDate) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * check if user is muted in channel
+     * @param {Channel} channel
+     * @param {User} user
+     * @returns {boolean}
+     */
+    isMuted(channel: Channel, user: User): boolean {
+        const currentDate = new Date();
+
+        for (const mute of channel.mutes) {
+            if (mute.user.id === user.id) {
+                //in case mute is permanent
+                if (mute.endDate === null) {
+                    return true;
+                }
+
+                //in case mute is temporary
+                if (mute.endDate > currentDate) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 
     /**
      * check if a direct channel already exist

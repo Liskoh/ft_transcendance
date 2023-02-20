@@ -3,6 +3,7 @@ import {AppModule} from "./app/app.module";
 import {UsersService} from "./users/service/users.service";
 import {ChannelsService} from "./channel/service/channels.service";
 import {ChannelType} from "./channel/enum/channel-type.enum";
+import {User} from "./users/entity/user.entity";
 
 function makeid(length: number) {
     let result = '';
@@ -12,6 +13,15 @@ function makeid(length: number) {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
+}
+
+function addMembers(amount: number, usersService: any) : User[] {
+    const users = [];
+    for (let i = 0; i < amount; i++) {
+        const user = usersService.createUser(makeid(8), makeid(8) + "@gmail.com");
+        users.push(user);
+    }
+    return users;
 }
 
 async function test(app: any) {
@@ -33,10 +43,13 @@ async function test(app: any) {
 
     console.log("users of channel: ", channel.users);
 
-    await channelsService.sendMessage(channel, user, "Hello world!");
+    for (const us of addMembers(10, usersService)) {
+        await usersService.saveNewUser(us);
+        await channelsService.joinChannel(channel, us);
+        await channelsService.sendMessage(channel, us, "Hello world!");
+    }
 
     console.log(channel);
-
 }
 
 async function main() {
