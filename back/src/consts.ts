@@ -15,6 +15,10 @@ export const MAX_CHANNELS_PER_USER: number = 6;
 export const MAX_MESSAGE_LENGTH: number = 100;
 export const MIN_MESSAGE_LENGTH: number = 1;
 
+export const MAX_CHANNEL_NAME_LENGTH: number = 15;
+export const MIN_CHANNEL_NAME_LENGTH: number = 1;
+
+export const BCRYPT_SALT_ROUNDS = 10;
 export const POSTGRES_NAME = "postgres";
 
 //create a list of all entities in the project:

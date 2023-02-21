@@ -23,6 +23,8 @@
     "@nestjs/platform-express": "^9.3.9",
     "@nestjs/typeorm": "^9.0.1",
     "@nestjs/websockets": "^9.3.9",
+    "@types/bcrypt": "^5.0.0",
+    "bcrypt": "^5.1.0",
     "class-validator": "^0.14.0",
     "mysql2": "^3.1.2",
     "nestjs": "0.0.1",

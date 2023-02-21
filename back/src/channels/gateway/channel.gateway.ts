@@ -6,6 +6,7 @@ import {SendMessageDto} from "./dto/send-message.dto";
 import {UsersService} from "../../users/service/users.service";
 import {User} from "../../users/entity/user.entity";
 import {Channel} from "../entity/channel.entity";
+import {validate} from "class-validator";
 
 @WebSocketGateway()
 export class ChannelGateway implements OnGatewayConnection {
@@ -27,6 +28,11 @@ export class ChannelGateway implements OnGatewayConnection {
         } catch (ex) {
             console.log(ex);
         }
+    }
+
+    @SubscribeMessage('getChannels')
+    async getChannels(socket: Socket, payload: any): Promise<any> {
+
     }
 
     @SubscribeMessage('getChannel')
@@ -66,6 +72,26 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    @SubscribeMessage('joinChannel')
+    async joinChannel(socket: Socket, payload: any): Promise<any> {
+        try {
+            const channelDto = new GetChannelDto(payload);
+            await validate(channelDto);
+
+            const channel = await this.channelsService.getChannelById(channelDto.id);
+            const user = socket.data.user;
+
+            if (payload.password) {
+                await this.channelsService.joinChannel(channel, user, payload.password);
+                return;
+            }
+
+            await this.channelsService.joinChannel(channel, user);
+        } catch (ex) {
+            console.log(ex);
+        }
+    }
+    //TODO: Implement
     async sendChannelMessage(channel: Channel, event: string, args: any): Promise<any> {
         try {
             if (!channel.users)

@@ -10,7 +10,9 @@ import {Message} from "../entity/message.entity";
 import {Ban} from "../entity/ban.entity";
 import {Mute} from "../entity/mute.entity";
 import {UsersService} from "../../users/service/users.service";
-import {MAX_CHANNELS_PER_USER} from "../../consts";
+import * as bcrypt from 'bcrypt';
+import {BCRYPT_SALT_ROUNDS, MAX_CHANNELS_PER_USER} from "../../consts";
+import {SetNameDto} from "../dto/set-name.dto";
 
 
 @Injectable()
@@ -83,9 +85,10 @@ export class ChannelsService {
      * create and return channels
      * @param {User} owner
      * @param {ChannelType} type
+     * @param {string} name?
      * @returns {Promise<Channel>}
      */
-    async createChannel(owner: User, type: ChannelType): Promise<Channel> {
+    async createChannel(owner: User, type: ChannelType, name?: string): Promise<Channel> {
         let channel = new Channel();
 
         // if (this.usersService.getChannelCount(owner) >= MAX_CHANNELS_PER_USER)
@@ -94,7 +97,23 @@ export class ChannelsService {
         //         HttpStatus.FORBIDDEN
         //     );
 
+        if (!name) {
+            name = owner.login + "'s channel";
+        }
+
+        const dto = new SetNameDto(name);
+
+        try {
+            await validate(dto);
+        } catch (e) {
+            throw new HttpException(
+                e,
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
         channel.owner = owner;
+        channel.name = name;
         channel.users = [owner];
         channel.channelType = type;
         channel.messages = [];
@@ -161,7 +180,7 @@ export class ChannelsService {
 
         try {
             await validate(dto);
-            channel.password = password;
+            channel.password = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
             return await this.channelsRepository.save(channel);
         } catch (e) {
@@ -457,8 +476,18 @@ export class ChannelsService {
 
         //in case of channels has password
         if (this.hasPassword(channel)) {
-            //TODO: HASH PASSWORD
-            if (channel.password !== password)
+            const dto = new SetPasswordDto(password);
+
+            try {
+                await validate(dto)
+            } catch (e) {
+                throw new HttpException(
+                    'Password is required',
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+
+            if (!bcrypt.compareSync(password, channel.password))
                 throw new HttpException(
                     'Wrong password',
                     HttpStatus.FORBIDDEN

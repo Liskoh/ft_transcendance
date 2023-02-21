@@ -1,6 +1,7 @@
 import {Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import {Channel} from "../../channels/entity/channel.entity";
 import {MatchHistory} from "../../game/entity/match-history.entity";
+import {UserStatus} from "../enum/user-status.enum";
 
 
 @Entity({name: "users"})
@@ -23,6 +24,9 @@ export class User {
 
     @Column( {unique: true} )
     email: string;
+
+    @Column({default: UserStatus.OFFLINE})
+    status: UserStatus;
 
     @Column('int', { array: true, default: [] })
     friendsList: number[];

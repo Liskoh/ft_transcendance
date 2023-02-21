@@ -36,13 +36,13 @@ async function test(app: any) {
     }
 
     // console.log("User created: ", user);
+    let channel;
 
-    let channel = await channelsService.getChannelById(1);
-
-    if (!channel) {
+    try {
+        channel = await channelsService.getChannelById(1);
+    } catch (ex) {
         channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
     }
-
 
     let lastUser: User = null;
 
@@ -70,7 +70,11 @@ async function main() {
     // await app.listen(8000);
 
     if (true) {
-        await test(app);
+        try {
+            await test(app);
+        } catch (ex) {
+            console.log(ex);
+        }
         return;
     }
 
