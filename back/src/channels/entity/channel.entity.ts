@@ -30,6 +30,9 @@ export class Channel {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Column('varchar', { length: 100 })
+    name: string;
+
     @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
     @JoinColumn()
     owner: User;
