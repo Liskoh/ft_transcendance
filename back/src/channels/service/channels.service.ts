@@ -1,4 +1,4 @@
-import {Injectable} from "@nestjs/common";
+import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {Channel} from "../entity/channel.entity";
@@ -9,6 +9,8 @@ import {validate} from "class-validator";
 import {Message} from "../entity/message.entity";
 import {Ban} from "../entity/ban.entity";
 import {Mute} from "../entity/mute.entity";
+import {UsersService} from "../../users/service/users.service";
+import {MAX_CHANNELS_PER_USER} from "../../consts";
 
 
 @Injectable()
@@ -21,7 +23,8 @@ export class ChannelsService {
                 @InjectRepository(Ban)
                 private bansRepository: Repository<Ban>,
                 @InjectRepository(Mute)
-                private mutesRepository: Repository<Mute>) {
+                private mutesRepository: Repository<Mute>,
+                private readonly usersService: UsersService) {
     }
 
     /**
@@ -76,6 +79,12 @@ export class ChannelsService {
     async createChannel(owner: User, type: ChannelType): Promise<Channel> {
         let channel = new Channel();
 
+        // if (this.usersService.getChannelCount(owner) >= MAX_CHANNELS_PER_USER)
+        //     throw new HttpException(
+        //         'You have reached the maximum number of channels',
+        //         HttpStatus.FORBIDDEN
+        //     );
+
         channel.owner = owner;
         channel.users = [owner];
         channel.channelType = type;
@@ -94,15 +103,17 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async changeChannelType(channel: Channel, owner: User, type: ChannelType): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-        if (type === ChannelType.DM) {
-            // throw new Error('You can not change the type to DM');
-            return null;
-        }
+        if (this.isDirectChannel(channel))
+            throw new HttpException(
+                'You can not do this in DM',
+                HttpStatus.BAD_REQUEST
+            );
 
         channel.channelType = type.toString();
 
@@ -117,10 +128,17 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async setChannelPassword(channel: Channel, owner: User, password: string): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (this.isDirectChannel(channel))
+            throw new HttpException(
+                'You can not do this in DM',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
         //remove old password and switch to public channels
         if (!password) {
@@ -152,23 +170,26 @@ export class ChannelsService {
      */
     async giveAdminRole(channel: Channel, owner: User, user: User): Promise<Channel> {
 
+        //in case 'owner' is not admin
+        if (channel.owner !== owner)
+            throw new HttpException(
+                'You are not owner of this channels',
+                HttpStatus.FORBIDDEN
+            );
+
         //in case of user is not in channels
-        if (!this.isMember(channel, user)) {
-            // throw new Error('User is not member of this channels');
-            return null;
-        }
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'User is not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
         //in case user is already admin
-        if (this.isAdministrator(channel, user)) {
-            // throw new Error('User is already administrator of this channels');
-            return null;
-        }
-
-        //in case 'owner' is not admin
-        if (channel.owner !== owner) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (this.isAdministrator(channel, user))
+            throw new HttpException(
+                'User is already administrator of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
         channel.admins.push(user.id);
 
@@ -184,20 +205,29 @@ export class ChannelsService {
      */
     async inviteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
 
-        if (channel.channelType !== ChannelType.PRIVATE) {
-            // throw new Error('You can invite only to private channels');
-            return null;
-        }
+        if (channel.channelType !== ChannelType.PRIVATE)
+            throw new HttpException(
+                'You can not invite someone to public channels',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-        if (this.isMember(channel, user)) {
-            // throw new Error('User is already member of this channels');
-            return null;
-        }
+        if (this.isMember(channel, user))
+            throw new HttpException(
+                'User is already member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (this.usersService.isSameUser(owner, user))
+            throw new HttpException(
+                'You can not invite yourself',
+                HttpStatus.BAD_REQUEST
+            );
 
         channel.users.push(user);
 
@@ -213,27 +243,42 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async muteUser(channel: Channel, owner: User, user: User, date?: Date): Promise<Channel> {
-            if (!this.isAdministrator(channel, owner)) {
-                // throw new Error('You are not administrator of this channels');
-                return null;
-            }
+        if (this.isDirectChannel(channel))
+            throw new HttpException(
+                'You can not do this in DM',
+                HttpStatus.BAD_REQUEST
+            );
 
-            if (!this.isMember(channel, user)) {
-                // throw new Error('User is not member of this channels');
-                return null;
-            }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-            if (this.isMuted(channel, user)) {
-                // throw new Error('User is already muted');
-                return null;
-            }
+        if (this.usersService.isSameUser(owner, user))
+            throw new HttpException(
+                'You can not mute yourself',
+                HttpStatus.BAD_REQUEST
+            );
 
-            const mute = new Mute(user, date);
-            channel.mutes.push(mute);
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'User is not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
-            await this.mutesRepository.save(mute);
+        if (this.isMuted(channel, user))
+            throw new HttpException(
+                'User is already muted',
+                HttpStatus.BAD_REQUEST
+            );
 
-            return await this.channelsRepository.save(channel);
+        const mute = new Mute(user, date);
+        channel.mutes.push(mute);
+
+        await this.mutesRepository.save(mute);
+
+        return await this.channelsRepository.save(channel);
     }
 
     /**
@@ -244,20 +289,23 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async unmuteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-        if (!this.isMember(channel, user)) {
-            // throw new Error('User is not member of this channels');
-            return null;
-        }
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'User is not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (!this.isMuted(channel, user)) {
-            // throw new Error('User is not muted');
-            return null;
-        }
+        if (!this.isMuted(channel, user))
+            throw new HttpException(
+                'User is not muted',
+                HttpStatus.BAD_REQUEST
+            );
 
         const mute = channel.mutes.find(mute => mute.user.id === user.id);
 
@@ -276,23 +324,41 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async banUser(channel: Channel, owner: User, user: User, date?: Date): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (this.isDirectChannel(channel))
+            throw new HttpException(
+                'You can not do this in DM',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (!this.isMember(channel, user)) {
-            // throw new Error('User is not member of this channels');
-            return null;
-        }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-        if (this.isBanned(channel, user)) {
-            // throw new Error('User is already banned');
-            return null;
-        }
+        if (this.usersService.isSameUser(owner, user))
+            throw new HttpException(
+                'You can not ban yourself',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'User is not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (this.isBanned(channel, user))
+            throw new HttpException(
+                'User is already banned',
+                HttpStatus.BAD_REQUEST
+            );
 
         const ban = new Ban(user, date);
         channel.bans.push(ban);
+
+        //kick user from channel
+        channel = await this.kickUser(channel, owner, user);
 
         return await this.channelsRepository.save(channel);
     }
@@ -305,20 +371,23 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async unbanUser(channel: Channel, owner: User, user: User): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-        if (!this.isMember(channel, user)) {
-            // throw new Error('User is not member of this channels');
-            return null;
-        }
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'User is not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (!this.isBanned(channel, user)) {
-            // throw new Error('User is not banned');
-            return null;
-        }
+        if (!this.isBanned(channel, user))
+            throw new HttpException(
+                'User is not banned',
+                HttpStatus.BAD_REQUEST
+            );
 
         const ban = channel.bans.find(ban => ban.user.id === user.id);
 
@@ -328,15 +397,29 @@ export class ChannelsService {
     }
 
     async kickUser(channel: Channel, owner: User, user: User): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner)) {
-            // throw new Error('You are not administrator of this channels');
-            return null;
-        }
+        if (this.isDirectChannel(channel))
+            throw new HttpException(
+                'You can not do this in DM',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (!this.isMember(channel, user)) {
-            // throw new Error('User is not member of this channels');
-            return null;
-        }
+        if (!this.isAdministrator(channel, owner))
+            throw new HttpException(
+                'You are not administrator of this channels',
+                HttpStatus.FORBIDDEN
+            );
+
+        if (this.usersService.isSameUser(owner, user))
+            throw new HttpException(
+                'You can not kick yourself',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'User is not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
         channel.users = channel.users.filter(u => u.id !== user.id);
 
@@ -345,28 +428,32 @@ export class ChannelsService {
 
     async joinChannel(channel: Channel, user: User, password?: string): Promise<Channel> {
 
-        if (channel.channelType === ChannelType.DM) {
-            // throw new Error('You can not join to DM channels');
-            return null;
-        }
+        if (channel.channelType === ChannelType.DM)
+            throw new HttpException(
+                'You can not join DM',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (this.isMember(channel, user)) {
-            // throw new Error('You are already member of this channels');
-            return null;
-        }
+        if (this.isMember(channel, user))
+            throw new HttpException(
+                'You are already member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
-        if (this.isBanned(channel, user)) {
-            // throw new Error('You are banned from this channels');
-            return null;
-        }
+        if (this.isBanned(channel, user))
+            throw new HttpException(
+                'You are banned from this channels',
+                HttpStatus.BAD_REQUEST
+            );
 
         //in case of channels has password
         if (this.hasPassword(channel)) {
             //TODO: HASH PASSWORD
-            if (channel.password !== password) {
-                // throw new Error('Wrong password');
-                return null;
-            }
+            if (channel.password !== password)
+                throw new HttpException(
+                    'Wrong password',
+                    HttpStatus.FORBIDDEN
+                );
 
             channel.users.push(user);
             return await this.channelsRepository.save(channel);
@@ -374,10 +461,11 @@ export class ChannelsService {
 
         //in case of channels is private
         if (channel.channelType === ChannelType.PRIVATE) {
-            if (!this.isInvited(channel, user)) {
-                // throw new Error('You are not invited to this channels');
-                return null;
-            }
+            if (!this.isInvited(channel, user))
+                throw new HttpException(
+                    'You are not invited to this channels',
+                    HttpStatus.FORBIDDEN
+                );
 
             channel.users.push(user);
             channel.invites = channel.invites.filter(id => id !== user.id);
@@ -403,15 +491,17 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async sendMessage(channel: Channel, user: User, text: string): Promise<Channel> {
-        if (!this.isMember(channel, user)) {
-            // throw new Error('You are not member of this channels');
-            return null;
-        }
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'You are not member of this channels',
+                HttpStatus.FORBIDDEN
+            );
 
-        if (this.isMuted(channel, user)) {
-            // throw new Error('You are muted in this channels');
-            return null;
-        }
+        if (this.isMuted(channel, user))
+            throw new HttpException(
+                'You are muted in this channels',
+                HttpStatus.FORBIDDEN
+            );
 
         const message = new Message(user, text);
         channel.messages.push(message);
@@ -553,6 +643,15 @@ export class ChannelsService {
                 }
             }
         });
+    }
+
+    /**
+     * check if channel is direct channel
+     * @param {Channel} channel
+     * @returns {boolean}
+     */
+    isDirectChannel(channel: Channel): boolean {
+        return channel.channelType === ChannelType.DM;
     }
 
 
