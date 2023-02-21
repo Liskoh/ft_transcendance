@@ -11,7 +11,7 @@ import {Ban} from "../entity/ban.entity";
 import {Mute} from "../entity/mute.entity";
 import {UsersService} from "../../users/service/users.service";
 import * as bcrypt from 'bcrypt';
-import {BCRYPT_SALT_ROUNDS, MAX_CHANNELS_PER_USER} from "../../consts";
+import {BCRYPT_SALT_ROUNDS} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
 
 
@@ -454,6 +454,33 @@ export class ChannelsService {
         return await this.channelsRepository.save(channel);
     }
 
+    async leaveChannel(channel: Channel, user: User): Promise<Channel> {
+        if (this.isDirectChannel(channel))
+            throw new HttpException(
+                'You can not leave DM',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (!this.isMember(channel, user))
+            throw new HttpException(
+                'You are not member of this channels',
+                HttpStatus.BAD_REQUEST
+            );
+
+        channel.users = channel.users.filter(u => u.id !== user.id);
+
+        //in case of user is owner of channel
+        if (this.isOwner(channel, user)) {
+            if (channel.users.length > 0) {
+                channel.owner = channel.users[0];
+            } else {
+                return this.channelsRepository.remove(channel);
+            }
+        }
+
+        return await this.channelsRepository.save(channel);
+    }
+
     async joinChannel(channel: Channel, user: User, password?: string): Promise<Channel> {
 
         if (channel.channelType === ChannelType.DM)
@@ -693,4 +720,7 @@ export class ChannelsService {
     }
 
 
+    isOwner(channel: Channel, user: User) {
+        return channel.owner.id === user.id;
+    }
 }

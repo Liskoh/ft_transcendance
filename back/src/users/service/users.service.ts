@@ -31,7 +31,15 @@ export class UsersService {
      * @returns {Promise<User>}
      **/
     async getUserById(id: number): Promise<User> {
-        return await this.usersRepository.findOneBy({id: id});
+        const user = await this.usersRepository.findOneBy({id: id});
+
+        if (!user)
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return user;
     }
 
     /**
@@ -40,7 +48,15 @@ export class UsersService {
      * @returns {Promise<User>}
      */
     async getUserByLogin(login: string): Promise<User> {
-        return await this.usersRepository.findOneBy({login: login});
+        const user = await this.usersRepository.findOneBy({login: login});
+
+        if (!user)
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return user;
     }
 
     /**
