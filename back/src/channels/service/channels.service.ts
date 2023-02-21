@@ -41,7 +41,15 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     async getChannelById(id: number): Promise<Channel> {
-        return await this.channelsRepository.findOneBy({id: id});
+        const channel = await this.channelsRepository.findOneBy({id: id});
+
+        if (!channel)
+            throw new HttpException(
+                'Channel not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return channel;
     }
 
     /**
@@ -52,10 +60,11 @@ export class ChannelsService {
      */
     async createDirectMessageChannel(user1: User, user2: User): Promise<Channel> {
 
-        if (this.isDirectChannelExist(user1, user2, await this.getChannels())) {
-            // throw new Error('Direct channels already exist');
-            return null;
-        }
+        if (this.isDirectChannelExist(user1, user2, await this.getChannels()))
+            throw new HttpException(
+                'This DM already exist',
+                HttpStatus.FORBIDDEN
+            );
 
         let channel = new Channel();
 
