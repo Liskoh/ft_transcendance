@@ -6,8 +6,9 @@ import {SendMessageDto} from "./dto/send-message.dto";
 import {UsersService} from "../../users/service/users.service";
 import {User} from "../../users/entity/user.entity";
 import {Channel} from "../entity/channel.entity";
-import {validate} from "class-validator";
+import {validate, ValidationError} from "class-validator";
 import {DateDto} from "./dto/date.dto";
+import {JoinChannelDto} from "./dto/join-channel.dto";
 
 @WebSocketGateway()
 export class ChannelGateway implements OnGatewayConnection {
@@ -23,9 +24,10 @@ export class ChannelGateway implements OnGatewayConnection {
 
     // Override method from OnGatewayConnection
     //TODO: Implement authentication
-    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
+    async handleConnection(socket: any, ...args: any[]): Promise<any> {
         try {
-            socket.data.user = await this.usersService.getUserById(1);
+            const userId = socket.request.session.userId;
+
         } catch (ex) {
             console.log(ex);
         }
@@ -76,27 +78,30 @@ export class ChannelGateway implements OnGatewayConnection {
     /**
      * Join a channel with a password or without
      * @param {Socket} socket
-     * @param {any} payload => {id: number, password?: string}
+     * @param {JoinChannelDto} payload => {id: number, password?: string}
      * @returns {Promise<any>}
      */
     @SubscribeMessage('joinChannel')
-    async joinChannel(socket: Socket, payload: any): Promise<any> {
+    async joinChannel(socket: Socket, payload: JoinChannelDto): Promise<void> {
         try {
-            const channelDto = new IdDto(payload);
-            await validate(channelDto);
+            await validate(payload);
 
-            const channel = await this.channelsService.getChannelById(channelDto.id);
+            const channel = await this.channelsService.getChannelById(payload.id);
             const user = socket.data.user;
 
             if (payload.password) {
                 await this.channelsService.joinChannel(channel, user, payload.password);
-                return;
+            } else {
+                await this.channelsService.joinChannel(channel, user);
             }
 
-            await this.channelsService.joinChannel(channel, user);
-            //TODO: Send message to all users in channel
-        } catch (ex) {
-            console.log(ex);
+            socket.emit('joinChannelSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('joinChannelValidationFailed', error);
+            } else {
+                socket.emit('joinChannelFailed', error);
+            }
         }
     }
 
@@ -108,20 +113,23 @@ export class ChannelGateway implements OnGatewayConnection {
      */
     //TODO: SEND SOCKET WHEN OWNER CHANGE ?
     @SubscribeMessage('leaveChannel')
-    async leaveChannel(socket: Socket, payload: any): Promise<any> {
+    async leaveChannel(socket: Socket, payload: IdDto): Promise<any> {
         try {
+            await validate(payload);
+
             const user = socket.data.user;
-
-            const channelDto = new IdDto(payload);
-            await validate(channelDto);
-
-            const channel = await this.channelsService.getChannelById(channelDto.id);
+            const channel = await this.channelsService.getChannelById(payload.id);
 
             await this.channelsService.leaveChannel(channel, user);
+            socket.emit('leaveChannelSuccess');
 
             //TODO: Send message to all users in channel
-        } catch (ex) {
-
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('leaveChannelValidationFailed', error);
+            } else {
+                socket.emit('leaveChannelFailed', error);
+            }
         }
     }
 
@@ -249,6 +257,7 @@ export class ChannelGateway implements OnGatewayConnection {
             console.log(ex);
         }
     }
+
 
     //TODO: Implement
     async sendChannelMessage(channel: Channel, event: string, args: any): Promise<any> {

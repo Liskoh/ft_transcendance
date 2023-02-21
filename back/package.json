@@ -12,6 +12,8 @@
     "url": "https://github.com/Liskoh/ft_transcendance.git"
   },
   "devDependencies": {
+    "@nestjs/testing": "^9.3.9",
+    "@types/jest": "^29.4.0",
     "@types/node": "^17.0.21",
     "@types/passport-local": "^1.0.35",
     "prettier": "^2.5.1",
