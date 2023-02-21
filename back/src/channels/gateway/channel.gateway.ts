@@ -35,7 +35,12 @@ export class ChannelGateway implements OnGatewayConnection {
             const dto = new GetChannelDto(payload);
             const channel = await this.channelsService.getChannelById(dto.id);
 
-            socket.emit('getChannel', channel);
+            socket.emit('getChannel',
+                {
+                    id: channel.id,
+                    users: channel.users,
+                    messages: channel.messages,
+                });
         } catch (ex) {
             console.log(ex);
         }
