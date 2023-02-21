@@ -1,6 +1,6 @@
 import {IsNumber, Min} from "class-validator";
 
-export class GetChannelDto {
+export class IdDto {
     constructor(id: any) {
         this.id = id;
     }
