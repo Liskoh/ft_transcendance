@@ -4,6 +4,8 @@ import {UsersService} from "./users/service/users.service";
 import {ChannelsService} from "./channels/service/channels.service";
 import {ChannelType} from "./channels/enum/channel-type.enum";
 import {User} from "./users/entity/user.entity";
+import {GameService} from "./game/service/game.service";
+import {MatchHistory} from "./game/entity/match-history.entity";
 
 function makeid(length: number) {
     let result = '';
@@ -41,15 +43,26 @@ async function test(app: any) {
         channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
     }
 
-    console.log("users of channels: ", channel.users);
 
-    for (const us of addMembers(10, usersService)) {
+    let lastUser: User = null;
+
+    for (const us of addMembers(1, usersService)) {
+        lastUser = us;
         await usersService.saveNewUser(us);
         await channelsService.joinChannel(channel, us);
         await channelsService.sendMessage(channel, us, "Hello world!");
     }
 
+    await channelsService.muteUser(channel, user, lastUser);
+    await channelsService.banUser(channel, user, lastUser, new Date(2026, 1, 1));
+
     console.log(channel);
+
+    const gameService = app.get(GameService);
+
+    // const matchHistory = await gameService.createMatchHistory(10, 5, user, lastUser);
+
+    // console.log("Match history: ", matchHistory);
 }
 
 async function main() {

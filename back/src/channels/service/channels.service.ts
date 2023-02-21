@@ -209,10 +209,10 @@ export class ChannelsService {
      * @param {Channel} channel
      * @param {User} owner
      * @param {User} user
-     * @param {Date} date (if null, mute is permanent)
+     * @param {Date} date? (if null, mute is permanent)
      * @returns {Promise<Channel>}
      */
-    async muteUser(channel: Channel, owner: User, user: User, date: Date): Promise<Channel> {
+    async muteUser(channel: Channel, owner: User, user: User, date?: Date): Promise<Channel> {
             if (!this.isAdministrator(channel, owner)) {
                 // throw new Error('You are not administrator of this channels');
                 return null;
@@ -272,10 +272,10 @@ export class ChannelsService {
      * @param {Channel} channel
      * @param {User} owner
      * @param {User} user
-     * @param {Date} date (if null, ban is permanent)
+     * @param {Date} date? (if null, ban is permanent)
      * @returns {Promise<Channel>}
      */
-    async banUser(channel: Channel, owner: User, user: User, date: Date): Promise<Channel> {
+    async banUser(channel: Channel, owner: User, user: User, date?: Date): Promise<Channel> {
         if (!this.isAdministrator(channel, owner)) {
             // throw new Error('You are not administrator of this channels');
             return null;

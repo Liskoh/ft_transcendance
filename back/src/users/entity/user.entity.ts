@@ -1,5 +1,6 @@
 import {Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import {Channel} from "../../channels/entity/channel.entity";
+import {MatchHistory} from "../../game/entity/match-history.entity";
 
 
 @Entity({name: "users"})
@@ -31,12 +32,6 @@ export class User {
 
     @Column('int', { array: true, default: [] })
     blockedList: number[];
-
-    // @OneToMany(type => Match, (match) => match.winner)
-    // wins: Match[];
-    //
-    // @OneToMany(type => Match, (match) => match.looser)
-    // losses: Match[];
 
     @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })
     firstLogin: Date;
