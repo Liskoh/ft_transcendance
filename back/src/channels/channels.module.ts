@@ -5,12 +5,24 @@ import {Channel} from "./entity/channel.entity";
 import {Message} from "./entity/message.entity";
 import {Ban} from "./entity/ban.entity";
 import {Mute} from "./entity/mute.entity";
+import {UsersModule} from "../users/users.module";
+
 // import {Message} from "./entity/message.entity";
 
 @Module({
     exports: [ChannelsService],
-    imports: [TypeOrmModule.forFeature([Channel, Message, Ban, Mute])],
+    imports: [
+        TypeOrmModule.forFeature(
+            [
+                Channel,
+                Message,
+                Ban,
+                Mute]
+        ),
+        UsersModule
+    ],
     controllers: [],
     providers: [ChannelsService]
 })
-export class ChannelsModule {}
+export class ChannelsModule {
+}

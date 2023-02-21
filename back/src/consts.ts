@@ -10,6 +10,8 @@ export const MAX_LOGIN_LENGTH: number = 8;
 export const MAX_PASSWORD_LENGTH: number = 20;
 export const MIN_PASSWORD_LENGTH: number = 3;
 
+export const MAX_CHANNELS_PER_USER: number = 6;
+
 export const POSTGRES_NAME = "postgres";
 
 //create a list of all entities in the project:
