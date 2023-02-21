@@ -35,7 +35,11 @@ export class ChannelGateway implements OnGatewayConnection {
 
     @SubscribeMessage('getChannels')
     async getChannels(socket: Socket, payload: any): Promise<any> {
+        try {
 
+        } catch (error) {
+
+        }
     }
 
     @SubscribeMessage('getChannel')
@@ -56,22 +60,29 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('sendMessage')
-    async sendMessage(socket: Socket, payload: any): Promise<any> {
+    async sendMessage(socket: Socket, payload: SendMessageDto): Promise<any> {
         try {
-            const dto = new SendMessageDto(payload);
-            const channel = await this.channelsService.getChannelById(dto.id);
+            await validate(payload);
+
+            const channel = await this.channelsService.getChannelById(payload.id);
             const user = socket.data.user;
 
-            await this.channelsService.sendMessage(channel, user, dto.text);
+            await this.channelsService.sendMessage(channel, user, payload.text);
 
             //TODO: Send message to all users in channel
-            await this.sendChannelMessage(channel, 'newMessage', {
-                userId: user.id,
-                userLogin: user.login,
-                text: dto.text,
-            });
-        } catch (ex) {
-            console.log(ex);
+            // await this.sendChannelMessage(channel, 'newMessage', {
+            //     userId: user.id,
+            //     userLogin: user.login,
+            //     text: dto.text,
+            // });
+
+            socket.emit('sendMessageSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('sendMessageValidationFailed', error);
+            } else {
+                socket.emit('sendMessageFailed', error);
+            }
         }
     }
 
