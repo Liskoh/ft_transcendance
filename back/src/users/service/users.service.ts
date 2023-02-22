@@ -4,7 +4,7 @@ import {Repository} from "typeorm";
 import {User} from "../entity/user.entity";
 import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
 import {RegisterUserDto} from "../dto/register-user.dto";
-import {validate} from "class-validator";
+import {validate, ValidationError} from "class-validator";
 import {ChangeLoginUserDto} from "../dto/change-login-user.dto";
 import {ChannelType} from "../../channels/enum/channel-type.enum";
 
@@ -86,27 +86,37 @@ export class UsersService {
 
     /**
      * save and return new user (using dto)
+     * @param {RegisterUserDto} dto
      * @returns {Promise<User>}
-     * @param user
-     **/
-    async saveNewUser(user: User): Promise<User> {
-        let existingUser = await this.getUserByLogin(user.login);
-
-        if (existingUser !== null) {
-            // throw new Error("User with this login already exists"); //TODO: check what we have to do here ?
-            return null;
-        }
-
-        const dto = new RegisterUserDto(user.login, user.email);
-
+     */
+    async saveNewUser(dto: RegisterUserDto): Promise<User> {
         try {
             await validate(dto);
-            console.log("validation succeed");
-            await this.usersRepository.save(user);
-            return user;
         } catch (errors) {
-            throw new HttpException(errors, HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+                errors,
+                HttpStatus.BAD_REQUEST
+            );
         }
+        let existingUser;
+
+        //if user is unique
+        try {
+            existingUser = await this.getUserByLogin(dto.login);
+        } catch (error) {
+            existingUser = null;
+        }
+
+        if (existingUser !== null)
+            throw new HttpException(
+                "User with this login already exists",
+                HttpStatus.BAD_REQUEST
+            );
+
+        const user = new User(dto.login, dto.email);
+
+        await this.usersRepository.save(user);
+        return user;
     }
 
     /**

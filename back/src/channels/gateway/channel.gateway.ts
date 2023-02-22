@@ -28,7 +28,7 @@ export class ChannelGateway implements OnGatewayConnection {
     //TODO: Implement authentication
     async handleConnection(socket: any, ...args: any[]): Promise<any> {
         try {
-            const userId = socket.request.session.userId;
+
 
         } catch (ex) {
             console.log(ex);
@@ -45,19 +45,19 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('getChannel')
-    async getChannel(socket: Socket, payload: any): Promise<any> {
+    async getChannel(socket: Socket, payload: IdDto): Promise<any> {
         try {
-            const dto = new IdDto(payload);
-            const channel = await this.channelsService.getChannelById(dto.id);
+            await validate(payload);
 
-            socket.emit('getChannel',
-                {
-                    id: channel.id,
-                    users: channel.users,
-                    messages: channel.messages,
-                });
-        } catch (ex) {
-            console.log(ex);
+            const channel = await this.channelsService.getChannelById(payload.id);
+
+            socket.emit('getChannelSuccess', channel);
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('getChannelValidationFailed', error);
+            } else {
+                socket.emit('getChannelFailed', error);
+            }
         }
     }
 
