@@ -11,9 +11,9 @@ export class User {
     //     this.login = login;
     // }
 
-    constructor(login: string, email: string) {
+    constructor(login: string) {
         this.login = login;
-        this.email = email;
+        this.nickname = this.login;
     }
 
     @PrimaryGeneratedColumn()
@@ -23,7 +23,7 @@ export class User {
     login: string;
 
     @Column( {unique: true} )
-    email: string;
+    nickname: string;
 
     @Column({default: UserStatus.OFFLINE})
     status: UserStatus;

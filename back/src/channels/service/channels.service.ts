@@ -52,6 +52,26 @@ export class ChannelsService {
         return channel;
     }
 
+    //TODO: check version typeorm and fix this
+    /**
+     * Get channels by id with filtered data (for socket)
+     * @param {number} id
+     * @param {string[]} requiredFields
+     * @returns {Promise<Channel>}
+     */
+    // async getFilteredChannelById(id: number, select: string[]): Promise<Channel> {
+    //     const options = { select };
+    //     const channel = await this.channelsRepository.findOneBy({ id }, options);
+    //
+    //     if (!channel)
+    //         throw new HttpException(
+    //             'Channel not found',
+    //             HttpStatus.NOT_FOUND
+    //         );
+    //
+    //     return channel;
+    // }
+
     /**
      * create private channels with another user
      * @param {User} user1
