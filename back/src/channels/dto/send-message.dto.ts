@@ -1,5 +1,5 @@
 import {IsNumber, IsString, MaxLength, Min, MinLength} from "class-validator";
-import {MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH} from "../../../consts";
+import {MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH} from "../../consts";
 
 export class SendMessageDto {
 

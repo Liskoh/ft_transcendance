@@ -1,14 +1,16 @@
 import {OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer} from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {IdDto} from "./dto/id.dto";
+import {IdDto} from "../dto/id.dto";
 import {ChannelsService} from "../service/channels.service";
-import {SendMessageDto} from "./dto/send-message.dto";
+import {SendMessageDto} from "../dto/send-message.dto";
 import {UsersService} from "../../users/service/users.service";
 import {User} from "../../users/entity/user.entity";
 import {Channel} from "../entity/channel.entity";
 import {validate, ValidationError} from "class-validator";
-import {DateDto} from "./dto/date.dto";
-import {JoinChannelDto} from "./dto/join-channel.dto";
+import {DateDto} from "../dto/date.dto";
+import {JoinChannelDto} from "../dto/join-channel.dto";
+import {ApplyPunishmentDto} from "../dto/apply-punishment.dto";
+import {CancelPunishmentDto} from "../dto/cancel-punishment.dto";
 
 @WebSocketGateway()
 export class ChannelGateway implements OnGatewayConnection {
@@ -59,6 +61,12 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /**
+     * send a message to a channel
+     * @param {Socket} socket
+     * @param {SendMessageDto} payload => {id: number, text: string}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('sendMessage')
     async sendMessage(socket: Socket, payload: SendMessageDto): Promise<any> {
         try {
@@ -144,145 +152,49 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
-    /**
-     * mute an user from a channel
-     * @param {Socket} socket
-     * @param {any} payload => {channelId: number, userId: number, date?: Date}
-     * @returns {Promise<any>}
-     */
-    @SubscribeMessage('muteUser')
-    async muteUser(socket: Socket, payload: any): Promise<any> {
+    @SubscribeMessage('applyPunishment')
+    async applyPunishment(socket: Socket, payload: ApplyPunishmentDto): Promise<any> {
         try {
+            await validate(payload);
+
             const user = socket.data.user;
 
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-            const dtoDate = new DateDto(payload.date);
+            const channel = await this.channelsService.getChannelById(payload.channelId);
+            const userToPunish = await this.usersService.getUserById(payload.userId);
+            const punishmentType = payload.punishmentType;
+            const date = payload.date;
 
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToMute = await this.usersService.getUserById(dtoUser.id);
-
-            if (payload.date === undefined) {
-                await this.channelsService.muteUser(channel, user, userToMute);
+            await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
+            socket.emit('applyPunishmentSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('applyPunishmentValidationFailed', error);
             } else {
-                await validate(dtoDate);
-                await this.channelsService.muteUser(channel, user, userToMute, dtoDate.date);
+                socket.emit('applyPunishmentFailed', error);
             }
-
-        } catch (ex) {
-            console.log(ex);
         }
     }
 
-    @SubscribeMessage('unmuteUser')
-    async unmuteUser(socket: Socket, payload: any): Promise<any> {
+    @SubscribeMessage('cancelPunishment')
+    async cancelPunishment(socket: Socket, payload: CancelPunishmentDto): Promise<any> {
         try {
+            await validate(payload);
+
             const user = socket.data.user;
 
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
+            const channel = await this.channelsService.getChannelById(payload.channelId);
+            const userToCancel = await this.usersService.getUserById(payload.userId);
+            const punishmentType = payload.punishmentType;
 
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToUnmute = await this.usersService.getUserById(dtoUser.id);
-
-            await this.channelsService.unmuteUser(channel, user, userToUnmute);
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-    /**
-     * Ban an user from a channel
-     * @param {Socket} socket
-     * @param {any} payload => {channelId: number, userId: number, date?: Date}
-     */
-    @SubscribeMessage('banUser')
-    async banUser(socket: Socket, payload: any): Promise<any> {
-        try {
-            const user = socket.data.user;
-
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-            const dtoDate = new DateDto(payload.date);
-
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToBan = await this.usersService.getUserById(dtoUser.id);
-
-            if (payload.date === undefined) {
-                await this.channelsService.banUser(channel, user, userToBan);
+            await this.channelsService.cancelPunishment(channel, user, userToCancel, punishmentType);
+            socket.emit('cancelPunishmentSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('cancelPunishmentValidationFailed', error);
             } else {
-                await validate(dtoDate);
-                await this.channelsService.banUser(channel, user, userToBan, dtoDate.date);
+                socket.emit('cancelPunishmentFailed', error);
             }
-
-        } catch (ex) {
-            console.log(ex);
         }
     }
-
-    @SubscribeMessage('unbanUser')
-    async unbanUser(socket: Socket, payload: any): Promise<any> {
-        try {
-            const user = socket.data.user;
-
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToUnban = await this.usersService.getUserById(dtoUser.id);
-
-            await this.channelsService.unbanUser(channel, user, userToUnban);
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-    @SubscribeMessage('kickUser')
-    async kickUser(socket: Socket, payload: any): Promise<any> {
-        try {
-            const user = socket.data.user;
-
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToKick = await this.usersService.getUserById(dtoUser.id);
-
-            await this.channelsService.kickUser(channel, user, userToKick);
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-
-    //TODO: Implement
-    async sendChannelMessage(channel: Channel, event: string, args: any): Promise<any> {
-        try {
-            if (!channel.users)
-                return;
-
-            for (const user of channel.users) {
-
-            }
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
 
 }

@@ -7,12 +7,12 @@ import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
 import {validate} from "class-validator";
 import {Message} from "../entity/message.entity";
-import {Ban} from "../entity/ban.entity";
-import {Mute} from "../entity/mute.entity";
 import {UsersService} from "../../users/service/users.service";
 import * as bcrypt from 'bcrypt';
 import {BCRYPT_SALT_ROUNDS} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
+import {PunishmentType} from "../enum/punishment-type.enum";
+import {Punishment} from "../entity/punishment.entity";
 
 
 @Injectable()
@@ -22,10 +22,8 @@ export class ChannelsService {
                 private channelsRepository: Repository<Channel>,
                 @InjectRepository(Message)
                 private messagesRepository: Repository<Message>,
-                @InjectRepository(Ban)
-                private bansRepository: Repository<Ban>,
-                @InjectRepository(Mute)
-                private mutesRepository: Repository<Mute>,
+                @InjectRepository(Punishment)
+                private punishmentsRepository: Repository<Punishment>,
                 private readonly usersService: UsersService) {
     }
 
@@ -75,8 +73,7 @@ export class ChannelsService {
         channel.users = [user1, user2];
         channel.channelType = ChannelType.DM;
         channel.messages = [];
-        channel.mutes = [];
-        channel.bans = [];
+        channel.punishments = [];
 
         return await this.channelsRepository.save(channel);
     }
@@ -117,8 +114,7 @@ export class ChannelsService {
         channel.users = [owner];
         channel.channelType = type;
         channel.messages = [];
-        channel.mutes = [];
-        channel.bans = [];
+        channel.punishments = [];
 
         return await this.channelsRepository.save(channel);
     }
@@ -262,15 +258,7 @@ export class ChannelsService {
         return await this.channelsRepository.save(channel);
     }
 
-    /**
-     * mute an user from channels
-     * @param {Channel} channel
-     * @param {User} owner
-     * @param {User} user
-     * @param {Date} date? (if null, mute is permanent)
-     * @returns {Promise<Channel>}
-     */
-    async muteUser(channel: Channel, owner: User, user: User, date?: Date): Promise<Channel> {
+    async applyPunishment(channel: Channel, owner: User, user: User, punishmentType: PunishmentType, date?: Date): Promise<Channel> {
         if (this.isDirectChannel(channel))
             throw new HttpException(
                 'You can not do this in DM',
@@ -285,7 +273,7 @@ export class ChannelsService {
 
         if (this.usersService.isSameUser(owner, user))
             throw new HttpException(
-                'You can not mute yourself',
+                'You can not punish yourself',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -295,63 +283,21 @@ export class ChannelsService {
                 HttpStatus.BAD_REQUEST
             );
 
-        if (this.isMuted(channel, user))
-            throw new HttpException(
-                'User is already muted',
-                HttpStatus.BAD_REQUEST
-            );
+        let punishment = new Punishment(user, punishmentType, date);
 
-        const mute = new Mute(user, date);
-        channel.mutes.push(mute);
+        //we can kick the user from the channel because he is not member anymore
+        if (punishmentType === PunishmentType.KICK || punishmentType === PunishmentType.BAN) {
+            return this.kickUser(channel, owner, user);
+        }
 
-        await this.mutesRepository.save(mute);
-
-        return await this.channelsRepository.save(channel);
-    }
-
-    /**
-     * unmute an user from channels
-     * @param {Channel} channel
-     * @param {User} owner
-     * @param {User} user
-     * @returns {Promise<Channel>}
-     */
-    async unmuteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner))
-            throw new HttpException(
-                'You are not administrator of this channels',
-                HttpStatus.FORBIDDEN
-            );
-
-        if (!this.isMember(channel, user))
-            throw new HttpException(
-                'User is not member of this channels',
-                HttpStatus.BAD_REQUEST
-            );
-
-        if (!this.isMuted(channel, user))
-            throw new HttpException(
-                'User is not muted',
-                HttpStatus.BAD_REQUEST
-            );
-
-        const mute = channel.mutes.find(mute => mute.user.id === user.id);
-
-        await this.mutesRepository.remove(mute);
+        //save punishment
+        channel.punishments.push(punishment);
+        await this.punishmentsRepository.save(punishment);
 
         return await this.channelsRepository.save(channel);
     }
 
-
-    /**
-     * ban an user from channels
-     * @param {Channel} channel
-     * @param {User} owner
-     * @param {User} user
-     * @param {Date} date? (if null, ban is permanent)
-     * @returns {Promise<Channel>}
-     */
-    async banUser(channel: Channel, owner: User, user: User, date?: Date): Promise<Channel> {
+    async cancelPunishment(channel: Channel, owner: User, user: User, punishmentType: PunishmentType): Promise<Channel> {
         if (this.isDirectChannel(channel))
             throw new HttpException(
                 'You can not do this in DM',
@@ -366,7 +312,7 @@ export class ChannelsService {
 
         if (this.usersService.isSameUser(owner, user))
             throw new HttpException(
-                'You can not ban yourself',
+                'You can not cancel punishment for yourself',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -376,81 +322,34 @@ export class ChannelsService {
                 HttpStatus.BAD_REQUEST
             );
 
-        if (this.isBanned(channel, user))
+        if (!this.isPunished(channel, user, punishmentType))
             throw new HttpException(
-                'User is already banned',
+                'User is not punished',
                 HttpStatus.BAD_REQUEST
             );
 
-        const ban = new Ban(user, date);
-        channel.bans.push(ban);
+        //in case if the punishment is permanent (we have to remove it)
+        let punishment = channel.punishments.find(
+            punishment => punishment.user.id === user.id &&
+                punishment.punishmentType === punishmentType &&
+                punishment.endDate === null &&
+                punishmentType !== PunishmentType.KICK
+        );
 
-        //kick user from channel
-        channel = await this.kickUser(channel, owner, user);
-
-        return await this.channelsRepository.save(channel);
-    }
-
-    /**
-     * unban an user from channels
-     * @param {Channel} channel
-     * @param {User} owner
-     * @param {User} user
-     * @returns {Promise<Channel>}
-     */
-    async unbanUser(channel: Channel, owner: User, user: User): Promise<Channel> {
-        if (!this.isAdministrator(channel, owner))
+        if (!punishment)
             throw new HttpException(
-                'You are not administrator of this channels',
-                HttpStatus.FORBIDDEN
-            );
-
-        if (!this.isMember(channel, user))
-            throw new HttpException(
-                'User is not member of this channels',
+                'User has no such punishment',
                 HttpStatus.BAD_REQUEST
             );
 
-        if (!this.isBanned(channel, user))
-            throw new HttpException(
-                'User is not banned',
-                HttpStatus.BAD_REQUEST
-            );
-
-        const ban = channel.bans.find(ban => ban.user.id === user.id);
-
-        await this.bansRepository.remove(ban);
+        await this.punishmentsRepository.remove(punishment);
 
         return await this.channelsRepository.save(channel);
     }
 
     async kickUser(channel: Channel, owner: User, user: User): Promise<Channel> {
-        if (this.isDirectChannel(channel))
-            throw new HttpException(
-                'You can not do this in DM',
-                HttpStatus.BAD_REQUEST
-            );
-
-        if (!this.isAdministrator(channel, owner))
-            throw new HttpException(
-                'You are not administrator of this channels',
-                HttpStatus.FORBIDDEN
-            );
-
-        if (this.usersService.isSameUser(owner, user))
-            throw new HttpException(
-                'You can not kick yourself',
-                HttpStatus.BAD_REQUEST
-            );
-
-        if (!this.isMember(channel, user))
-            throw new HttpException(
-                'User is not member of this channels',
-                HttpStatus.BAD_REQUEST
-            );
-
+        //verification is effectuated in this.applyPunishment method
         channel.users = channel.users.filter(u => u.id !== user.id);
-
         return await this.channelsRepository.save(channel);
     }
 
@@ -495,7 +394,7 @@ export class ChannelsService {
                 HttpStatus.BAD_REQUEST
             );
 
-        if (this.isBanned(channel, user))
+        if (this.isPunished(channel, user, PunishmentType.BAN))
             throw new HttpException(
                 'You are banned from this channels',
                 HttpStatus.BAD_REQUEST
@@ -562,7 +461,8 @@ export class ChannelsService {
                 HttpStatus.FORBIDDEN
             );
 
-        if (this.isMuted(channel, user))
+        //check if user is muted
+        if (this.isPunished(channel, user, PunishmentType.MUTE))
             throw new HttpException(
                 'You are muted in this channels',
                 HttpStatus.FORBIDDEN
@@ -640,58 +540,23 @@ export class ChannelsService {
         return channel.users.includes(user);
     }
 
-    /**
-     * check if user is banned in channels
-     * @param {Channel} channel
-     * @param {User} user
-     * @returns {boolean}
-     */
-    isBanned(channel: Channel, user: User): boolean {
+    isPunished(channel: Channel, user: User, punishmentType: PunishmentType): boolean {
         const currentDate = new Date();
 
-        for (const ban of channel.bans) {
-            if (ban.user.id === user.id) {
-                //in case ban is permanent
-                if (ban.endDate === null) {
-                    return true;
-                }
+        const punishments = channel.punishments.filter(
+            punish => punish.user.id === user.id &&
+                punish.punishmentType === punishmentType &&
+                punish.punishmentType !== PunishmentType.KICK
+        );
 
-                //in case ban is temporary
-                if (ban.endDate > currentDate) {
+        //in case punish is permanent or active
+        for (const punish of punishments)
+            if (punish.user.id === user.id && punish.punishmentType === punishmentType)
+                if (punish.endDate === null || punish.endDate > currentDate)
                     return true;
-                }
-            }
-        }
 
-        return false;
+        return false
     }
-
-    /**
-     * check if user is muted in channels
-     * @param {Channel} channel
-     * @param {User} user
-     * @returns {boolean}
-     */
-    isMuted(channel: Channel, user: User): boolean {
-        const currentDate = new Date();
-
-        for (const mute of channel.mutes) {
-            if (mute.user.id === user.id) {
-                //in case mute is permanent
-                if (mute.endDate === null) {
-                    return true;
-                }
-
-                //in case mute is temporary
-                if (mute.endDate > currentDate) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
 
     /**
      * check if a direct channels already exist

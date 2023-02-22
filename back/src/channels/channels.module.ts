@@ -3,9 +3,8 @@ import {ChannelsService} from "./service/channels.service";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {Channel} from "./entity/channel.entity";
 import {Message} from "./entity/message.entity";
-import {Ban} from "./entity/ban.entity";
-import {Mute} from "./entity/mute.entity";
 import {UsersModule} from "../users/users.module";
+import {Punishment} from "./entity/punishment.entity";
 
 // import {Message} from "./entity/message.entity";
 
@@ -16,8 +15,8 @@ import {UsersModule} from "../users/users.module";
             [
                 Channel,
                 Message,
-                Ban,
-                Mute]
+                Punishment,
+                ]
         ),
         UsersModule
     ],
