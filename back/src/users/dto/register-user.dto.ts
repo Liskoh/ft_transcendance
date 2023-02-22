@@ -3,9 +3,8 @@ import {MAX_LOGIN_LENGTH, MAX_SIZE_LOGIN_ERROR} from "../../consts";
 
 export class RegisterUserDto {
 
-    constructor(login: string, email: string) {
+    constructor(login: string) {
         this.login = login;
-        this.email = email;
     }
 
 
@@ -14,8 +13,4 @@ export class RegisterUserDto {
     @MaxLength(MAX_LOGIN_LENGTH, {message: MAX_SIZE_LOGIN_ERROR})
     @Matches(/^[a-zA-Z0-9]+$/, { message: 'Login should contain only letters and numbers' })
     login: string;
-
-    @IsEmail(undefined, { message: 'Invalid email address' })
-    @IsNotEmpty()
-    email: string;
 }

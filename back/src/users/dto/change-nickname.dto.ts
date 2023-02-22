@@ -1,7 +1,7 @@
 import {IsNotEmpty, IsString, MaxLength} from "class-validator";
 import {MAX_LOGIN_LENGTH, MAX_SIZE_LOGIN_ERROR} from "../../consts";
 
-export class ChangeLoginUserDto {
+export class ChangeNicknameDto {
 
     constructor(login: string) {
         this.login = login;

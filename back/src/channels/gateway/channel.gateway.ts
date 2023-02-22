@@ -61,6 +61,33 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /*
+     * send a socket message to all users in a channel
+     * @param {Channel} channel
+     * @param {string} type
+     * @param {any} payload
+     * returns {void}
+     */
+    emitOnChannel(channel: Channel, type: string, payload: any): void {
+        try {
+            if (!channel || !channel.users)
+                return;
+
+            const socketIds: string[] = Object.keys(this.server.sockets.sockets);
+
+            for (const socketId of socketIds) {
+                const socket = this.server.sockets.sockets[socketId];
+                const user: User = socket.data.user;
+
+                if (channel.users.includes(user)) {
+                    socket.emit(type, payload);
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     /**
      * send a message to a channel
      * @param {Socket} socket

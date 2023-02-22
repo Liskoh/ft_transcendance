@@ -5,7 +5,7 @@ import {User} from "../entity/user.entity";
 import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
 import {RegisterUserDto} from "../dto/register-user.dto";
 import {validate, ValidationError} from "class-validator";
-import {ChangeLoginUserDto} from "../dto/change-login-user.dto";
+import {ChangeLoginUserDto, ChangeNicknameDto} from "../dto/change-nickname.dto";
 import {ChannelType} from "../../channels/enum/channel-type.enum";
 
 @Injectable()
@@ -18,7 +18,6 @@ export class UsersService {
 
     /**
      * Returns all users
-     * @param {number} id
      * @returns {Promise<User[]>}
      */
     async getUsers(): Promise<User[]> {
@@ -113,7 +112,7 @@ export class UsersService {
                 HttpStatus.BAD_REQUEST
             );
 
-        const user = new User(dto.login, dto.email);
+        const user = new User(dto.login);
 
         await this.usersRepository.save(user);
         return user;
@@ -121,34 +120,31 @@ export class UsersService {
 
     /**
      * Change user login and check if it is unique
-     * @param user
-     * @param newLogin
-     * @returns {Promise<User | undefined>}
+     * @param {User} user
+     * @param {RegisterUserDto} dto
+     * @returns {Promise<User>}
      */
-    async changeLogin(user: User, newLogin: string): Promise<User | undefined> {
+    async changeNickname(user: User, dto: ChangeNicknameDto): Promise<User> {
+        try {
+            await validate(dto);
+        } catch (errors) {
+            throw new HttpException(
+                errors,
+                HttpStatus.BAD_REQUEST
+            );
+        }
 
         for (const u of await this.getUsers()) {
-            if (u.login === newLogin && u.id !== user.id) {
+            if (u.nickname === dto.login) {
                 throw new HttpException(
-                    "User with this login already exists",
+                    "User with this nickname already exists",
                     HttpStatus.BAD_REQUEST
                 );
             }
         }
 
-        const dto = new ChangeLoginUserDto(newLogin);
-
-        try {
-            await validate(dto);
-            console.log("validation succeed");
-
-            user.login = newLogin;
-            await this.usersRepository.save(user);
-
-            return user;
-        } catch (errors) {
-            throw new HttpException(errors, HttpStatus.BAD_REQUEST);
-        }
+        user.nickname = dto.login;
+        return await this.usersRepository.save(user);
     }
 
     /**
@@ -203,6 +199,12 @@ export class UsersService {
         if (from.friendsList.includes(to.id))
             throw new HttpException(
                 "You are already friends with this user",
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (this.isBlockedByUser(from, to))
+            throw new HttpException(
+                "You are blocked by this user",
                 HttpStatus.BAD_REQUEST
             );
 
@@ -265,6 +267,10 @@ export class UsersService {
         return user1.id === user2.id;
     }
 
+    isBlockedByUser(from: User, to: User): boolean {
+        return from.blockedList.includes(to.id);
+    }
+
     /**
      * Create and return user
      * @param login
@@ -272,7 +278,7 @@ export class UsersService {
      * @returns {User}
      **/
     createUser(login: string, mail: string): User {
-        return new User(login, mail);
+        return new User(login);
     }
 
 }
