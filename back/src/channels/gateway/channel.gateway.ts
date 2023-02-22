@@ -1,13 +1,16 @@
 import {OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer} from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {IdDto} from "./dto/id.dto";
+import {IdDto} from "../dto/id.dto";
 import {ChannelsService} from "../service/channels.service";
-import {SendMessageDto} from "./dto/send-message.dto";
+import {SendMessageDto} from "../dto/send-message.dto";
 import {UsersService} from "../../users/service/users.service";
 import {User} from "../../users/entity/user.entity";
 import {Channel} from "../entity/channel.entity";
-import {validate} from "class-validator";
-import {DateDto} from "./dto/date.dto";
+import {validate, ValidationError} from "class-validator";
+import {DateDto} from "../dto/date.dto";
+import {JoinChannelDto} from "../dto/join-channel.dto";
+import {ApplyPunishmentDto} from "../dto/apply-punishment.dto";
+import {CancelPunishmentDto} from "../dto/cancel-punishment.dto";
 
 @WebSocketGateway()
 export class ChannelGateway implements OnGatewayConnection {
@@ -23,9 +26,10 @@ export class ChannelGateway implements OnGatewayConnection {
 
     // Override method from OnGatewayConnection
     //TODO: Implement authentication
-    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
+    async handleConnection(socket: any, ...args: any[]): Promise<any> {
         try {
-            socket.data.user = await this.usersService.getUserById(1);
+            const userId = socket.request.session.userId;
+
         } catch (ex) {
             console.log(ex);
         }
@@ -33,7 +37,11 @@ export class ChannelGateway implements OnGatewayConnection {
 
     @SubscribeMessage('getChannels')
     async getChannels(socket: Socket, payload: any): Promise<any> {
+        try {
 
+        } catch (error) {
+
+        }
     }
 
     @SubscribeMessage('getChannel')
@@ -53,50 +61,66 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /**
+     * send a message to a channel
+     * @param {Socket} socket
+     * @param {SendMessageDto} payload => {id: number, text: string}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('sendMessage')
-    async sendMessage(socket: Socket, payload: any): Promise<any> {
+    async sendMessage(socket: Socket, payload: SendMessageDto): Promise<any> {
         try {
-            const dto = new SendMessageDto(payload);
-            const channel = await this.channelsService.getChannelById(dto.id);
+            await validate(payload);
+
+            const channel = await this.channelsService.getChannelById(payload.id);
             const user = socket.data.user;
 
-            await this.channelsService.sendMessage(channel, user, dto.text);
+            await this.channelsService.sendMessage(channel, user, payload.text);
 
             //TODO: Send message to all users in channel
-            await this.sendChannelMessage(channel, 'newMessage', {
-                userId: user.id,
-                userLogin: user.login,
-                text: dto.text,
-            });
-        } catch (ex) {
-            console.log(ex);
+            // await this.sendChannelMessage(channel, 'newMessage', {
+            //     userId: user.id,
+            //     userLogin: user.login,
+            //     text: dto.text,
+            // });
+
+            socket.emit('sendMessageSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('sendMessageValidationFailed', error);
+            } else {
+                socket.emit('sendMessageFailed', error);
+            }
         }
     }
 
     /**
      * Join a channel with a password or without
      * @param {Socket} socket
-     * @param {any} payload => {id: number, password?: string}
+     * @param {JoinChannelDto} payload => {id: number, password?: string}
      * @returns {Promise<any>}
      */
     @SubscribeMessage('joinChannel')
-    async joinChannel(socket: Socket, payload: any): Promise<any> {
+    async joinChannel(socket: Socket, payload: JoinChannelDto): Promise<void> {
         try {
-            const channelDto = new IdDto(payload);
-            await validate(channelDto);
+            await validate(payload);
 
-            const channel = await this.channelsService.getChannelById(channelDto.id);
+            const channel = await this.channelsService.getChannelById(payload.id);
             const user = socket.data.user;
 
             if (payload.password) {
                 await this.channelsService.joinChannel(channel, user, payload.password);
-                return;
+            } else {
+                await this.channelsService.joinChannel(channel, user);
             }
 
-            await this.channelsService.joinChannel(channel, user);
-            //TODO: Send message to all users in channel
-        } catch (ex) {
-            console.log(ex);
+            socket.emit('joinChannelSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('joinChannelValidationFailed', error);
+            } else {
+                socket.emit('joinChannelFailed', error);
+            }
         }
     }
 
@@ -108,161 +132,69 @@ export class ChannelGateway implements OnGatewayConnection {
      */
     //TODO: SEND SOCKET WHEN OWNER CHANGE ?
     @SubscribeMessage('leaveChannel')
-    async leaveChannel(socket: Socket, payload: any): Promise<any> {
+    async leaveChannel(socket: Socket, payload: IdDto): Promise<any> {
         try {
+            await validate(payload);
+
             const user = socket.data.user;
-
-            const channelDto = new IdDto(payload);
-            await validate(channelDto);
-
-            const channel = await this.channelsService.getChannelById(channelDto.id);
+            const channel = await this.channelsService.getChannelById(payload.id);
 
             await this.channelsService.leaveChannel(channel, user);
+            socket.emit('leaveChannelSuccess');
 
             //TODO: Send message to all users in channel
-        } catch (ex) {
-
-        }
-    }
-
-    /**
-     * mute an user from a channel
-     * @param {Socket} socket
-     * @param {any} payload => {channelId: number, userId: number, date?: Date}
-     * @returns {Promise<any>}
-     */
-    @SubscribeMessage('muteUser')
-    async muteUser(socket: Socket, payload: any): Promise<any> {
-        try {
-            const user = socket.data.user;
-
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-            const dtoDate = new DateDto(payload.date);
-
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToMute = await this.usersService.getUserById(dtoUser.id);
-
-            if (payload.date === undefined) {
-                await this.channelsService.muteUser(channel, user, userToMute);
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('leaveChannelValidationFailed', error);
             } else {
-                await validate(dtoDate);
-                await this.channelsService.muteUser(channel, user, userToMute, dtoDate.date);
+                socket.emit('leaveChannelFailed', error);
             }
-
-        } catch (ex) {
-            console.log(ex);
         }
     }
 
-    @SubscribeMessage('unmuteUser')
-    async unmuteUser(socket: Socket, payload: any): Promise<any> {
+    @SubscribeMessage('applyPunishment')
+    async applyPunishment(socket: Socket, payload: ApplyPunishmentDto): Promise<any> {
         try {
+            await validate(payload);
+
             const user = socket.data.user;
 
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
+            const channel = await this.channelsService.getChannelById(payload.channelId);
+            const userToPunish = await this.usersService.getUserById(payload.userId);
+            const punishmentType = payload.punishmentType;
+            const date = payload.date;
 
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToUnmute = await this.usersService.getUserById(dtoUser.id);
-
-            await this.channelsService.unmuteUser(channel, user, userToUnmute);
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-    /**
-     * Ban an user from a channel
-     * @param {Socket} socket
-     * @param {any} payload => {channelId: number, userId: number, date?: Date}
-     */
-    @SubscribeMessage('banUser')
-    async banUser(socket: Socket, payload: any): Promise<any> {
-        try {
-            const user = socket.data.user;
-
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-            const dtoDate = new DateDto(payload.date);
-
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToBan = await this.usersService.getUserById(dtoUser.id);
-
-            if (payload.date === undefined) {
-                await this.channelsService.banUser(channel, user, userToBan);
+            await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
+            socket.emit('applyPunishmentSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('applyPunishmentValidationFailed', error);
             } else {
-                await validate(dtoDate);
-                await this.channelsService.banUser(channel, user, userToBan, dtoDate.date);
+                socket.emit('applyPunishmentFailed', error);
             }
-
-        } catch (ex) {
-            console.log(ex);
         }
     }
 
-    @SubscribeMessage('unbanUser')
-    async unbanUser(socket: Socket, payload: any): Promise<any> {
+    @SubscribeMessage('cancelPunishment')
+    async cancelPunishment(socket: Socket, payload: CancelPunishmentDto): Promise<any> {
         try {
+            await validate(payload);
+
             const user = socket.data.user;
 
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
+            const channel = await this.channelsService.getChannelById(payload.channelId);
+            const userToCancel = await this.usersService.getUserById(payload.userId);
+            const punishmentType = payload.punishmentType;
 
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToUnban = await this.usersService.getUserById(dtoUser.id);
-
-            await this.channelsService.unbanUser(channel, user, userToUnban);
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-    @SubscribeMessage('kickUser')
-    async kickUser(socket: Socket, payload: any): Promise<any> {
-        try {
-            const user = socket.data.user;
-
-            const dtoChannel = new IdDto(payload.channelId);
-            const dtoUser = new IdDto(payload.userId);
-
-            await validate(dtoChannel);
-            await validate(dtoUser);
-
-            const channel = await this.channelsService.getChannelById(dtoChannel.id);
-            const userToKick = await this.usersService.getUserById(dtoUser.id);
-
-            await this.channelsService.kickUser(channel, user, userToKick);
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-    //TODO: Implement
-    async sendChannelMessage(channel: Channel, event: string, args: any): Promise<any> {
-        try {
-            if (!channel.users)
-                return;
-
-            for (const user of channel.users) {
-
+            await this.channelsService.cancelPunishment(channel, user, userToCancel, punishmentType);
+            socket.emit('cancelPunishmentSuccess');
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                socket.emit('cancelPunishmentValidationFailed', error);
+            } else {
+                socket.emit('cancelPunishmentFailed', error);
             }
-        } catch (ex) {
-            console.log(ex);
         }
     }
-
 
 }

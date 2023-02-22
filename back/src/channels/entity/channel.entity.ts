@@ -1,18 +1,7 @@
-import {
-    Column,
-    Entity, JoinColumn,
-    JoinTable,
-    ManyToMany, ManyToOne,
-    PrimaryGeneratedColumn,
-    TableInheritance
-} from "typeorm";
+import {Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {User} from "../../users/entity/user.entity";
 import {Message} from "./message.entity";
-import {MAX_PASSWORD_LENGTH} from "../../consts";
-import {Ban} from "./ban.entity";
-import {Mute} from "./mute.entity";
-import {ChannelType} from "../enum/channel-type.enum";
-import {channel} from "diagnostics_channel";
+import {Punishment} from "./punishment.entity";
 
 @Entity({name: "channels"})
 export class Channel {
@@ -44,13 +33,9 @@ export class Channel {
     @JoinTable()
     messages: Message[];
 
-    @ManyToMany(type => Ban, {eager: true})
+    @ManyToMany(type => Punishment, {eager: true})
     @JoinTable()
-    bans: Ban[];
-
-    @ManyToMany(type => Mute, {eager: true})
-    @JoinTable()
-    mutes: Mute[];
+    punishments: Punishment[];
 
     @Column('varchar')
     channelType: string;

@@ -1,12 +1,14 @@
 import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {User} from "../../users/entity/user.entity";
+import {PunishmentType} from "../enum/punishment-type.enum";
 
-@Entity({name: "bans"})
-export class Ban {
+@Entity({name: "punishments"})
+export class Punishment {
 
-    constructor(user: User, endDate: Date) {
+    constructor(user: User, punishmentType: PunishmentType, endDate?: Date) {
         this.user = user;
         this.endDate = endDate;
+        this.punishmentType = punishmentType;
     }
 
     @PrimaryGeneratedColumn()
@@ -15,6 +17,9 @@ export class Ban {
     @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
     @JoinColumn()
     user: User;
+
+    @Column('varchar')
+    punishmentType: string;
 
     @Column({ type: 'timestamp with time zone', nullable: true })
     endDate: Date;
