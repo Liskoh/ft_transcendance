@@ -1,9 +1,10 @@
 import {NestFactory} from "@nestjs/core";
 import {AppModule} from "./app/app.module";
-import {UsersService} from "./users/service/users.service";
-import {ChannelsService} from "./channels/service/channels.service";
-import {ChannelType} from "./channels/enum/channel-type.enum";
+import {UserService} from "./user/service/user.service";
+import {ChannelService} from "./channel/service/channel.service";
+import {ChannelType} from "./channel/enum/channel-type.enum";
 import {ValidationPipe} from "@nestjs/common";
+import {PunishmentType} from "./channel/enum/punishment-type.enum";
 
 function makeid(length: number) {
     let result = '';
@@ -16,17 +17,17 @@ function makeid(length: number) {
 }
 
 // function addMembers(amount: number, usersService: any): User[] {
-//     const users = [];
+//     const user = [];
 //     for (let i = 0; i < amount; i++) {
 //         const user = usersService.createUser(makeid(8), makeid(8) + "@gmail.com");
-//         users.push(user);
+//         user.push(user);
 //     }
-//     return users;
+//     return user;
 // }
 //
 // async function test(app: any) {
-//     const usersService = app.get(UsersService);
-//     const channelsService = app.get(ChannelsService);
+//     const usersService = app.get(UserService);
+//     const channelsService = app.get(ChannelService);
 //
 //     // let user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
 //     let user;
@@ -98,9 +99,11 @@ async function bootstrap() {
 
     let channel;
     let user;
+    let user2;
 
-    const usersService = app.get(UsersService);
-    const channelsService = app.get(ChannelsService);
+    const usersService = app.get(UserService);
+    const channelsService = app.get(ChannelService);
+    const list: string[] = [];
 
     try {
         user = await usersService.getUserById(1);
@@ -109,12 +112,58 @@ async function bootstrap() {
     }
 
     try {
+        user2 = await usersService.getUserById(2);
+    } catch (error) {
+        user2 = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+    }
+
+    try {
         channel = await channelsService.getChannelById(1);
     } catch (ex) {
         channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
     }
 
-    console.log("Channel: ", channel);
+    //join channel
+    try {
+        await channelsService.joinChannel(channel, user2);
+    } catch (e) {
+        list.push(e.status + "\n" + e.message);
+    }
+
+    try {
+        await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
+    } catch (e) {
+        list.push(e.status + "\n" + e.message);
+    }
+
+    try {
+        await channelsService.sendMessage(channel, user, "Hello world!");
+        await channelsService.sendMessage(channel, user, "Hello world!");
+    } catch (e) {
+        list.push(e.status + "\n" + e.message);
+    }
+
+    try {
+        const endDate = new Date();
+        endDate.setMinutes(endDate.getMinutes() + 4);
+
+        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+    } catch (e) {
+        list.push(e.status + "\n" + e.message);
+    }
+
+    try {
+        await channelsService.sendMessage(channel, user2, "Hello world!");
+        await channelsService.sendMessage(channel, user2, "Hello world!");
+    } catch (e) {
+        list.push(e.status + "\n" + e.message);
+    }
+
+    // console.log("Channel: ", channel);
+    for (const s of list) {
+        console.log("\x1b[31m%s\x1b[0m", "Error: " + s);
+    }
 }
 
 bootstrap().then(r => console.log("App started!")).catch(e => console.log("Error: ", e));

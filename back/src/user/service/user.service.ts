@@ -7,7 +7,7 @@ import {validate} from "class-validator";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 
 @Injectable()
-export class UsersService {
+export class UserService {
 
     constructor(@InjectRepository(User)
                 private usersRepository: Repository<User>
@@ -15,7 +15,7 @@ export class UsersService {
     }
 
     /**
-     * Returns all users
+     * Returns all user
      * @returns {Promise<User[]>}
      */
     async getUsers(): Promise<User[]> {
@@ -261,7 +261,7 @@ export class UsersService {
     // getChannelCount(user: User): number {
     //     let count = 0;
     //
-    //     for (const channel of user.channels) {
+    //     for (const channel of user.channel) {
     //         if (channel.channelType !== ChannelType.DM) {
     //             count++;
     //         }
@@ -271,7 +271,7 @@ export class UsersService {
     // }
 
     /**
-     * check if two users are the same
+     * check if two user are the same
      * @param user1
      * @param user2
      * @returns {boolean}

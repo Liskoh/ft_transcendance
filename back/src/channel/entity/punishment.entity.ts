@@ -1,5 +1,5 @@
 import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
-import {User} from "../../users/entity/user.entity";
+import {User} from "../../user/entity/user.entity";
 import {PunishmentType} from "../enum/punishment-type.enum";
 
 @Entity({name: "punishments"})
@@ -21,6 +21,6 @@ export class Punishment {
     @Column('varchar')
     punishmentType: string;
 
-    @Column({ type: 'timestamp with time zone', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     endDate: Date;
 }

@@ -1,16 +1,16 @@
 import {Module} from "@nestjs/common";
-import {ChannelsService} from "./service/channels.service";
+import {ChannelService} from "./service/channel.service";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {Channel} from "./entity/channel.entity";
 import {Message} from "./entity/message.entity";
-import {UsersModule} from "../users/users.module";
+import {UserModule} from "../user/user.module";
 import {Punishment} from "./entity/punishment.entity";
 import {ChannelGateway} from "./gateway/channel.gateway";
+import {ChannelController} from "./controller/channel.controller";
 
-// import {Message} from "./entity/message.entity";
 
 @Module({
-    exports: [ChannelsService],
+    exports: [ChannelService],
     imports: [
         TypeOrmModule.forFeature(
             [
@@ -19,10 +19,10 @@ import {ChannelGateway} from "./gateway/channel.gateway";
                 Punishment,
                 ]
         ),
-        UsersModule
+        UserModule
     ],
-    controllers: [],
-    providers: [ChannelsService, ChannelGateway]
+    controllers: [ChannelController],
+    providers: [ChannelService, ChannelGateway]
 })
-export class ChannelsModule {
+export class ChannelModule {
 }
