@@ -5,6 +5,7 @@ import {Message} from "./channels/entity/message.entity";
 import {MatchHistory} from "./game/entity/match-history.entity";
 import {Punishment} from "./channels/entity/punishment.entity";
 
+export const MIN_LOGIN_LENGTH: number = 3;
 export const MAX_LOGIN_LENGTH: number = 8;
 export const MAX_PASSWORD_LENGTH: number = 20;
 export const MIN_PASSWORD_LENGTH: number = 3;
