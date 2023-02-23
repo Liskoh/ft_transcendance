@@ -21,6 +21,6 @@ export class Punishment {
     @Column('varchar')
     punishmentType: string;
 
-    @Column({ type: 'timestamp with time zone', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     endDate: Date;
 }

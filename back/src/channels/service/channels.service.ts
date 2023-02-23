@@ -125,6 +125,8 @@ export class ChannelsService {
         channel.name = name;
         channel.owner = owner;
         channel.users = [owner];
+        channel.messages = [];
+        channel.punishments = [];
         channel.channelType = type;
 
         if (password)

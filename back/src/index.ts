@@ -4,6 +4,7 @@ import {UsersService} from "./users/service/users.service";
 import {ChannelsService} from "./channels/service/channels.service";
 import {ChannelType} from "./channels/enum/channel-type.enum";
 import {ValidationPipe} from "@nestjs/common";
+import {PunishmentType} from "./channels/enum/punishment-type.enum";
 
 function makeid(length: number) {
     let result = '';
@@ -98,6 +99,7 @@ async function bootstrap() {
 
     let channel;
     let user;
+    let user2;
 
     const usersService = app.get(UsersService);
     const channelsService = app.get(ChannelsService);
@@ -109,9 +111,50 @@ async function bootstrap() {
     }
 
     try {
+        user2 = await usersService.getUserById(2);
+    } catch (error) {
+        user2 = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+    }
+
+    try {
         channel = await channelsService.getChannelById(1);
     } catch (ex) {
         channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
+    }
+
+    //join channel
+    try {
+        await channelsService.joinChannel(channel, user2);
+    } catch (e) {
+        console.log("Error: ", e);
+    }
+
+    try {
+        await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
+    } catch (e) {
+        console.log("Error: ", e);
+    }
+
+    try {
+        await channelsService.sendMessage(channel, user, "Hello world!");
+    } catch (e) {
+        console.log("Error: ", e);
+    }
+
+    try {
+        //create an end date 4m from now:
+        const endDate = new Date();
+        endDate.setMinutes(endDate.getMinutes() + 4);
+
+        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+    } catch (e) {
+        console.log("Error: ", e);
+    }
+
+    try {
+        await channelsService.sendMessage(channel, user2, "Hello world!");
+    } catch (e) {
+        console.log("Error: ", e);
     }
 
     console.log("Channel: ", channel);

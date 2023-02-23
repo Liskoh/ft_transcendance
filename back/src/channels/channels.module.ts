@@ -6,8 +6,8 @@ import {Message} from "./entity/message.entity";
 import {UsersModule} from "../users/users.module";
 import {Punishment} from "./entity/punishment.entity";
 import {ChannelGateway} from "./gateway/channel.gateway";
+import {ChannelController} from "./controller/channel.controller";
 
-// import {Message} from "./entity/message.entity";
 
 @Module({
     exports: [ChannelsService],
@@ -21,7 +21,7 @@ import {ChannelGateway} from "./gateway/channel.gateway";
         ),
         UsersModule
     ],
-    controllers: [],
+    controllers: [ChannelController],
     providers: [ChannelsService, ChannelGateway]
 })
 export class ChannelsModule {
