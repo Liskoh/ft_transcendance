@@ -1,5 +1,5 @@
 import {Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
-import {User} from "../../users/entity/user.entity";
+import {User} from "../../user/entity/user.entity";
 import {Message} from "./message.entity";
 import {Punishment} from "./punishment.entity";
 import {ChannelType} from "../enum/channel-type.enum";
@@ -9,7 +9,7 @@ export class Channel {
 
     constructor(owner: User, type: ChannelType) {
         this.owner = owner;
-        // this.users = [owner];
+        // this.user = [owner];
         this.channelType = type;
         // this.messages = [];
         // this.punishments = [];

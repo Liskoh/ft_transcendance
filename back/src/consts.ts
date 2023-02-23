@@ -1,9 +1,9 @@
 import "reflect-metadata";
-import {User} from "./users/entity/user.entity";
-import {Channel} from "./channels/entity/channel.entity";
-import {Message} from "./channels/entity/message.entity";
+import {User} from "./user/entity/user.entity";
+import {Channel} from "./channel/entity/channel.entity";
+import {Message} from "./channel/entity/message.entity";
 import {MatchHistory} from "./game/entity/match-history.entity";
-import {Punishment} from "./channels/entity/punishment.entity";
+import {Punishment} from "./channel/entity/punishment.entity";
 
 export const MIN_LOGIN_LENGTH: number = 3;
 export const MAX_LOGIN_LENGTH: number = 8;

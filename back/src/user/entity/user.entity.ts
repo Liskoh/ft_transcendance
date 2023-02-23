@@ -1,5 +1,5 @@
 import {Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn} from "typeorm";
-import {Channel} from "../../channels/entity/channel.entity";
+import {Channel} from "../../channel/entity/channel.entity";
 import {MatchHistory} from "../../game/entity/match-history.entity";
 import {UserStatus} from "../enum/user-status.enum";
 
@@ -51,21 +51,21 @@ export class User {
         *
      ************************************ */
 
-    // async joinChannel(channels: ChannelEntity, password?: string) {
+    // async joinChannel(channel: ChannelEntity, password?: string) {
     //     let userId = this.id;
     //
-    //     if (channels.users.includes(userId)) {
-    //         // throw new Error("You are already in this channels");
+    //     if (channel.user.includes(userId)) {
+    //         // throw new Error("You are already in this channel");
     //         return;
     //     }
     //
-    //     channels.users.push(userId);
-    //     await AppDataSource.manager.save(channels);
+    //     channel.user.push(userId);
+    //     await AppDataSource.manager.save(channel);
     //
-    //     console.log("UserEntity " + this.login + " joined channels " + channels.id);
+    //     console.log("UserEntity " + this.login + " joined channel " + channel.id);
     // }
     //
-    // async sendMessageToChannel(text: string, channels: ChannelEntity) {
+    // async sendMessageToChannel(text: string, channel: ChannelEntity) {
     //     const messageObj = new MessageEntity();
     //
     //     messageObj.user = this;
@@ -73,9 +73,9 @@ export class User {
     //
     //     await AppDataSource.manager.save(messageObj);
     //
-    //     channels.messages.push(messageObj.id);
+    //     channel.messages.push(messageObj.id);
     //
-    //     await AppDataSource.manager.save(channels);
+    //     await AppDataSource.manager.save(channel);
     // }
     //
     //

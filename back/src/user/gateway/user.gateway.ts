@@ -7,20 +7,20 @@ import {
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
 import {Logger} from "@nestjs/common";
-import {UsersService} from "../service/users.service";
+import {UserService} from "../service/user.service";
 import {validate, ValidationError} from "class-validator";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 
 @WebSocketGateway({
     namespace: 'users',
-    path: '/users',
+    path: '/user',
     port: 3000
     }
 )
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
-    constructor(private readonly usersService: UsersService) {
+    constructor(private readonly usersService: UserService) {
     }
     @WebSocketServer() server: Server;
 

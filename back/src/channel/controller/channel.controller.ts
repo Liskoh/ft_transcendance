@@ -1,11 +1,11 @@
 import {Controller, Get} from "@nestjs/common";
-import {ChannelsService} from "../service/channels.service";
+import {ChannelService} from "../service/channel.service";
 
 @Controller('channels')
 export class ChannelController {
 
     constructor(
-        private readonly channelsService: ChannelsService,
+        private readonly channelsService: ChannelService,
     ) {}
 
     @Get()

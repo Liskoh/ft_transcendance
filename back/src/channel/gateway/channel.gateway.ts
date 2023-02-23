@@ -1,10 +1,10 @@
 import {OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer} from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
 import {IdDto} from "../dto/id.dto";
-import {ChannelsService} from "../service/channels.service";
+import {ChannelService} from "../service/channel.service";
 import {SendMessageDto} from "../dto/send-message.dto";
-import {UsersService} from "../../users/service/users.service";
-import {User} from "../../users/entity/user.entity";
+import {UserService} from "../../user/service/user.service";
+import {User} from "../../user/entity/user.entity";
 import {Channel} from "../entity/channel.entity";
 import {validate, ValidationError} from "class-validator";
 import {DateDto} from "../dto/date.dto";
@@ -26,8 +26,8 @@ import {ChangeChannelTypeDto} from "../dto/change-channel-type.dto";
 export class ChannelGateway implements OnGatewayConnection {
 
     constructor(
-        private readonly channelsService: ChannelsService,
-        private readonly usersService: UsersService,
+        private readonly channelsService: ChannelService,
+        private readonly usersService: UserService,
     ) {
     }
 
@@ -155,7 +155,7 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
     /**
-     * send a socket message to all users in a channel
+     * send a socket message to all user in a channel
      * @param {Channel} channel
      * @param {string} type
      * @param {any} payload
@@ -197,7 +197,7 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.sendMessage(channel, user, payload.text);
 
-            //TODO: Send message to all users in channel
+            //TODO: Send message to all user in channel
             // await this.sendChannelMessage(channel, 'newMessage', {
             //     userId: user.id,
             //     userLogin: user.login,
@@ -255,7 +255,7 @@ export class ChannelGateway implements OnGatewayConnection {
             await this.channelsService.leaveChannel(channel, user);
             socket.emit('leaveChannelSuccess');
 
-            //TODO: Send message to all users in channel
+            //TODO: Send message to all user in channel
         } catch (error) {
             socket.emit('channelError', error);
         }

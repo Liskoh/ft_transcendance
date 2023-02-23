@@ -2,12 +2,12 @@ import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {Channel} from "../entity/channel.entity";
-import {User} from "../../users/entity/user.entity";
+import {User} from "../../user/entity/user.entity";
 import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
 import {validate} from "class-validator";
 import {Message} from "../entity/message.entity";
-import {UsersService} from "../../users/service/users.service";
+import {UserService} from "../../user/service/user.service";
 import * as bcrypt from 'bcrypt';
 import {BCRYPT_SALT_ROUNDS, CHAT_COOLDOWN_IN_MILLISECONDS} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
@@ -16,7 +16,7 @@ import {Punishment} from "../entity/punishment.entity";
 
 
 @Injectable()
-export class ChannelsService {
+export class ChannelService {
 
     constructor(@InjectRepository(Channel)
                 private channelsRepository: Repository<Channel>,
@@ -24,13 +24,13 @@ export class ChannelsService {
                 private messagesRepository: Repository<Message>,
                 @InjectRepository(Punishment)
                 private punishmentsRepository: Repository<Punishment>,
-                private readonly usersService: UsersService) {
+                private readonly usersService: UserService) {
     }
 
     private cooldownMap = new Map<number, Date>();
 
     /**
-     * Get all channels
+     * Get all channel
      * @returns {Promise<Channel[]>}
      **/
     async getChannels(): Promise<Channel[]> {
@@ -38,7 +38,7 @@ export class ChannelsService {
     }
 
     /**
-     * Get channels by id
+     * Get channel by id
      * @param {number} id
      * @returns {Promise<Channel>}
      */
@@ -56,7 +56,7 @@ export class ChannelsService {
 
     //TODO: check version typeorm and fix this
     /**
-     * Get channels by id with filtered data (for socket)
+     * Get channel by id with filtered data (for socket)
      * @param {number} id
      * @param {string[]} requiredFields
      * @returns {Promise<Channel>}
@@ -80,7 +80,7 @@ export class ChannelsService {
     // }
 
     /**
-     * create private channels with another user
+     * create private channel with another user
      * @param {User} user1
      * @param {User} user2
      * @returns {Promise<Channel>}
@@ -103,7 +103,7 @@ export class ChannelsService {
     }
 
     /**
-     * create and return channels
+     * create and return channel
      * @param {User} owner
      * @param {ChannelType} type
      * @param {string} name? (optional)
@@ -115,7 +115,7 @@ export class ChannelsService {
 
         // if (this.usersService.getChannelCount(owner) >= MAX_CHANNELS_PER_USER)
         //     throw new HttpException(
-        //         'You have reached the maximum number of channels',
+        //         'You have reached the maximum number of channel',
         //         HttpStatus.FORBIDDEN
         //     );
 
@@ -136,7 +136,7 @@ export class ChannelsService {
     }
 
     /**
-     * change the channels type between public and private
+     * change the channel type between public and private
      * @param {Channel} channel
      * @param {User} owner
      * @param {ChannelType} type
@@ -145,7 +145,7 @@ export class ChannelsService {
     async changeChannelType(channel: Channel, owner: User, type: ChannelType): Promise<Channel> {
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
-                'You are not administrator of this channels',
+                'You are not administrator of this channel',
                 HttpStatus.FORBIDDEN
             );
 
@@ -161,7 +161,7 @@ export class ChannelsService {
     }
 
     /**
-     * change the channels password using DTO validation
+     * change the channel password using DTO validation
      * @param channel
      * @param owner
      * @param password
@@ -176,11 +176,11 @@ export class ChannelsService {
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
-                'You are not administrator of this channels',
+                'You are not administrator of this channel',
                 HttpStatus.FORBIDDEN
             );
 
-        //remove old password and switch to public channels
+        //remove old password and switch to public channel
         if (!password) {
             channel.password = null;
 
@@ -214,28 +214,28 @@ export class ChannelsService {
         //in case 'owner' is not admin
         if (channel.owner !== owner)
             throw new HttpException(
-                'You are not owner of this channels',
+                'You are not owner of this channel',
                 HttpStatus.FORBIDDEN
             );
 
-        //in case of user is not in channels
+        //in case of user is not in channel
         if (!this.isMember(channel, user))
             throw new HttpException(
-                'User is not member of this channels',
+                'User is not member of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
         //in case user is already admin and we want to give him admin role
         if (this.isAdministrator(channel, user) && giveAdminRole)
             throw new HttpException(
-                'User is already administrator of this channels',
+                'User is already administrator of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
         //in case user is not admin and we want to remove admin role
         if (!this.isAdministrator(channel, user) && !giveAdminRole)
             throw new HttpException(
-                'User is not administrator of this channels',
+                'User is not administrator of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -248,7 +248,7 @@ export class ChannelsService {
     }
 
     /**
-     * invite someone to channels
+     * invite someone to channel
      * @param {Channel} channel
      * @param {User} owner
      * @param {User} user
@@ -258,19 +258,19 @@ export class ChannelsService {
 
         if (channel.channelType !== ChannelType.PRIVATE)
             throw new HttpException(
-                'You can not invite someone to public channels',
+                'You can not invite someone to public channel',
                 HttpStatus.BAD_REQUEST
             );
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
-                'You are not administrator of this channels',
+                'You are not administrator of this channel',
                 HttpStatus.FORBIDDEN
             );
 
         if (this.isMember(channel, user))
             throw new HttpException(
-                'User is already member of this channels',
+                'User is already member of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -294,7 +294,7 @@ export class ChannelsService {
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
-                'You are not administrator of this channels',
+                'You are not administrator of this channel',
                 HttpStatus.FORBIDDEN
             );
 
@@ -306,7 +306,7 @@ export class ChannelsService {
 
         if (!this.isMember(channel, user))
             throw new HttpException(
-                'User is not member of this channels',
+                'User is not member of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -339,7 +339,7 @@ export class ChannelsService {
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
-                'You are not administrator of this channels',
+                'You are not administrator of this channel',
                 HttpStatus.FORBIDDEN
             );
 
@@ -351,7 +351,7 @@ export class ChannelsService {
 
         if (!this.isMember(channel, user))
             throw new HttpException(
-                'User is not member of this channels',
+                'User is not member of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -395,7 +395,7 @@ export class ChannelsService {
 
         if (!this.isMember(channel, user))
             throw new HttpException(
-                'You are not member of this channels',
+                'You are not member of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
@@ -423,17 +423,17 @@ export class ChannelsService {
 
         if (this.isMember(channel, user))
             throw new HttpException(
-                'You are already member of this channels',
+                'You are already member of this channel',
                 HttpStatus.BAD_REQUEST
             );
 
         if (this.isPunished(channel, user, PunishmentType.BAN))
             throw new HttpException(
-                'You are banned from this channels',
+                'You are banned from this channel',
                 HttpStatus.BAD_REQUEST
             );
 
-        //in case of channels has password
+        //in case of channel has password
         if (this.hasPassword(channel)) {
             const dto = new SetPasswordDto(password);
 
@@ -456,11 +456,11 @@ export class ChannelsService {
             return await this.channelsRepository.save(channel);
         }
 
-        //in case of channels is private
+        //in case of channel is private
         if (channel.channelType === ChannelType.PRIVATE) {
             if (!this.isInvited(channel, user))
                 throw new HttpException(
-                    'You are not invited to this channels',
+                    'You are not invited to this channel',
                     HttpStatus.FORBIDDEN
                 );
 
@@ -470,7 +470,7 @@ export class ChannelsService {
             return await this.channelsRepository.save(channel);
         }
 
-        //in case of channels is public
+        //in case of channel is public
         channel.users.push(user);
 
         if (this.isInvited(channel, user)) {
@@ -481,7 +481,7 @@ export class ChannelsService {
     }
 
     /**
-     * send message to channels
+     * send message to channel
      * @param {Channel} channel
      * @param {User} user
      * @param {string} text
@@ -490,20 +490,20 @@ export class ChannelsService {
     async sendMessage(channel: Channel, user: User, text: string): Promise<User []> {
         if (!this.isMember(channel, user))
             throw new HttpException(
-                'You are not member of this channels',
+                'You are not member of this channel',
                 HttpStatus.FORBIDDEN
             );
 
         //check if user is muted
         if (this.isPunished(channel, user, PunishmentType.MUTE))
             throw new HttpException(
-                'You are muted in this channels',
+                'You are muted in this channel',
                 HttpStatus.FORBIDDEN
             );
 
         if (this.isPunished(channel, user, PunishmentType.BAN))
             throw new HttpException(
-                'You are banned in this channels',
+                'You are banned in this channel',
                 HttpStatus.FORBIDDEN
             );
 
@@ -519,7 +519,7 @@ export class ChannelsService {
         await this.messagesRepository.save(message);
         await this.channelsRepository.save(channel);
 
-        //return filtered users if blocked etc...
+        //return filtered user if blocked etc...
         return channel.users.filter(u => !u.blockedList.includes(user.id));
     }
 
@@ -528,7 +528,7 @@ export class ChannelsService {
      */
 
     /**
-     * check if user is administrator of channels
+     * check if user is administrator of channel
      * @param channel
      * @param user
      * @returns {boolean}
@@ -542,7 +542,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if channels is private
+     * check if channel is private
      * @param channel
      * @returns {boolean}
      */
@@ -559,7 +559,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if user is invited to channels
+     * check if user is invited to channel
      * @param {Channel} channel
      * @param {User} user
      * @returns {boolean}
@@ -569,7 +569,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if channels has password
+     * check if channel has password
      * @param channel
      * @returns {boolean}
      */
@@ -578,7 +578,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if user is member of channels
+     * check if user is member of channel
      * @param {Channel} channel
      * @param {User} user
      * @returns {boolean}
@@ -606,7 +606,7 @@ export class ChannelsService {
     }
 
     /**
-     * check if a direct channels already exist
+     * check if a direct channel already exist
      * @param {User} user1
      * @param {User} user2
      * @param {Channel[]} channels
