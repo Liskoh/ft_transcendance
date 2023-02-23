@@ -3,10 +3,8 @@ import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {User} from "../entity/user.entity";
 import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
-import {RegisterUserDto} from "../dto/register-user.dto";
-import {validate, ValidationError} from "class-validator";
-import {ChangeLoginUserDto, ChangeNicknameDto} from "../dto/change-nickname.dto";
-import {ChannelType} from "../../channels/enum/channel-type.enum";
+import {validate} from "class-validator";
+import {LoginNicknameDto} from "../dto/login-nickname.dto";
 
 @Injectable()
 export class UsersService {
@@ -88,7 +86,7 @@ export class UsersService {
      * @param {RegisterUserDto} dto
      * @returns {Promise<User>}
      */
-    async saveNewUser(dto: RegisterUserDto): Promise<User> {
+    async saveNewUser(dto: LoginNicknameDto): Promise<User> {
         try {
             await validate(dto);
         } catch (errors) {
@@ -121,21 +119,12 @@ export class UsersService {
     /**
      * Change user login and check if it is unique
      * @param {User} user
-     * @param {RegisterUserDto} dto
+     * @param {string} nickname
      * @returns {Promise<User>}
      */
-    async changeNickname(user: User, dto: ChangeNicknameDto): Promise<User> {
-        try {
-            await validate(dto);
-        } catch (errors) {
-            throw new HttpException(
-                errors,
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
+    async changeNickname(user: User, nickname: string): Promise<User> {
         for (const u of await this.getUsers()) {
-            if (u.nickname === dto.login) {
+            if (u.nickname === nickname) {
                 throw new HttpException(
                     "User with this nickname already exists",
                     HttpStatus.BAD_REQUEST
@@ -143,7 +132,7 @@ export class UsersService {
             }
         }
 
-        user.nickname = dto.login;
+        user.nickname = nickname;
         return await this.usersRepository.save(user);
     }
 
@@ -243,6 +232,30 @@ export class UsersService {
         from.blockedList.push(to.id);
 
         return await this.usersRepository.save(from);
+    }
+
+    /**
+     * Unblock other user
+     * @param {User} from
+     * @param {User} to
+     * @returns {Promise<User>}
+     */
+    async unblockUser(from: User, to: User): Promise<User> {
+            if (this.isSameUser(from, to))
+                throw new HttpException(
+                    "You can't unblock yourself",
+                    HttpStatus.BAD_REQUEST
+                );
+
+            if (!from.blockedList.includes(to.id))
+                throw new HttpException(
+                    "You didn't block this user",
+                    HttpStatus.BAD_REQUEST
+                );
+
+            from.blockedList.splice(from.blockedList.indexOf(to.id), 1);
+
+            return await this.usersRepository.save(from);
     }
 
     // getChannelCount(user: User): number {

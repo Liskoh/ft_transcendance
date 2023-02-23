@@ -2,19 +2,19 @@ import {Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGen
 import {User} from "../../users/entity/user.entity";
 import {Message} from "./message.entity";
 import {Punishment} from "./punishment.entity";
+import {ChannelType} from "../enum/channel-type.enum";
 
 @Entity({name: "channels"})
 export class Channel {
 
-    // constructor(owner: User, type: ChannelType) {
-    //     this.owner = owner;
-    //     this.users = [owner];
-    //     this.channelType = type;
-    //     this.messages = [];
-    //     // this.bans = [];
-    //     // this.mutes = [];
-    //     this.admins = [];
-    // }
+    constructor(owner: User, type: ChannelType) {
+        this.owner = owner;
+        // this.users = [owner];
+        this.channelType = type;
+        // this.messages = [];
+        // this.punishments = [];
+        // this.admins = [];
+    }
 
     @PrimaryGeneratedColumn()
     id: number;

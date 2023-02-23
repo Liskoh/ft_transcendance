@@ -27,6 +27,8 @@ export class ChannelsService {
                 private readonly usersService: UsersService) {
     }
 
+    private cooldownMap = new Map<number, Date>();
+
     /**
      * Get all channels
      * @returns {Promise<Channel[]>}
@@ -60,16 +62,21 @@ export class ChannelsService {
      * @returns {Promise<Channel>}
      */
     // async getFilteredChannelById(id: number, select: string[]): Promise<Channel> {
-    //     const options = { select };
-    //     const channel = await this.channelsRepository.findOneBy({ id }, options);
     //
-    //     if (!channel)
-    //         throw new HttpException(
-    //             'Channel not found',
-    //             HttpStatus.NOT_FOUND
-    //         );
-    //
-    //     return channel;
+    //     // const options = { select };
+    //     // this.channelsRepository.
+    //     // const channel = await this.channelsRepository.findOne({ id }, {
+    //     //     password: false,
+    //     //     punishments: false
+    //     // });
+    //     //
+    //     // if (!channel)
+    //     //     throw new HttpException(
+    //     //         'Channel not found',
+    //     //         HttpStatus.NOT_FOUND
+    //     //     );
+    //     //
+    //     // return channel;
     // }
 
     /**
@@ -86,14 +93,11 @@ export class ChannelsService {
                 HttpStatus.FORBIDDEN
             );
 
-        let channel = new Channel();
+        let channel = new Channel(user1, ChannelType.DM);
 
-        //TODO: SET IN CONSTRUCTOR
+        channel.name = user1.login + " & " + user2.login;
         channel.owner = user1;
         channel.users = [user1, user2];
-        channel.channelType = ChannelType.DM;
-        channel.messages = [];
-        channel.punishments = [];
 
         return await this.channelsRepository.save(channel);
     }
@@ -102,11 +106,12 @@ export class ChannelsService {
      * create and return channels
      * @param {User} owner
      * @param {ChannelType} type
-     * @param {string} name?
+     * @param {string} name? (optional)
+     * @param {string} password? (optional)
      * @returns {Promise<Channel>}
      */
-    async createChannel(owner: User, type: ChannelType, name?: string): Promise<Channel> {
-        let channel = new Channel();
+    async createChannel(owner: User, type: ChannelType, name?: string, password?: string): Promise<Channel> {
+        let channel = new Channel(owner, type);
 
         // if (this.usersService.getChannelCount(owner) >= MAX_CHANNELS_PER_USER)
         //     throw new HttpException(
@@ -114,27 +119,16 @@ export class ChannelsService {
         //         HttpStatus.FORBIDDEN
         //     );
 
-        if (!name) {
+        if (!name)
             name = owner.login + "'s channel";
-        }
 
-        const dto = new SetNameDto(name);
-
-        try {
-            await validate(dto);
-        } catch (e) {
-            throw new HttpException(
-                e,
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        channel.owner = owner;
         channel.name = name;
+        channel.owner = owner;
         channel.users = [owner];
         channel.channelType = type;
-        channel.messages = [];
-        channel.punishments = [];
+
+        if (password)
+            channel.password = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
         return await this.channelsRepository.save(channel);
     }
@@ -210,9 +204,10 @@ export class ChannelsService {
      * @param {Channel} channel
      * @param {User} owner
      * @param {User} user
+     * @param {boolean} giveAdminRole
      * @returns {Promise<Channel>}
      */
-    async giveAdminRole(channel: Channel, owner: User, user: User): Promise<Channel> {
+    async toggleAdminRole(channel: Channel, owner: User, user: User, giveAdminRole: boolean): Promise<Channel> {
 
         //in case 'owner' is not admin
         if (channel.owner !== owner)
@@ -228,14 +223,24 @@ export class ChannelsService {
                 HttpStatus.BAD_REQUEST
             );
 
-        //in case user is already admin
-        if (this.isAdministrator(channel, user))
+        //in case user is already admin and we want to give him admin role
+        if (this.isAdministrator(channel, user) && giveAdminRole)
             throw new HttpException(
                 'User is already administrator of this channels',
                 HttpStatus.BAD_REQUEST
             );
 
-        channel.admins.push(user.id);
+        //in case user is not admin and we want to remove admin role
+        if (!this.isAdministrator(channel, user) && !giveAdminRole)
+            throw new HttpException(
+                'User is not administrator of this channels',
+                HttpStatus.BAD_REQUEST
+            );
+
+        if (giveAdminRole)
+            channel.admins.push(user.id);
+        else
+            channel.admins = channel.admins.filter(id => id !== user.id);
 
         return await this.channelsRepository.save(channel);
     }
