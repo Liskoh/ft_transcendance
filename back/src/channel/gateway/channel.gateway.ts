@@ -195,14 +195,12 @@ export class ChannelGateway implements OnGatewayConnection {
             const channel = await this.channelsService.getChannelById(payload.id);
             const user = socket.data.user;
 
-            await this.channelsService.sendMessage(channel, user, payload.text);
+            const users = await this.channelsService.sendMessage(channel, user, payload.text);
 
-            //TODO: Send message to all user in channel
-            // await this.sendChannelMessage(channel, 'newMessage', {
-            //     userId: user.id,
-            //     userLogin: user.login,
-            //     text: dto.text,
-            // });
+            //get all users who can see the message
+            for (const user of users) {
+                //TODO: send message to user
+            }
 
             socket.emit('sendMessageSuccess');
         } catch (error) {
@@ -323,7 +321,7 @@ export class ChannelGateway implements OnGatewayConnection {
             const giveAdminRole = payload.giveAdminRole;
 
             await this.channelsService.toggleAdminRole(channel, user, userToToggle, giveAdminRole);
-            socket.emit('toggleAdminRoleSuccess');
+            socket.emit('toggleAdminRoleSuccess', giveAdminRole);
         } catch (error) {
             socket.emit('channelError', error);
         }

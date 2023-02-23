@@ -27,7 +27,7 @@ export class ChannelService {
                 private readonly usersService: UserService) {
     }
 
-    private cooldownMap = new Map<number, Date>();
+    private coolDownMap = new Map<number, Date>();
 
     /**
      * Get all channel
@@ -637,7 +637,7 @@ export class ChannelService {
     }
 
     isOnCooldown(userId: number): boolean {
-        const lastMessage = this.cooldownMap.get(userId);
+        const lastMessage = this.coolDownMap.get(userId);
         const now = new Date();
 
         if (lastMessage) {
@@ -646,7 +646,7 @@ export class ChannelService {
                 return true;
             }
         }
-        this.cooldownMap.set(userId, now);
+        this.coolDownMap.set(userId, now);
         return false;
     }
 }

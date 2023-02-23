@@ -54,7 +54,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     /**
      * Change user nickname
      * @param {Socket} socket
-     * @param {ChangeNicknameDto} payload => {login: string}
+     * @param {LoginNicknameDto} payload => {login: string}
      * @returns {Promise<any>}
      */
     @SubscribeMessage('changeNickname')
@@ -85,7 +85,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             await validate(payload);
 
             const user = await this.getUserBySocket(socket, true);
-            const targetUser = await this.usersService.getUserByLogin(payload.login);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.sendFriendRequest(user, targetUser);
         } catch (error) {
@@ -105,9 +105,49 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             await validate(payload);
 
             const user = await this.getUserBySocket(socket, true);
-            const targetUser = await this.usersService.getUserByLogin(payload.login);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.acceptFriendRequest(user, targetUser);
+        } catch (error) {
+            socket.emit('userError', error);
+        }
+    }
+
+    /**
+     * block user
+     * @param {Socket} socket
+     * @param {LoginNicknameDto} payload => {login: string}
+     * @returns {Promise<any>}
+     */
+    @SubscribeMessage('blockUser')
+    async blockUser(socket: Socket, payload: LoginNicknameDto): Promise<any> {
+        try {
+            await validate(payload);
+
+            const user = await this.getUserBySocket(socket, true);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
+
+            await this.usersService.blockUser(user, targetUser);
+        } catch (error) {
+            socket.emit('userError', error);
+        }
+    }
+
+    /**
+     * Unblock user
+     * @param {Socket} socket
+     * @param {LoginNicknameDto} payload => {login: string}
+     * @returns {Promise<any>}
+     */
+    @SubscribeMessage('unblockUser')
+    async unblockUser(socket: Socket, payload: LoginNicknameDto): Promise<any> {
+        try {
+            await validate(payload);
+
+            const user = await this.getUserBySocket(socket, true);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
+
+            await this.usersService.unblockUser(user, targetUser);
         } catch (error) {
             socket.emit('userError', error);
         }

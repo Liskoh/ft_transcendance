@@ -44,8 +44,8 @@ export class UserService {
      * @param {string} login
      * @returns {Promise<User>}
      */
-    async getUserByLogin(login: string): Promise<User> {
-        const user = await this.usersRepository.findOneBy({login: login});
+    async getUserByLoginOrNickname(login: string): Promise<User> {
+        const user = await this.usersRepository.findOneBy({login: login, nickname: login});
 
         if (!user)
             throw new HttpException(
@@ -83,7 +83,7 @@ export class UserService {
 
     /**
      * save and return new user (using dto)
-     * @param {RegisterUserDto} dto
+     * @param {LoginNicknameDto} dto => {login: string}
      * @returns {Promise<User>}
      */
     async saveNewUser(dto: LoginNicknameDto): Promise<User> {
@@ -99,7 +99,7 @@ export class UserService {
 
         //if user is unique
         try {
-            existingUser = await this.getUserByLogin(dto.login);
+            existingUser = await this.getUserByLoginOrNickname(dto.login);
         } catch (error) {
             existingUser = null;
         }
@@ -124,9 +124,9 @@ export class UserService {
      */
     async changeNickname(user: User, nickname: string): Promise<User> {
         for (const u of await this.getUsers()) {
-            if (u.nickname === nickname) {
+            if (u.nickname === nickname || u.login === nickname) {
                 throw new HttpException(
-                    "User with this nickname already exists",
+                    "User with this nickname or login already exists",
                     HttpStatus.BAD_REQUEST
                 );
             }
