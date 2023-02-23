@@ -103,6 +103,7 @@ async function bootstrap() {
 
     const usersService = app.get(UsersService);
     const channelsService = app.get(ChannelsService);
+    const list: string[] = [];
 
     try {
         user = await usersService.getUserById(1);
@@ -126,38 +127,43 @@ async function bootstrap() {
     try {
         await channelsService.joinChannel(channel, user2);
     } catch (e) {
-        console.log("Error: ", e);
+        list.push(e.status + "\n" + e.message);
     }
 
     try {
         await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
     } catch (e) {
-        console.log("Error: ", e);
+        list.push(e.status + "\n" + e.message);
     }
 
     try {
         await channelsService.sendMessage(channel, user, "Hello world!");
+        await channelsService.sendMessage(channel, user, "Hello world!");
     } catch (e) {
-        console.log("Error: ", e);
+        list.push(e.status + "\n" + e.message);
     }
 
     try {
-        //create an end date 4m from now:
         const endDate = new Date();
         endDate.setMinutes(endDate.getMinutes() + 4);
 
         await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
     } catch (e) {
-        console.log("Error: ", e);
+        list.push(e.status + "\n" + e.message);
     }
 
     try {
         await channelsService.sendMessage(channel, user2, "Hello world!");
+        await channelsService.sendMessage(channel, user2, "Hello world!");
     } catch (e) {
-        console.log("Error: ", e);
+        list.push(e.status + "\n" + e.message);
     }
 
-    console.log("Channel: ", channel);
+    // console.log("Channel: ", channel);
+    for (const s of list) {
+        console.log("\x1b[31m%s\x1b[0m", "Error: " + s);
+    }
 }
 
 bootstrap().then(r => console.log("App started!")).catch(e => console.log("Error: ", e));

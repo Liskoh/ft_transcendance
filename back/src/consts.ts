@@ -18,6 +18,8 @@ export const MIN_MESSAGE_LENGTH: number = 1;
 export const MAX_CHANNEL_NAME_LENGTH: number = 15;
 export const MIN_CHANNEL_NAME_LENGTH: number = 1;
 
+export const CHAT_COOLDOWN_IN_MILLISECONDS: number = 3000;
+
 export const BCRYPT_SALT_ROUNDS = 10;
 export const POSTGRES_NAME = "postgres";
 

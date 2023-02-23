@@ -9,7 +9,7 @@ import {validate} from "class-validator";
 import {Message} from "../entity/message.entity";
 import {UsersService} from "../../users/service/users.service";
 import * as bcrypt from 'bcrypt';
-import {BCRYPT_SALT_ROUNDS} from "../../consts";
+import {BCRYPT_SALT_ROUNDS, CHAT_COOLDOWN_IN_MILLISECONDS} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
 import {PunishmentType} from "../enum/punishment-type.enum";
 import {Punishment} from "../entity/punishment.entity";
@@ -310,12 +310,18 @@ export class ChannelsService {
                 HttpStatus.BAD_REQUEST
             );
 
-        let punishment = new Punishment(user, punishmentType, date);
-
-        //we can kick the user from the channel because he is not member anymore
-        if (punishmentType === PunishmentType.KICK || punishmentType === PunishmentType.BAN) {
+        //if its kick we can execute it directly and return
+        if (punishmentType === PunishmentType.KICK) {
             return this.kickUser(channel, owner, user);
         }
+
+        if (this.isPunished(channel, user, punishmentType))
+            throw new HttpException(
+                'User is already punished',
+                HttpStatus.BAD_REQUEST
+            );
+
+        let punishment = new Punishment(user, punishmentType, date);
 
         //save punishment
         channel.punishments.push(punishment);
@@ -479,9 +485,9 @@ export class ChannelsService {
      * @param {Channel} channel
      * @param {User} user
      * @param {string} text
-     * @returns {Promise<Channel>}
+     * @returns {Promise<User[]>}
      */
-    async sendMessage(channel: Channel, user: User, text: string): Promise<Channel> {
+    async sendMessage(channel: Channel, user: User, text: string): Promise<User []> {
         if (!this.isMember(channel, user))
             throw new HttpException(
                 'You are not member of this channels',
@@ -495,12 +501,26 @@ export class ChannelsService {
                 HttpStatus.FORBIDDEN
             );
 
+        if (this.isPunished(channel, user, PunishmentType.BAN))
+            throw new HttpException(
+                'You are banned in this channels',
+                HttpStatus.FORBIDDEN
+            );
+
+        if (this.isOnCooldown(user.id))
+            throw new HttpException(
+                'You must wait before sending another message',
+                HttpStatus.FORBIDDEN
+            );
+
         const message = new Message(user, text);
         channel.messages.push(message);
 
         await this.messagesRepository.save(message);
+        await this.channelsRepository.save(channel);
 
-        return await this.channelsRepository.save(channel);
+        //return filtered users if blocked etc...
+        return channel.users.filter(u => !u.blockedList.includes(user.id));
     }
 
     /*
@@ -614,5 +634,19 @@ export class ChannelsService {
 
     isOwner(channel: Channel, user: User) {
         return channel.owner.id === user.id;
+    }
+
+    isOnCooldown(userId: number): boolean {
+        const lastMessage = this.cooldownMap.get(userId);
+        const now = new Date();
+
+        if (lastMessage) {
+            const diff = now.getTime() - lastMessage.getTime();
+            if (diff < CHAT_COOLDOWN_IN_MILLISECONDS) {
+                return true;
+            }
+        }
+        this.cooldownMap.set(userId, now);
+        return false;
     }
 }
