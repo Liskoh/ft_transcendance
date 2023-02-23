@@ -5,6 +5,9 @@ import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
 
 @Module({
     imports: [
+        ConfigModule.forRoot({
+            envFilePath: '.env'
+        }),
         TypeOrmModule.forRootAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
@@ -14,6 +17,13 @@ import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
                 username: "postgres",
                 password: "password",
                 database: "test",
+                /*
+                    host: configService.get<string>('DB_HOST'),
+                    port: configService.get<number>('DB_PORT'),
+                    username: configService.get<string>('DB_USER'),
+                    password: configService.get<string>('DB_PASSWORD'),
+                    database: configService.get<string>('DB_NAME'),
+                 */
                 synchronize: true,
                 logging: true,
                 entities: TYPEORM_ENTITIES,

@@ -4,17 +4,19 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import {AppController} from "./controller/app.controller";
 import {AppService} from "./service/app.service";
-import {User} from "../users/entity/user.entity";
-import {UsersModule} from "../users/users.module";
+import {User} from "../user/entity/user.entity";
+import {UserModule} from "../user/user.module";
 import {DatabaseModule} from "../db/database.module";
 import {Channel} from "diagnostics_channel";
-import {ChannelsModule} from "../channel/channels.module";
+import {ChannelModule} from "../channel/channel.module";
+import {GameModule} from "../game/game.module";
 @Module({
     imports: [
         ConfigModule.forRoot(),
         DatabaseModule,
-        UsersModule,
-        ChannelsModule,
+        UserModule,
+        ChannelModule,
+        GameModule
     ],
     controllers: [AppController],
     providers: [AppService],
