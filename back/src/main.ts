@@ -51,7 +51,7 @@ function makeid(length: number) {
 // }
 
 // console.log("User created: ", user);
-let channel;
+// let channel;
 
 // try {
 //     channel = await channelsService.getChannelById(1);
@@ -103,69 +103,71 @@ async function bootstrap() {
     let user;
     let user2;
 
-    // const usersService = app.get(UserService);
-    // const channelsService = app.get(ChannelService);
-    // const list: string[] = [];
-    //
-    // try {
-    //     user = await usersService.getUserById(1);
-    // } catch (error) {
-    //     user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
-    // }
-    //
-    // try {
-    //     user2 = await usersService.getUserById(2);
-    // } catch (error) {
-    //     user2 = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
-    // }
-    //
-    // try {
-    //     channel = await channelsService.getChannelById(1);
-    // } catch (ex) {
-    //     channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
-    // }
-    //
-    // //join channel
-    // try {
-    //     await channelsService.joinChannel(channel, user2);
-    // } catch (e) {
-    //     list.push(e.status + "\n" + e.message);
-    // }
-    //
-    // try {
-    //     await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
-    // } catch (e) {
-    //     list.push(e.status + "\n" + e.message);
-    // }
-    //
-    // try {
-    //     await channelsService.sendMessage(channel, user, "Hello world!");
-    //     await channelsService.sendMessage(channel, user, "Hello world!");
-    // } catch (e) {
-    //     list.push(e.status + "\n" + e.message);
-    // }
-    //
-    // try {
-    //     const endDate = new Date();
-    //     endDate.setMinutes(endDate.getMinutes() + 4);
-    //
-    //     await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
-    //     await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
-    // } catch (e) {
-    //     list.push(e.status + "\n" + e.message);
-    // }
-    //
-    // try {
-    //     await channelsService.sendMessage(channel, user2, "Hello world!");
-    //     await channelsService.sendMessage(channel, user2, "Hello world!");
-    // } catch (e) {
-    //     list.push(e.status + "\n" + e.message);
-    // }
-    //
-    // // console.log("Channel: ", channel);
-    // for (const s of list) {
-    //     console.log("\x1b[31m%s\x1b[0m", "Error: " + s);
-    // }
+    const usersService = app.get(UserService);
+    const channelsService = app.get(ChannelService);
+    const list: string[] = [];
+
+    try {
+        user = await usersService.getUserById(1);
+    } catch (error) {
+        user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+    }
+
+    try {
+        user2 = await usersService.getUserById(2);
+    } catch (error) {
+        user2 = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+    }
+
+    try {
+        channel = await channelsService.getChannelById(1);
+    } catch (ex) {
+        channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
+    }
+
+    //join channel
+    try {
+        await channelsService.joinChannel(channel, user2);
+    } catch (e) {
+        list.push(e.status + " " + e.message);
+    }
+
+    //set password
+    try {
+        await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
+        // await channelsService.setChannelPassword(channel, user, null);
+    } catch (e) {
+        list.push(e.status + " " + e.message);
+    }
+
+    try {
+        await channelsService.sendMessage(channel, user, "Hello world!");
+        await channelsService.sendMessage(channel, user, "Hello world!");
+    } catch (e) {
+        list.push(e.status + " " + e.message);
+    }
+
+    try {
+        const endDate = new Date();
+        endDate.setMinutes(endDate.getMinutes() + 4);
+
+        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+    } catch (e) {
+        list.push(e.status + " " + e.message);
+    }
+
+    try {
+        await channelsService.sendMessage(channel, user2, "Hello world!");
+        await channelsService.sendMessage(channel, user2, "Hello world!");
+    } catch (e) {
+        list.push(e.status + " " + e.message);
+    }
+
+    // console.log("Channel: ", channel);
+    for (const s of list) {
+        console.log("\x1b[31m%s\x1b[0m", "Error: " + s);
+    }
 }
 
 bootstrap().then(r => console.log("App started!")).catch(e => console.log("Error: ", e));

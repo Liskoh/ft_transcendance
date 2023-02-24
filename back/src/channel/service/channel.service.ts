@@ -104,7 +104,17 @@ export class ChannelService {
 
     async getAvailableChannelsByUser(user: User): Promise<Channel[]> {
         let channels = await this.getChannels();
-        channels = channels.filter(c => c.channelType === ChannelType.PUBLIC && !c.users.includes(user));
+        channels = channels.filter(c => c.channelType === ChannelType.PUBLIC &&
+            !this.isMember(c, user) &&
+            !this.isPunished(c, user, PunishmentType.BAN));
+
+        return channels;
+    }
+
+    async getJoinedChannelsByUser(user: User): Promise<Channel[]> {
+        let channels = await this.getChannels();
+        channels = channels.filter(c => this.isMember(c, user) &&
+            !this.isPunished(c, user, PunishmentType.BAN));
 
         return channels;
     }
@@ -136,8 +146,10 @@ export class ChannelService {
         channel.punishments = [];
         channel.channelType = type;
 
-        if (password)
+        if (password) {
+            // console.log("password: " + password);
             channel.password = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+        }
 
         return await this.channelsRepository.save(channel);
     }
@@ -441,7 +453,7 @@ export class ChannelService {
             );
 
         //in case of channel has password
-        if (this.hasPassword(channel)) {
+        if (this.hasPassword(channel) && password) {
             const dto = new SetPasswordDto(password);
 
             try {
@@ -514,11 +526,13 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        if (this.isOnCooldown(user.id))
+        if (this.isOnCoolDown(user.id))
             throw new HttpException(
                 'You must wait before sending another message',
                 HttpStatus.FORBIDDEN
             );
+        else
+            console.log('User ' + user.id + ' is not on cooldown');
 
         const message = new Message(user, text);
         channel.messages.push(message);
@@ -581,7 +595,10 @@ export class ChannelService {
      * @returns {boolean}
      */
     hasPassword(channel: Channel): boolean {
-        return channel.password ? true : false;
+        if (channel.password)
+            return false;
+
+        return true;
     }
 
     /**
@@ -591,7 +608,10 @@ export class ChannelService {
      * @returns {boolean}
      */
     isMember(channel: Channel, user: User): boolean {
-        return channel.users.includes(user);
+        for (const u of channel.users)
+            if (u.id === user.id)
+                return true;
+        return false;
     }
 
     isPunished(channel: Channel, user: User, punishmentType: PunishmentType): boolean {
@@ -643,10 +663,9 @@ export class ChannelService {
         return channel.owner.id === user.id;
     }
 
-    isOnCooldown(userId: number): boolean {
+    isOnCoolDown(userId: number): boolean {
         const lastMessage = this.coolDownMap.get(userId);
         const now = new Date();
-
         if (lastMessage) {
             const diff = now.getTime() - lastMessage.getTime();
             if (diff < CHAT_COOLDOWN_IN_MILLISECONDS) {

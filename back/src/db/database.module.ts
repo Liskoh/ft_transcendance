@@ -26,7 +26,7 @@ import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
                     database: configService.get<string>('DB_NAME'),
                  */
                 synchronize: true,
-                logging: true,
+                logging: false,
                 entities: TYPEORM_ENTITIES,
                 subscribers: [],
                 migrations: [],

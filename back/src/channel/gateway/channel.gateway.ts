@@ -20,7 +20,6 @@ import {ChangeChannelTypeDto} from "../dto/change-channel-type.dto";
     {
         namespace: 'channels',
         port: 3001,
-
     }
 )
 export class ChannelGateway implements OnGatewayConnection {
@@ -64,14 +63,15 @@ export class ChannelGateway implements OnGatewayConnection {
     @SubscribeMessage('getChannels')
     async getChannels(socket: Socket, payload: any): Promise<any> {
         try {
-
+            await this.getJoinableChannels(socket, payload);
+            await this.getJoinedChannels(socket, payload);
         } catch (error) {
-
+            socket.emit('channelError', error);
         }
     }
 
-    @SubscribeMessage('getAvailableChannels')
-    async sendMyChannels(socket: Socket, payload: any): Promise<any> {
+    @SubscribeMessage('getJoinableChannels')
+    async getJoinableChannels(socket: Socket, payload: any): Promise<any> {
         try {
             const user = await this.getUserBySocket(socket, true);
             const channels = await this.channelsService.getAvailableChannelsByUser(user);
@@ -83,6 +83,25 @@ export class ChannelGateway implements OnGatewayConnection {
             }));
 
             socket.emit('availableChannels', channelList);
+        } catch (error) {
+
+        }
+    }
+
+    @SubscribeMessage('getJoinedChannels')
+    async getJoinedChannels(socket: Socket, payload: any): Promise<any> {
+        try {
+            const user = await this.getUserBySocket(socket, true);
+            const channels = await this.channelsService.getJoinedChannelsByUser(user);
+
+            const channelList = channels.map(channel => ({
+                id: channel.id,
+                name: channel.name,
+                password: (channel.password !== null),
+                channelType: channel.channelType,
+            }));
+
+            socket.emit('joinedChannels', channelList);
         } catch (error) {
 
         }

@@ -13,7 +13,7 @@ import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 
 @WebSocketGateway(
-    3000,
+    3500,
     {namespace: 'users'}
 )
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
