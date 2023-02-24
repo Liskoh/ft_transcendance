@@ -10,7 +10,13 @@ export class ChannelController {
 
     @Get()
     async getChannels() : Promise<any> {
-        return await this.channelsService.getChannels();
+        const channels = await this.channelsService.getChannels();
+
+        return channels.map(channel => ({
+            id: channel.id,
+            name: channel.name,
+            channelType: channel.channelType,
+        }))
     }
 
 }

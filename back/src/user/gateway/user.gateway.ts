@@ -12,11 +12,9 @@ import {validate, ValidationError} from "class-validator";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 
-@WebSocketGateway({
-    namespace: 'users',
-    path: '/user',
-    port: 3000
-    }
+@WebSocketGateway(
+    3000,
+    {namespace: 'users'}
 )
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
@@ -152,5 +150,11 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             socket.emit('userError', error);
         }
     }
+
+    // handleConnection(client: any, ...args: any[]): any {
+    // }
+    //
+    // handleDisconnect(client: any): any {
+    // }
 
 }

@@ -12,10 +12,11 @@ import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
                 type: POSTGRES_NAME,
-                host: "localhost",
-                port: 5432,
+                //host: "localhost",
+				host: "postgres",
+                //port: 5432,
                 username: "postgres",
-                password: "password",
+                password: "secret",
                 database: "test",
                 /*
                     host: configService.get<string>('DB_HOST'),

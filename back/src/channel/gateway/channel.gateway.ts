@@ -70,6 +70,24 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    @SubscribeMessage('getAvailableChannels')
+    async sendMyChannels(socket: Socket, payload: any): Promise<any> {
+        try {
+            const user = await this.getUserBySocket(socket, true);
+            const channels = await this.channelsService.getAvailableChannelsByUser(user);
+
+            const channelList = channels.map(channel => ({
+                id: channel.id,
+                name: channel.name,
+                channelType: channel.channelType,
+            }));
+
+            socket.emit('availableChannels', channelList);
+        } catch (error) {
+
+        }
+    }
+
     @SubscribeMessage('createChannel')
     async createChannel(socket: Socket, payload: CreateChannelDto): Promise<any> {
         try {

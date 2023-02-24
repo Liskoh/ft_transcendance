@@ -2,7 +2,6 @@ import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {Channel} from "../entity/channel.entity";
-import {User} from "../../user/entity/user.entity";
 import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
 import {validate} from "class-validator";
@@ -13,6 +12,7 @@ import {BCRYPT_SALT_ROUNDS, CHAT_COOLDOWN_IN_MILLISECONDS} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
 import {PunishmentType} from "../enum/punishment-type.enum";
 import {Punishment} from "../entity/punishment.entity";
+import { User } from "src/user/entity/user.entity";
 
 
 @Injectable()
@@ -100,6 +100,13 @@ export class ChannelService {
         channel.users = [user1, user2];
 
         return await this.channelsRepository.save(channel);
+    }
+
+    async getAvailableChannelsByUser(user: User): Promise<Channel[]> {
+        let channels = await this.getChannels();
+        channels = channels.filter(c => c.channelType === ChannelType.PUBLIC && !c.users.includes(user));
+
+        return channels;
     }
 
     /**

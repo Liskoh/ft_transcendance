@@ -4,6 +4,7 @@ import {MatchHistory} from "../entity/match-history.entity";
 import {Repository} from "typeorm";
 import {User} from "../../user/entity/user.entity";
 import {UserService} from "../../user/service/user.service";
+
 // import { CronJob } from 'cron';
 
 @Injectable()
@@ -15,11 +16,12 @@ export class GameService {
         @Inject(UserService)
         private readonly userService: UserService
     ) {
+        this.startQueue();
     }
 
     //List of acvtives games
     private activeMatches: MatchHistory[] = [];
-    // private job: CronJob;
+
     /**
      * return all match history
      * @returns {Promise<MatchHistory[]>}
@@ -62,6 +64,38 @@ export class GameService {
         }
 
         return await this.gameRepository.save(matchHistory);
+    }
+
+
+    async handleQueue(): Promise<void> {
+        if (this.activeMatches.length < 1) {
+            return;
+        }
+
+        for (const match of this.activeMatches) {
+            if (match.started) {
+                if (match.firstPlayerScore >= 3 || match.secondPlayerScore >= 3) {
+                    this.activeMatches = this.activeMatches.filter(m => m.id !== match.id);
+
+                    await this.createMatchHistory(match);
+                }
+                continue;
+            }
+
+            if (match.firstPlayerId && match.secondPlayerId) {
+                this.startMatch(match);
+                continue;
+            }
+        }
+    }
+
+    //queue
+    startQueue(): void {
+        setInterval(() => {
+            this.handleQueue().then(r => {
+                // console.log('queue handled');
+            });
+        }, 1000); //<== every 1 second
     }
 
     /*
