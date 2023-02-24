@@ -7,6 +7,15 @@ export class MatchHistory {
         @PrimaryGeneratedColumn()
         id: number;
 
+        @Column({default: false})
+        started: boolean;
+
+        @Column()
+        firstPlayerId: number;
+
+        @Column()
+        secondPlayerId: number;
+
         @Column({default: 0})
         firstPlayerScore: number;
 
