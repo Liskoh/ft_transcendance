@@ -10,13 +10,15 @@ import {DatabaseModule} from "../db/database.module";
 import {Channel} from "diagnostics_channel";
 import {ChannelModule} from "../channel/channel.module";
 import {GameModule} from "../game/game.module";
+import { AuthModule } from "src/auth/auth.module"
 @Module({
     imports: [
         ConfigModule.forRoot(),
         DatabaseModule,
         UserModule,
         ChannelModule,
-        GameModule
+        GameModule,
+		AuthModule
     ],
     controllers: [AppController],
     providers: [AppService],
