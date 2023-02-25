@@ -4,6 +4,8 @@ import {MatchHistory} from "../entity/match-history.entity";
 import {Repository} from "typeorm";
 import {User} from "../../user/entity/user.entity";
 import {UserService} from "../../user/service/user.service";
+import {Game} from "../model/game.model";
+import {Socket} from "socket.io";
 
 // import { CronJob } from 'cron';
 
@@ -21,7 +23,8 @@ export class GameService {
 
     //List of acvtives games
     private activeMatches: MatchHistory[] = [];
-    private Game
+    private activeGames: Game[] = [];
+    private queueIds: string[] = [];
 
     /**
      * return all match history
@@ -201,6 +204,60 @@ export class GameService {
         }
 
         return false;
+    }
+
+    getQueue(): string[] {
+        return this.queueIds;
+    }
+
+    isOnQueue(socket: Socket): boolean {
+        return this.queueIds.includes(socket.id);
+    }
+
+    getCurrentGame(socket: Socket): Game {
+        for (const game of this.activeGames) {
+            if (game.firstPlayer && game.firstPlayer.id === socket.id) {
+                return game;
+            }
+
+            if (game.secondPlayer && game.secondPlayer.id === socket.id) {
+                return game;
+            }
+        }
+        return null;
+    }
+
+    canJoinGame(socket: Socket, game: Game): boolean {
+
+        if (this.getCurrentGame(socket)) {
+            return false;
+        }
+
+        if (game.isPrivate && !game.invitations.includes(socket.id)) {
+            return false;
+        }
+
+        game.invitations = [];
+        return true;
+    }
+
+    joinQueue(socket: Socket): void {
+        if (this.isOnQueue(socket)) {
+            throw new HttpException(
+                'user already in queue',
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        this.queueIds.push(socket.id);
+    }
+
+    clearQueue(): void {
+        this.queueIds = [];
+    }
+
+    getActiveMatches(): MatchHistory[] {
+        return this.activeMatches;
     }
 
 }

@@ -3,6 +3,7 @@ import {Player} from "./player.model";
 import {DirectionState} from "../enum/direction-state.enum";
 import {MAX_POINTS} from "../../consts";
 import {GameState} from "../enum/game-state.enum";
+import {GameLevel} from "../enum/game-level.enum";
 
 export class Game {
 
@@ -15,6 +16,12 @@ export class Game {
     firstPlayer: Player;
     secondPlayer: Player;
     gameState: GameState;
+    gameLevel: GameLevel;
+    document: Document;
+
+    invitations: string[] = [];
+
+    isPrivate: boolean;
 
     resetGame() {
         console.log('reset');
@@ -120,7 +127,7 @@ export class Game {
         }
     }
 
-    moveAll() {
+    moveAll() : void {
         if (this.gameState === GameState.NOT_STARTED) {
             return;
         }
@@ -131,5 +138,18 @@ export class Game {
             return ;
         this.movePaddle();
         setTimeout(this.moveAll, 10);
+    }
+
+    checkGameLevel() : void {
+        if (this.gameLevel === GameLevel.EASY) {
+            this.ball.speed -= 0.3;
+        } else if (this.gameLevel === GameLevel.HARD) {
+            // find the way to access to the html page
+        }
+    }
+
+    startGame() : void {
+        this.checkGameLevel();
+        this.moveAll();
     }
 }

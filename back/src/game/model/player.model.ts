@@ -4,7 +4,7 @@ import {Socket} from "socket.io";
 
 export class Player {
     keyPress: {[key:string]: boolean};
-    id: number;
+    id: string;
     name: string;
     client: Socket;
     speed: number;
@@ -12,7 +12,7 @@ export class Player {
     size: {width: number; height: number};
     coord: Coord;
 
-    constructor(position: {top: number; left: number; width: number; height: number}, id: number, client: Socket, board: {top: number; left: number; width: number; height: number}) {
+    constructor(position: {top: number; left: number; width: number; height: number}, id: string, client: Socket, board: {top: number; left: number; width: number; height: number}) {
         this.keyPress = {};
         this.id = id;
         this.name = 'player' + this.id;
