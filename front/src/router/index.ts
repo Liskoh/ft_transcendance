@@ -30,8 +30,8 @@ const router = createRouter({
       component: () => import('../views/GameResultView.vue')
     },
     {
-      path: '/auth/redirect',
-      name: 'authredirect',
+      path: '/auth/intra',
+      name: 'authintra',
       component: () => import('../views/RedirectView.vue')
     }
   ]
