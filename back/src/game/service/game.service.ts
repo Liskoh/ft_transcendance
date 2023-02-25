@@ -21,6 +21,7 @@ export class GameService {
 
     //List of acvtives games
     private activeMatches: MatchHistory[] = [];
+    private Game
 
     /**
      * return all match history
