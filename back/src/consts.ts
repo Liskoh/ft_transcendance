@@ -24,6 +24,8 @@ export const POSTGRES_NAME = "postgres";
 
 export const MAX_MATCHES: number = 10;
 
+export const MAX_POINTS: number = 5;
+
 //create a list of all entities in the project:
 export const TYPEORM_ENTITIES = [User, Channel, Message, Punishment, MatchHistory];
 

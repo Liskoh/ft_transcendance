@@ -60,6 +60,10 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    async handleDisconnect(socket: any): Promise<any> {
+
+    }
+
     @SubscribeMessage('getChannels')
     async getChannels(socket: Socket, payload: any): Promise<any> {
         try {
