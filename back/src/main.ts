@@ -110,13 +110,13 @@ async function bootstrap() {
     try {
         user = await usersService.getUserById(1);
     } catch (error) {
-        user = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+        user = await usersService.saveNewUser(usersService.createUser(makeid(8)));
     }
 
     try {
         user2 = await usersService.getUserById(2);
     } catch (error) {
-        user2 = await usersService.saveNewUser(usersService.createUser(makeid(8), makeid(8) + "@gmail.com"));
+        user2 = await usersService.saveNewUser(usersService.createUser(makeid(8)));
     }
 
     try {

@@ -56,6 +56,15 @@ export class UserService {
         return user;
     }
 
+	async getUserByLogin(login: string): Promise<User> {
+        const user = await this.usersRepository.findOneBy({login: login});
+
+        if (!user)
+            return null;
+
+        return user;
+    }
+
     /**
      * delete and return user by id
      * @param {number} id
@@ -290,7 +299,7 @@ export class UserService {
      * @param mail
      * @returns {User}
      **/
-    createUser(login: string, mail: string): User {
+    createUser(login: string): User {
         return new User(login);
     }
 

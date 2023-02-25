@@ -6,7 +6,7 @@
 /*   By: tnguyen- <tnguyen-@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/20 01:53:36 by tnguyen-          #+#    #+#             */
-/*   Updated: 2023/02/25 12:13:34 by tnguyen-         ###   ########.fr       */
+/*   Updated: 2023/02/25 16:14:54 by tnguyen-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,10 +15,14 @@ import { CreateAuthDto } from "./dtos/auth.dto";
 import { AuthService } from "./auth.service";
 import axios from "axios";
 import { ConfigModule } from "@nestjs/config";
+import { UserService } from "src/user/service/user.service";
+import { LoginNicknameDto } from "src/user/dto/login-nickname.dto";
 
 @Controller('auth') 
 export class AuthController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(private readonly authService: AuthService, private readonly userService: UserService) {
+
+	}
 
 	@Post('auth')
 	createAuth(@Body() createAuthDto: CreateAuthDto) {
@@ -39,7 +43,13 @@ export class AuthController {
 		}
 		const reqToken = await axios.post('https://api.intra.42.fr/oauth/token', data)
 		const info = await axios.get('https://api.intra.42.fr/v2/me', {headers: {Authorization: `Bearer ${reqToken.data.access_token}`}})
-		return `Hello ${info.data.login}`
+		const login = info.data.login;
+		
+		let user = await this.userService.getUserByLogin(login);
+
+		if (!user)
+			user = await this.userService.saveNewUser(new LoginNicknameDto(login));
+		return `Hello ${user}`
 	}
 }
 
