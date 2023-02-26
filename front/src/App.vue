@@ -50,7 +50,7 @@ const logout = () => {
         <RouterLink to="/gameresult">Game result</RouterLink>
         <RouterLink to="/pong">Pong</RouterLink>
 
-<!--        //create button who execute a function:-->
+        //create button who execute a function:
         <button @click="logout">SOCKET</button>
       </nav>
     </div>
@@ -61,7 +61,9 @@ const logout = () => {
 </template>
 
 <style scoped>
+
 header {
+  position: static;
   line-height: 1.5;
   max-height: 100vh;
 }

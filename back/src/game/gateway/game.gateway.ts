@@ -6,11 +6,17 @@ import {
     WebSocketServer
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
+import {validate, validateOrReject, ValidationError} from "class-validator";
 import {GameService} from "../service/game.service";
 import {Game} from "../model/game.model";
+import {OnKeyInputDto} from "../dto/on-key-input.dto";
 
-@WebSocketGateway(3510,
-    {namespace: 'games'}
+@WebSocketGateway(
+    {
+        cors: {
+            origin: '*'
+        }
+    }
 )
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
@@ -18,7 +24,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         private readonly gameService: GameService
     ) {
     }
-    @WebSocketServer() server: Server;
+    @WebSocketServer()
+    server: Server;
 
     async handleConnection(client: Socket, ...args: any[]): Promise<any> {
     }
@@ -63,6 +70,39 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     this.server.to(socketId).emit('gameFound', game);
                 }
             }
+        }
+    }
+
+    @SubscribeMessage('onKeyInput')
+    async onKeyInput(client: Socket, data: any): Promise<any> {
+        try {
+            await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
+
+            const game = this.gameService.getCurrentGame(client);
+
+            if (!game) {
+                client.emit('gameError', 'You are not in a game');
+                return;
+            }
+
+            const player = game.getPlayer(client.id);
+
+            if (!player) {
+                client.emit('gameError', 'You are not in this game');
+                return;
+            }
+
+            const key = data.key;
+            const pressed = data.pressed;
+
+            if (key !== 'ArrowUp' && key !== 'ArrowDown') {
+                client.emit('gameError', 'Invalid key');
+                return;
+            }
+
+            player.keyPress[key] = pressed;
+        } catch (error) {
+            //TODO: SEND MESSAGE
         }
     }
 
