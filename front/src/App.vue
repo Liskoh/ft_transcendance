@@ -21,7 +21,7 @@ const logout = () => {
     SOCKET_SERVER.on('userError', data => {
     console.log('error ' + data.message);
   });
-  SOCKET_SERVER.emit('blockUser', {d: 'd'});
+  SOCKET_SERVER.emit('blockUser', {logindddd: 'hjordan'});
 
   // SOCKET_SERVER.on('blockUser', data  => {
   //   console.log('Logged in successfully');
