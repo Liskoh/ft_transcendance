@@ -23,6 +23,17 @@ export class Game {
 
     isPrivate: boolean;
 
+
+    getPlayer(id: string): Player {
+        if (this.firstPlayer.id === id) {
+            return this.firstPlayer;
+        }
+        if (this.secondPlayer.id === id) {
+            return this.secondPlayer;
+        }
+        return null;
+    }
+
     resetGame() {
         console.log('reset');
         this.firstPlayer.score = 0;
