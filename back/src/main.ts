@@ -109,19 +109,19 @@ async function bootstrap() {
     const list: string[] = [];
 
     try {
-        user = await usersService.getUserById(1);
+        user = await usersService.getUserById(-1);
     } catch (error) {
         user = await usersService.saveNewUser(usersService.createUser(makeid(8)));
     }
 
     try {
-        user2 = await usersService.getUserById(2);
+        user2 = await usersService.getUserById(-1);
     } catch (error) {
         user2 = await usersService.saveNewUser(usersService.createUser(makeid(8)));
     }
 
     try {
-        channel = await channelsService.getChannelById(1);
+        channel = await channelsService.getChannelById(-1);
     } catch (ex) {
         channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
     }

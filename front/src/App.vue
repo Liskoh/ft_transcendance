@@ -21,7 +21,15 @@ const logout = () => {
     SOCKET_SERVER.on('userError', data => {
     console.log('error ' + data.message);
   });
-  SOCKET_SERVER.emit('blockUser', {logindddd: 'hjordan'});
+
+    SOCKET_SERVER.on('userBlocked', data => {
+      if (!data.id || !data.nickname) {
+        console.log("NULL VALUES");
+      }
+    // console.log("User blocked" + data.id + " " + data.nickname);
+  });
+
+  SOCKET_SERVER.emit('blockUser', {login: 'hjordan'});
 
   // SOCKET_SERVER.on('blockUser', data  => {
   //   console.log('Logged in successfully');
@@ -50,7 +58,6 @@ const logout = () => {
         <RouterLink to="/gameresult">Game result</RouterLink>
         <RouterLink to="/pong">Pong</RouterLink>
 
-        //create button who execute a function:
         <button @click="logout">SOCKET</button>
       </nav>
     </div>
