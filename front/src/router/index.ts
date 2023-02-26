@@ -33,7 +33,12 @@ const router = createRouter({
       path: '/auth/intra',
       name: 'authintra',
       component: () => import('../views/RedirectView.vue')
-    }
+    },
+    {
+      path: '/pong',
+      name: 'pong',
+      component: () => import('../views/PongView.vue')
+    },
   ]
 })
 

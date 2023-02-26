@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   auth.service.ts                                    :+:      :+:    :+:   */
+/*   auth42.service.ts                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tnguyen- <tnguyen-@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -14,4 +14,4 @@ import { Injectable } from '@nestjs/common';
 
 
 @Injectable()
-export class AuthService {}
+export class Auth42Service {}

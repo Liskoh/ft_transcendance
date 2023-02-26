@@ -16,6 +16,11 @@ import {LoginNicknameDto} from "../dto/login-nickname.dto";
 //     3500,
 //     {namespace: 'users'}
 // )
+@WebSocketGateway({
+    cors: {
+        origin: '*'
+    },
+})
 @WebSocketGateway(
     {namespace: 'users'}
 )
@@ -25,23 +30,26 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     @WebSocketServer() server: Server;
 
-    usersMap: Map<Socket, User> = new Map<Socket, User>();
+    usersMap: Map<Socket, number> = new Map<Socket, number>();
 
-    async getUserBySocket(socket: Socket, update?: boolean): Promise<User> {
-        const user = this.usersMap.get(socket);
-        if (!user)
-            throw new Error('User not found');
-
-        if (update) {
-            const updatedUser = await this.usersService.getUserById(user.id);
-            this.usersMap.set(socket, updatedUser);
-            return updatedUser;
+    async getUserBySocket(socket: Socket): Promise<User> {
+        const userId = this.usersMap.get(socket);
+        if (!userId) {
+            this.usersMap.set(socket, 1);
         }
+
+        const user = await this.usersService.getUserById(userId);
+
+        if (!user)
+            throw new Error('User not found')
 
         return user;
     }
 
-    async handleConnection(client: any, ...args: any[]): Promise<any> {
+    async handleConnection(client: Socket, ...args: any[]): Promise<any> {
+        console.log('connected ' + client.id);
+
+        // client.emit('connected', 'connected');
     }
 
     async handleDisconnect(client: any): Promise<any> {
@@ -63,7 +71,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await validate(payload);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
 
             await this.usersService.changeNickname(user, payload.login);
         } catch (error) {
@@ -85,7 +93,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await validate(payload);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.sendFriendRequest(user, targetUser);
@@ -105,7 +113,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await validate(payload);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.acceptFriendRequest(user, targetUser);
@@ -125,10 +133,11 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await validate(payload);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.blockUser(user, targetUser);
+            socket.emit('userBlocked', targetUser);
         } catch (error) {
             socket.emit('userError', error);
         }
@@ -145,7 +154,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await validate(payload);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.unblockUser(user, targetUser);

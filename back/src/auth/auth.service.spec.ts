@@ -11,17 +11,17 @@
 /* ************************************************************************** */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { AuthService } from './auth.service';
+import { Auth42Service } from './auth42.service';
 
 describe('AuthService', () => {
-  let service: AuthService;
+  let service: Auth42Service;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
+      providers: [Auth42Service],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
+    service = module.get<Auth42Service>(Auth42Service);
   });
 
   it('should be defined', () => {

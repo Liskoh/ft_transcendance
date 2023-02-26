@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Auth42Service } from './auth42.service';
 import { AuthController } from './auth.controller';
 import { UserService } from 'src/user/service/user.service';
 import { UserModule } from 'src/user/user.module';
@@ -20,7 +20,7 @@ import { UserModule } from 'src/user/user.module';
 	imports:[
 		UserModule
 	],
-  providers: [AuthService],
+  providers: [Auth42Service],
   controllers: [AuthController]
 })
 export class AuthModule {}

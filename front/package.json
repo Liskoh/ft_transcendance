@@ -13,6 +13,7 @@
     "pinia": "^2.0.32",
     "sass": "^1.58.3",
     "sass-loader": "^13.2.0",
+    "socket.io-client": "^4.6.1",
     "vue": "^3.2.47",
     "vue-router": "^4.1.6"
   },

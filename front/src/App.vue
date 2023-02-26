@@ -1,6 +1,38 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import io from 'socket.io-client'
 import HelloWorld from './components/HelloWorld.vue'
+import {SOCKET_SERVER} from "@/consts";
+
+const logout = () => {
+  // Code pour exécuter la déconnexion de l'utilisateur ici
+
+  //
+  SOCKET_SERVER.on('connect', () => {
+    console.log('Socket connected');
+    SOCKET_SERVER.emit('logout');
+  });
+
+
+  SOCKET_SERVER.on('userBlocked', () => {
+    console.log('User blocked');
+  });
+
+    SOCKET_SERVER.on('userError', data => {
+    console.log('error ' + data.message);
+  });
+  SOCKET_SERVER.emit('blockUser', {login: 'test'});
+
+  // SOCKET_SERVER.on('blockUser', data  => {
+  //   console.log('Logged in successfully');
+  //   console.log(data);
+  // });
+
+  // socket.on('logout', () => {
+  //   console.log('Logged out successfully');
+  //   socket.disconnect();
+  // });
+}
 
 </script>
 
@@ -16,6 +48,10 @@ import HelloWorld from './components/HelloWorld.vue'
         <RouterLink to="/playerprofile">Your profile</RouterLink>
         <RouterLink to="/game">Game</RouterLink>
         <RouterLink to="/gameresult">Game result</RouterLink>
+        <RouterLink to="/pong">Pong</RouterLink>
+
+<!--        //create button who execute a function:-->
+        <button @click="logout">SOCKET</button>
       </nav>
     </div>
   </header>
@@ -29,6 +65,7 @@ header {
   line-height: 1.5;
   max-height: 100vh;
 }
+
 
 .logo {
   display: block;
