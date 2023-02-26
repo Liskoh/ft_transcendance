@@ -1,4 +1,5 @@
 import {
+    MessageBody,
     OnGatewayConnection,
     OnGatewayDisconnect,
     SubscribeMessage,
@@ -6,9 +7,9 @@ import {
     WebSocketServer
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {Logger} from "@nestjs/common";
+import {Logger, UsePipes, ValidationPipe} from "@nestjs/common";
 import {UserService} from "../service/user.service";
-import {validate, ValidationError} from "class-validator";
+import {validate, validateOrReject, ValidationError} from "class-validator";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 
@@ -46,6 +47,37 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return user;
     }
 
+    async sendErrorToClient(socket: Socket, name: string, error: ValidationError | Error) {
+        console.log(socket.id + ' socketId send an invalid request: ' + error);
+        if (error instanceof ValidationError) {
+            console.log("hello world");
+            socket.emit(name, {message: "Invalid request, please check your data"});
+            return
+        }
+        socket.emit(name, error);
+    }
+
+    /**
+     * block user
+     * @param {Socket} socket
+     * @param {LoginNicknameDto} payload => {login: string}
+     * @returns {Promise<any>}
+     */
+    @SubscribeMessage('blockUser')
+    async blockUser(socket: Socket, payload: any): Promise<any> {
+        try {
+            await validateOrReject(new LoginNicknameDto(payload.login));
+
+            const user = await this.getUserBySocket(socket);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
+
+            await this.usersService.blockUser(user, targetUser);
+            socket.emit('userBlocked', targetUser);
+        } catch (error) {
+            await this.sendErrorToClient(socket, 'userError', error);
+        }
+    }
+
     async handleConnection(client: Socket, ...args: any[]): Promise<any> {
         console.log('connected ' + client.id);
 
@@ -75,10 +107,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             await this.usersService.changeNickname(user, payload.login);
         } catch (error) {
-            if (error instanceof ValidationError) {
-                socket.emit('changeNicknameValidationError', error);
-            }
-            socket.emit('changeNicknameError', error);
+            await this.sendErrorToClient(socket, 'userError', error);
         }
     }
 
@@ -98,7 +127,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             await this.usersService.sendFriendRequest(user, targetUser);
         } catch (error) {
-            socket.emit('userError', error);
+            await this.sendErrorToClient(socket, 'userError', error);
         }
     }
 
@@ -109,37 +138,16 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
      * @returns {Promise<any>}
      */
     @SubscribeMessage('acceptFriendRequest')
-    async acceptFriendRequest(socket: Socket, payload: LoginNicknameDto): Promise<any> {
+    async acceptFriendRequest(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            await validateOrReject(new LoginNicknameDto(payload.login));
 
             const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.acceptFriendRequest(user, targetUser);
         } catch (error) {
-            socket.emit('userError', error);
-        }
-    }
-
-    /**
-     * block user
-     * @param {Socket} socket
-     * @param {LoginNicknameDto} payload => {login: string}
-     * @returns {Promise<any>}
-     */
-    @SubscribeMessage('blockUser')
-    async blockUser(socket: Socket, payload: LoginNicknameDto): Promise<any> {
-        try {
-            await validate(payload);
-
-            const user = await this.getUserBySocket(socket);
-            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
-
-            await this.usersService.blockUser(user, targetUser);
-            socket.emit('userBlocked', targetUser);
-        } catch (error) {
-            socket.emit('userError', error);
+            await this.sendErrorToClient(socket, 'userError', error);
         }
     }
 
@@ -150,23 +158,16 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
      * @returns {Promise<any>}
      */
     @SubscribeMessage('unblockUser')
-    async unblockUser(socket: Socket, payload: LoginNicknameDto): Promise<any> {
+    async unblockUser(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            await validateOrReject(new LoginNicknameDto(payload.login));
 
             const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.unblockUser(user, targetUser);
         } catch (error) {
-            socket.emit('userError', error);
+            await this.sendErrorToClient(socket, 'userError', error);
         }
     }
-
-    // handleConnection(client: any, ...args: any[]): any {
-    // }
-    //
-    // handleDisconnect(client: any): any {
-    // }
-
 }
