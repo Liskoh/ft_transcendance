@@ -1,8 +1,8 @@
 import {IsNumber, Min} from "class-validator";
 
 export class IdDto {
-    constructor(id: any) {
-        this.id = id;
+    constructor(payload: any) {
+        this.id = payload.id;
     }
 
     @IsNumber()

@@ -39,8 +39,43 @@ export class UserService {
         return user;
     }
 
+
     /**
      * find and return user by login
+     * @param {string} login
+     * @returns {Promise<User>}
+     */
+    async getUserByLogin(login: string): Promise<User> {
+        const user = await this.usersRepository.findOneBy({login: login});
+
+        if (!user)
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return user;
+    }
+
+    /**
+     * find and return user by nickname
+     * @param {string} nickname
+     * @returns {Promise<User>}
+     */
+    async getUserByNickname(nickname: string): Promise<User> {
+        const user = await this.usersRepository.findOneBy({nickname: nickname});
+
+        if (!user)
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return user;
+    }
+
+    /**
+     * find and return user by login or nickname
      * @param {string} login
      * @returns {Promise<User>}
      */
@@ -52,15 +87,6 @@ export class UserService {
                 'User not found',
                 HttpStatus.NOT_FOUND
             );
-
-        return user;
-    }
-
-	async getUserByLogin(login: string): Promise<User> {
-        const user = await this.usersRepository.findOneBy({login: login});
-
-        if (!user)
-            return null;
 
         return user;
     }
@@ -146,51 +172,16 @@ export class UserService {
     }
 
     /**
-     * Send friend request from one user to another
-     * @param {User} from
-     * @param {User} to
-     * @returns {Promise<void>}
-     **/
-    async sendFriendRequest(from: User, to: User): Promise<void> {
-        if (this.isSameUser(from, to))
-            throw new HttpException(
-                "You can't send friend request to yourself",
-                HttpStatus.BAD_REQUEST
-            );
-
-        if (to.pendingFriendRequests.includes(from.id))
-            throw new HttpException(
-                "You are already friends with this user",
-                HttpStatus.BAD_REQUEST
-            );
-
-        if (to.pendingFriendRequests.includes(from.id))
-            throw new HttpException(
-                "You already sent friend request to this user",
-                HttpStatus.BAD_REQUEST
-            );
-
-        to.pendingFriendRequests.push(from.id);
-        await this.usersRepository.save(to);
-    }
-
-    /**
      * Accept friend request from one user to another
      * @param {User} from
      * @param {User} to
      * @returns {Promise<void>}
      */
-    async acceptFriendRequest(from: User, to: User): Promise<User> {
+    async followAsFriend(from: User, to: User): Promise<User> {
 
         if (this.isSameUser(from, to))
             throw new HttpException(
                 "You can't accept friend request from yourself",
-                HttpStatus.BAD_REQUEST
-            );
-
-        if (!from.pendingFriendRequests.includes(to.id))
-            throw new HttpException(
-                "You don't have friend request from this user",
                 HttpStatus.BAD_REQUEST
             );
 
@@ -200,18 +191,8 @@ export class UserService {
                 HttpStatus.BAD_REQUEST
             );
 
-        if (this.isBlockedByUser(from, to))
-            throw new HttpException(
-                "You are blocked by this user",
-                HttpStatus.BAD_REQUEST
-            );
-
         //add to friends list
         from.friendsList.push(to.id);
-        to.friendsList.push(from.id);
-
-        //remove pending friend requests
-        from.pendingFriendRequests.splice(from.pendingFriendRequests.indexOf(to.id), 1);
 
         //saving from and to
         await this.usersRepository.save(to);

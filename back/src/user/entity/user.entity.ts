@@ -32,9 +32,6 @@ export class User {
     friendsList: number[];
 
     @Column('int', { array: true, default: [] })
-    pendingFriendRequests: number[];
-
-    @Column('int', { array: true, default: [] })
     blockedList: number[];
 
     @Column('timestamp', { default: () => 'CURRENT_TIMESTAMP' })

@@ -4,15 +4,20 @@ import {Repository} from "typeorm";
 import {Channel} from "../entity/channel.entity";
 import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
-import {validate} from "class-validator";
+import {validate, validateOrReject} from "class-validator";
 import {Message} from "../entity/message.entity";
 import {UserService} from "../../user/service/user.service";
 import * as bcrypt from 'bcrypt';
-import {BCRYPT_SALT_ROUNDS, CHAT_COOLDOWN_IN_MILLISECONDS} from "../../consts";
+import {
+    BCRYPT_SALT_ROUNDS,
+    CHAT_COOLDOWN_IN_MILLISECONDS, MAX_CHANNELS_PER_USER,
+    MAX_PASSWORD_LENGTH,
+    MIN_PASSWORD_LENGTH
+} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
 import {PunishmentType} from "../enum/punishment-type.enum";
 import {Punishment} from "../entity/punishment.entity";
-import { User } from "src/user/entity/user.entity";
+import {User} from "src/user/entity/user.entity";
 
 
 @Injectable()
@@ -130,11 +135,17 @@ export class ChannelService {
     async createChannel(owner: User, type: ChannelType, name?: string, password?: string): Promise<Channel> {
         let channel = new Channel(owner, type);
 
-        // if (this.usersService.getChannelCount(owner) >= MAX_CHANNELS_PER_USER)
-        //     throw new HttpException(
-        //         'You have reached the maximum number of channel',
-        //         HttpStatus.FORBIDDEN
-        //     );
+        const channels: Channel[] = await this.channelsRepository
+            .createQueryBuilder("channel")
+            .leftJoinAndSelect("channel.owner", "owner")
+            .where("owner.id = :userId", {userId: owner.id})
+            .getMany();
+
+        if (channels.length >= MAX_CHANNELS_PER_USER)
+            throw new HttpException(
+                'You have reached the maximum number of channels',
+                HttpStatus.FORBIDDEN
+            );
 
         if (!name)
             name = owner.login + "'s channel";
@@ -231,7 +242,7 @@ export class ChannelService {
     async toggleAdminRole(channel: Channel, owner: User, user: User, giveAdminRole: boolean): Promise<Channel> {
 
         //in case 'owner' is not admin
-        if (channel.owner !== owner)
+        if (!this.isOwner(channel, owner))
             throw new HttpException(
                 'You are not owner of this channel',
                 HttpStatus.FORBIDDEN
@@ -243,6 +254,8 @@ export class ChannelService {
                 'User is not member of this channel',
                 HttpStatus.BAD_REQUEST
             );
+
+        const myB: boolean = giveAdminRole;
 
         //in case user is already admin and we want to give him admin role
         if (this.isAdministrator(channel, user) && giveAdminRole)
@@ -380,11 +393,22 @@ export class ChannelService {
                 HttpStatus.BAD_REQUEST
             );
 
+        // for (let i = 0; i < channel.punishments.length; i++) {
+        //     const p = channel.punishments[i];
+        //
+        //     if (p.user.id === user.id)
+        //         console.log("same ID");
+        //     if (p.punishmentType === punishmentType)
+        //         console.log("same type");
+        //     if (p.endDate !== null)
+        //         console.log("not null");
+        // }
+
         //in case if the punishment is permanent (we have to remove it)
         let punishment = channel.punishments.find(
             punishment => punishment.user.id === user.id &&
                 punishment.punishmentType === punishmentType &&
-                punishment.endDate === null &&
+                punishment.endDate !== null &&
                 punishmentType !== PunishmentType.KICK
         );
 
@@ -453,14 +477,15 @@ export class ChannelService {
             );
 
         //in case of channel has password
-        if (this.hasPassword(channel) && password) {
+        if (this.hasPassword(channel)) {
             const dto = new SetPasswordDto(password);
-
             try {
-                await validate(dto)
+                await validateOrReject(dto);
             } catch (e) {
                 throw new HttpException(
-                    'Password is required',
+                    'password must be between ' +
+                    MIN_PASSWORD_LENGTH + ' and ' +
+                    MAX_PASSWORD_LENGTH + ' characters long',
                     HttpStatus.BAD_REQUEST
                 );
             }
@@ -596,9 +621,9 @@ export class ChannelService {
      */
     hasPassword(channel: Channel): boolean {
         if (channel.password)
-            return false;
+            return true;
 
-        return true;
+        return false;
     }
 
     /**
