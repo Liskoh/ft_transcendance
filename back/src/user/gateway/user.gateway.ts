@@ -21,6 +21,7 @@ import {LoginNicknameDto} from "../dto/login-nickname.dto";
     cors: {
         origin: '*'
     },
+    // namespace: 'users'
 })
 @WebSocketGateway(
     {namespace: 'users'}

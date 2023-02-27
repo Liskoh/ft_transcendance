@@ -569,6 +569,13 @@ export class ChannelService {
         return channel.users.filter(u => !u.blockedList.includes(user.id));
     }
 
+    getMessagesForUser(channel: Channel, user: User): Message[] {
+        const messages = channel.messages;
+
+        return messages.filter(m =>
+            user.blockedList.includes(m.user.id));
+    }
+
     /*
      * NON ASYNC METHODS
      */
