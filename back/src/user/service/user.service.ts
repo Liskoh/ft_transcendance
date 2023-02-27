@@ -39,8 +39,43 @@ export class UserService {
         return user;
     }
 
+
     /**
      * find and return user by login
+     * @param {string} login
+     * @returns {Promise<User>}
+     */
+    async getUserByLogin(login: string): Promise<User> {
+        const user = await this.usersRepository.findOneBy({login: login});
+
+        if (!user)
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return user;
+    }
+
+    /**
+     * find and return user by nickname
+     * @param {string} nickname
+     * @returns {Promise<User>}
+     */
+    async getUserByNickname(nickname: string): Promise<User> {
+        const user = await this.usersRepository.findOneBy({nickname: nickname});
+
+        if (!user)
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return user;
+    }
+
+    /**
+     * find and return user by login or nickname
      * @param {string} login
      * @returns {Promise<User>}
      */
@@ -52,15 +87,6 @@ export class UserService {
                 'User not found',
                 HttpStatus.NOT_FOUND
             );
-
-        return user;
-    }
-
-	async getUserByLogin(login: string): Promise<User> {
-        const user = await this.usersRepository.findOneBy({login: login});
-
-        if (!user)
-            return null;
 
         return user;
     }

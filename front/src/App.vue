@@ -1,9 +1,91 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import {RouterLink, RouterView} from 'vue-router'
 import io from 'socket.io-client'
 import HelloWorld from './components/HelloWorld.vue'
 import {SOCKET_SERVER} from "@/consts";
 
+const parseCommand = (channelId: number, command: string) => {
+
+  const enum Command {
+    INVITE = 'invite',
+    SET_PASSWORD = 'set-password',
+    UNSET_PASSWORD = 'unset-password',
+    PUNISH = 'punish',
+    UN_PUNISH = 'un-punish',
+    SET_ADMIN = 'set-admin',
+    UNSET_ADMIN = 'unset-admin',
+  }
+
+  const commandArray = command.split(' ');
+  const commandName = commandArray[0];
+  const commandArgs = commandArray.slice(1);
+
+  //If the command is not a command, return
+  if (commandName[0] !== '/') {
+    return;
+  }
+
+  switch (commandName) {
+    case `/${Command.INVITE}`:
+      SOCKET_SERVER.emit('inviteUser',
+          {
+            channelId: channelId,
+            nickname: commandArgs[0],
+          }
+      );
+      break;
+    case `/${Command.SET_PASSWORD}`:
+      //TODO setPassword(channelId, commandArgs);
+      break;
+    case `/${Command.UNSET_PASSWORD}`:
+      //TODO unsetPassword(channelId, commandArgs);
+      break;
+    case `/${Command.PUNISH}`:
+      const date = new Date(commandArgs[2]);
+
+      SOCKET_SERVER.emit('applyPunishment',
+          {
+            channelId: channelId,
+            nickname: commandArgs[0],
+            punishmentType: commandArgs[1],
+            date: date,
+          }
+      );
+      break;
+    case `/${Command.UN_PUNISH}`:
+      SOCKET_SERVER.emit('cancelPunishment',
+          {
+            channelId: channelId,
+            nickname: commandArgs[0],
+            punishmentType: commandArgs[1],
+          }
+      );
+      break;
+
+    case `/${Command.SET_ADMIN}`:
+      SOCKET_SERVER.emit('toggleAdminRole',
+          {
+            channelId: channelId,
+            nickname: commandArgs[0],
+            giveAdminRole: true,
+          }
+      );
+      break;
+    case `/${Command.UNSET_ADMIN}`:
+      SOCKET_SERVER.emit('toggleAdminRole',
+          {
+            channelId: channelId,
+            nickname: commandArgs[0],
+            giveAdminRole: false,
+          }
+      );
+      break;
+
+    default:
+      // help(channelId, commandArgs);
+      break;
+  }
+}
 const logout = () => {
   // Code pour exécuter la déconnexion de l'utilisateur ici
 
@@ -13,19 +95,43 @@ const logout = () => {
     SOCKET_SERVER.emit('logout');
   });
 
+  SOCKET_SERVER.on('applyPunishmentSuccess', () => {
+    console.log('Punishment applied');
+  });
+
+  SOCKET_SERVER.on('cancelPunishmentSuccess', () => {
+    console.log('Punishment canceled successfully');
+  });
+
+  SOCKET_SERVER.on('toggleAdminRoleSuccess', () => {
+    console.log('Admin role toggled successfully');
+  });
+
 
   SOCKET_SERVER.on('userBlocked', () => {
     console.log('User blocked');
   });
 
-    SOCKET_SERVER.on('userError', data => {
+  SOCKET_SERVER.on('userError', data => {
     console.log('error ' + data.message);
   });
 
-    SOCKET_SERVER.on('userBlocked', data => {
-      if (!data.id || !data.nickname) {
-        console.log("NULL VALUES");
-      }
+  SOCKET_SERVER.on('channelError', data => {
+    console.log('error ' + data.message);
+  });
+
+  SOCKET_SERVER.on('userBlocked', data => {
+    if (!data.id || !data.nickname) {
+      console.log("NULL VALUES");
+    }
+
+    SOCKET_SERVER.on('joinChannelSuccess', data => {
+      console.log("joined channeld with succes");
+    });
+
+    SOCKET_SERVER.on('leaveChannelSuccess', data => {
+      console.log("left channeld with succes");
+    });
     // console.log("User blocked" + data.id + " " + data.nickname);
   });
 
@@ -42,14 +148,33 @@ const logout = () => {
   // });
 }
 
+const leaveChannel = () => {
+  SOCKET_SERVER.emit('leaveChannel', {id: 1});
+}
+
+const joinChannel = () => {
+  SOCKET_SERVER.emit('joinChannel', {
+    id: 1,
+    password: '1234Y34GFYSDGF8T7',
+  });
+}
+
+const createChannel = () => {
+  SOCKET_SERVER.emit('createChannel', {
+    name : 'default',
+    channelType: 'PUBLIC',
+    // password: '1234Y34GFYSDGF8T7',
+  });
+}
+
 </script>
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+<!--    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125"/>-->
 
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+<!--      <HelloWorld msg="You did it!"/>-->
 
       <nav>
         <RouterLink to="/home">Home</RouterLink>
@@ -58,12 +183,25 @@ const logout = () => {
         <RouterLink to="/gameresult">Game result</RouterLink>
         <RouterLink to="/pong">Pong</RouterLink>
 
+
         <button @click="logout">SOCKET</button>
+        <button @click="joinChannel">JOIN CHANNEL</button>
+        <button @click="leaveChannel">LEAVE CHANNEL</button>
+        <button @click="parseCommand(1, '/punish WzA4qBmi ban 2024-06-01T00:00:00')">BAN</button>
+        <button @click="parseCommand(1, '/punish WzA4qBmi mute 2024-06-01T00:00:00')">MUTE</button>
+        <button @click="parseCommand(1, '/punish WzA4qBmi kick 2024-06-01T00:00:00')">KICK</button>
+        <button @click="parseCommand(1, '/un-punish WzA4qBmi ban')">UN-BAN</button>
+        <button @click="parseCommand(1, '/un-punish WzA4qBmi mute')">UN-MUTE</button>
+        <button @click="parseCommand(1, '/set-admin WzA4qBmi')">SET-ADMIN</button>
+        <button @click="parseCommand(1, '/unset-admin WzA4qBmi')">UNSET-ADMIN</button>
+        <button @click="createChannel">CREATE-CHANNEL</button>
+        <button @click="parseCommand(1, '/invite WzA4qBmi')">invite</button>
+
       </nav>
     </div>
   </header>
 
-  <RouterView />
+  <RouterView/>
   <a href="https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-daf495cf13fd1f090c114ac2c7c8c9c0c15d11dee8de959157b2c07821a76d0d&redirect_uri=http%3A%2F%2Flocalhost:8000%2Fauth%2Fintra&response_type=code">LOGIN</a>
 </template>
 

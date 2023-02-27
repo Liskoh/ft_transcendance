@@ -21,7 +21,22 @@ export class ChannelController {
         return channels.map(channel => ({
             id: channel.id,
             name: channel.name,
+            owner: channel.owner.nickname,
+            admins: channel.admins,
+            users: channel.users.map(user => ({
+                login: user.login,
+                nickname: user.nickname,
+                id: user.id,
+                status: user.status,
+                                              })),
             password: channel.password !== null,
+            punishments: channel.punishments.map(punishment => ({
+                id: punishment.id,
+                userId: punishment.user.id,
+                nickname: punishment.user.nickname,
+                punishmentType: punishment.punishmentType,
+                endDate: punishment.endDate,
+                                                                })),
             channelType: channel.channelType,
         }))
     }

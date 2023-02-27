@@ -5,7 +5,7 @@ import {ChannelType} from "../enum/channel-type.enum";
 export class CreateChannelDto {
     constructor(payload: any) {
         this.name = payload.name;
-        this.channelType = payload.channelType;
+        this.channelType = ChannelType[payload.channelType];
         this.password = payload.password;
     }
 
