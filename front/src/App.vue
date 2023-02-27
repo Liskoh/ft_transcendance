@@ -3,6 +3,8 @@ import {RouterLink, RouterView} from 'vue-router'
 import io from 'socket.io-client'
 import HelloWorld from './components/HelloWorld.vue'
 import {SOCKET_SERVER} from "@/consts";
+import {AbstractCommand} from "@/commands/abstract.command";
+import {InviteCommand} from "@/commands/impl/invite.command";
 
 const parseCommand = (channelId: number, command: string) => {
 
@@ -24,6 +26,27 @@ const parseCommand = (channelId: number, command: string) => {
   //If the command is not a command, return
   if (commandName[0] !== '/') {
     return;
+  }
+
+
+
+  //TODO SET THIS ON A MANAGER: COMMANDS
+  const commands: AbstractCommand[] = [
+    new InviteCommand('/invite', 'inviteUser'),
+  ];
+
+  function getCommandToSend() : AbstractCommand {
+    for (let i = 0; i < commands.length; i++) {
+      if (commands[i].prefix.toLowerCase() === commandName.toLowerCase()) {
+        return commands[i];
+      }
+    }
+  }
+
+  const commandToSend = getCommandToSend();
+
+  if (commandToSend) {
+    commandToSend.emitCommand(commandToSend.getCommandData(channelId, commandArgs));
   }
 
   switch (commandName) {
