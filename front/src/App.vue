@@ -3,6 +3,8 @@ import {RouterLink, RouterView} from 'vue-router'
 import io from 'socket.io-client'
 import HelloWorld from './components/HelloWorld.vue'
 import {SOCKET_SERVER} from "@/consts";
+import {AbstractCommand} from "@/commands/abstract.command";
+import {InviteCommand} from "@/commands/impl/invite.command";
 
 const parseCommand = (channelId: number, command: string) => {
 
@@ -26,36 +28,9 @@ const parseCommand = (channelId: number, command: string) => {
     return;
   }
 
-  abstract class AbstractCommand{
-    public readonly prefix: string;
-    public readonly key: string;
 
-    protected constructor(prefix: string, key: string) {
-      this.prefix = prefix;
-      this.key = key;
-    }
 
-    public emitCommand(object: Object): void {
-      SOCKET_SERVER.emit(this.key, object);
-    }
-
-    public abstract getCommandData(channelId: number, commandArgs: string[]): Object;
-  }
-
-  class InviteCommand extends AbstractCommand {
-
-    constructor(prefix: string, key: string) {
-      super(prefix, key);
-    }
-
-    public getCommandData(channelId: number, commandArgs: string[]): Object {
-      return {
-        channelId: channelId,
-        nickname: commandArgs[0],
-      };
-    }
-  }
-
+  //TODO SET THIS ON A MANAGER: COMMANDS
   const commands: AbstractCommand[] = [
     new InviteCommand('/invite', 'inviteUser'),
   ];
