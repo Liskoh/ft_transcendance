@@ -5,7 +5,7 @@ import {IsEnum, IsNumber, Min} from "class-validator";
 export class ChangeChannelTypeDto {
     constructor(payload: any) {
         this.channelId = payload.channelId;
-        this.channelType = payload.channelType;
+        this.channelType = ChannelType[payload.channelType.toUpperCase()];
     }
 
     @IsNumber()

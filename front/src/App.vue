@@ -14,6 +14,7 @@ const parseCommand = (channelId: number, command: string) => {
     UN_PUNISH = 'un-punish',
     SET_ADMIN = 'set-admin',
     UNSET_ADMIN = 'unset-admin',
+    CHANGE_CHANNEL_TYPE = 'change-channel-type',
   }
 
   const commandArray = command.split(' ');
@@ -81,6 +82,15 @@ const parseCommand = (channelId: number, command: string) => {
       );
       break;
 
+    case `/${Command.CHANGE_CHANNEL_TYPE}`:
+      SOCKET_SERVER.emit('changeChannelType',
+          {
+            channelId: channelId,
+            channelType: commandArgs[0],
+          }
+      );
+      break;
+
     default:
       // help(channelId, commandArgs);
       break;
@@ -132,6 +142,14 @@ const logout = () => {
     SOCKET_SERVER.on('leaveChannelSuccess', data => {
       console.log("left channeld with succes");
     });
+
+    SOCKET_SERVER.on('changeChannelTypeSuccess', data => {
+      console.log("joined channeld with succes");
+    });
+
+    SOCKET_SERVER.on('getChannelSuccess', data => {
+      console.log("get channel data with succes", data);
+    });
     // console.log("User blocked" + data.id + " " + data.nickname);
   });
 
@@ -167,6 +185,19 @@ const createChannel = () => {
   });
 }
 
+const sendChatMessage = () => {
+  SOCKET_SERVER.emit('sendMessage', {
+    channelId: 1,
+    text: 'Hello world from client!',
+  });
+}
+
+const getChannel= () =>{
+  SOCKET_SERVER.emit('getChannel', {
+    id: 1,
+  });
+}
+
 </script>
 
 <template>
@@ -183,19 +214,21 @@ const createChannel = () => {
         <RouterLink to="/gameresult">Game result</RouterLink>
         <RouterLink to="/pong">Pong</RouterLink>
 
-
         <button @click="logout">SOCKET</button>
         <button @click="joinChannel">JOIN CHANNEL</button>
         <button @click="leaveChannel">LEAVE CHANNEL</button>
-        <button @click="parseCommand(1, '/punish WzA4qBmi ban 2024-06-01T00:00:00')">BAN</button>
-        <button @click="parseCommand(1, '/punish WzA4qBmi mute 2024-06-01T00:00:00')">MUTE</button>
-        <button @click="parseCommand(1, '/punish WzA4qBmi kick 2024-06-01T00:00:00')">KICK</button>
-        <button @click="parseCommand(1, '/un-punish WzA4qBmi ban')">UN-BAN</button>
-        <button @click="parseCommand(1, '/un-punish WzA4qBmi mute')">UN-MUTE</button>
-        <button @click="parseCommand(1, '/set-admin WzA4qBmi')">SET-ADMIN</button>
-        <button @click="parseCommand(1, '/unset-admin WzA4qBmi')">UNSET-ADMIN</button>
+        <button @click="parseCommand(1, '/punish u1o40tkN ban 2024-06-01T00:00:00')">BAN</button>
+        <button @click="parseCommand(1, '/punish u1o40tkN mute 2024-06-01T00:00:00')">MUTE</button>
+        <button @click="parseCommand(1, '/punish u1o40tkN kick 2024-06-01T00:00:00')">KICK</button>
+        <button @click="parseCommand(1, '/un-punish u1o40tkN ban')">UN-BAN</button>
+        <button @click="parseCommand(1, '/un-punish u1o40tkN mute')">UN-MUTE</button>
+        <button @click="parseCommand(1, '/set-admin u1o40tkN')">SET-ADMIN</button>
+        <button @click="parseCommand(1, '/unset-admin u1o40tkN')">UNSET-ADMIN</button>
         <button @click="createChannel">CREATE-CHANNEL</button>
-        <button @click="parseCommand(1, '/invite WzA4qBmi')">invite</button>
+        <button @click="parseCommand(1, '/invite u1o40tkN')">invite</button>
+        <button @click="parseCommand(1, '/change-channel-type private')">change-channel-type</button>
+        <button @click="sendChatMessage">SENDMESSAGE</button>
+        <button @click="getChannel">GETCHANNEL</button>
 
       </nav>
     </div>

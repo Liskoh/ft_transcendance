@@ -4,13 +4,13 @@ import {MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH} from "../../consts";
 export class SendMessageDto {
 
     constructor(payload: any) {
-        this.id = payload.id;
+        this.channelId = payload.channelId;
         this.text = payload.text;
     }
 
     @IsNumber()
     @Min(1)
-    id: number;
+    channelId: number;
 
     @IsString()
     @MinLength(MIN_MESSAGE_LENGTH)

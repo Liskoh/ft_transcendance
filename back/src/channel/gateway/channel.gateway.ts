@@ -21,7 +21,8 @@ import {HttpException, UsePipes} from "@nestjs/common";
     {
         cors: {
             origin: '*',
-        }
+        },
+        // namespace: 'channels'
     }
 )
 export class ChannelGateway implements OnGatewayConnection {
@@ -164,10 +165,18 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /**
+     * change the channelType of a channel
+     * @param {Socket} socket
+     * @param {any} payload => {channelId: number, channelType: ChannelType}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('changeChannelType')
-    async changeChannelType(socket: Socket, payload: ChangeChannelTypeDto): Promise<any> {
+    async changeChannelType(socket: Socket, payload: any): Promise<any> {
+        socket.emit('changeChannelTypeSuccess');
         try {
-            await validate(payload);
+            const dto = new ChangeChannelTypeDto(payload);
+            await validateOrReject(dto);
 
             const user = await this.getUserBySocket(socket);
             const channel = await this.channelsService.getChannelById(payload.channelId);
@@ -175,9 +184,10 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.changeChannelType(channel, user, channelType);
 
-            socket.emit('changeChannelTypeSuccess', channel);
+            console.log('changeChannelTypeSuccess');
+            socket.emit('changeChannelTypeSuccess');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -200,15 +210,29 @@ export class ChannelGateway implements OnGatewayConnection {
 
 
     @SubscribeMessage('getChannel')
-    async getChannel(socket: Socket, payload: IdDto): Promise<any> {
+    async getChannel(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new IdDto(payload);
+            await validateOrReject(dto);
 
-            const channel = await this.channelsService.getChannelById(payload.id);
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.id);
 
-            socket.emit('getChannelSuccess', channel);
+            const channelToReturn = ({
+                id: channel.id,
+                name: channel.name,
+                channelType: channel.channelType,
+                users: channel.users.map(user => ({
+                    id: user.id,
+                    nickname: user.nickname,
+                })),
+                messages: this.channelsService.getMessagesForUser(channel, user),
+            });
+
+            socket.emit('getChannelSuccess', channelToReturn);
+            console.log('getChannelSuccess ' + channelToReturn);
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -242,18 +266,20 @@ export class ChannelGateway implements OnGatewayConnection {
     /**
      * send a message to a channel
      * @param {Socket} socket
-     * @param {SendMessageDto} payload => {id: number, text: string}
+     * @param {any} payload => {channelId: number, text: string}
      * @returns {Promise<any>}
      */
     @SubscribeMessage('sendMessage')
-    async sendMessage(socket: Socket, payload: SendMessageDto): Promise<any> {
+    async sendMessage(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new SendMessageDto(payload);
+            await validateOrReject(dto);
 
-            const channel = await this.channelsService.getChannelById(payload.id);
-            const user = socket.data.user;
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.channelId);
 
-            const users = await this.channelsService.sendMessage(channel, user, payload.text);
+            //return all users who can see the message
+            const users = await this.channelsService.sendMessage(channel, user, dto.text);
 
             //get all users who can see the message
             for (const user of users) {
@@ -262,7 +288,7 @@ export class ChannelGateway implements OnGatewayConnection {
 
             socket.emit('sendMessageSuccess');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -350,11 +376,6 @@ export class ChannelGateway implements OnGatewayConnection {
             const punishmentType = dto.punishmentType;
             const date = dto.date;
 
-            //TODO: DEBUG REMOVE:
-            // {
-            //     channel = await this.channelsService.joinChannel(channel, userToPunish, '1234');
-            // }
-
             await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
             socket.emit('applyPunishmentSuccess');
             console.log('applyPunishmentSuccess');
@@ -389,6 +410,12 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /**
+     * toggle admin role to a user
+     * @param {Socket} socket
+     * @param {any} payload => {channelId: number, userId: number, giveAdminRole: boolean}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('toggleAdminRole')
     async toggleAdminRole(socket: Socket, payload: any): Promise<any> {
         try {
