@@ -39,7 +39,6 @@ export class UserService {
         return user;
     }
 
-
     /**
      * find and return user by login
      * @param {string} login
