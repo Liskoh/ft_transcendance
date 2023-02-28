@@ -5,6 +5,12 @@ import HelloWorld from './components/HelloWorld.vue'
 import {SOCKET_SERVER} from "@/consts";
 import {AbstractCommand} from "@/commands/abstract.command";
 import {InviteCommand} from "@/commands/impl/invite.command";
+import {PunishCommand} from "@/commands/impl/punish.command";
+import {UnPunishCommand} from "@/commands/impl/un-punish.command";
+import {ChangeChannelTypeCommand} from "@/commands/impl/change-channel-type.command";
+import {SetUnsetAdminCommand} from "@/commands/impl/set-unset-admin.command";
+
+
 
 const parseCommand = (channelId: number, command: string) => {
 
@@ -29,13 +35,17 @@ const parseCommand = (channelId: number, command: string) => {
   }
 
 
-
   //TODO SET THIS ON A MANAGER: COMMANDS
   const commands: AbstractCommand[] = [
     new InviteCommand('/invite', 'inviteUser'),
+    new ChangeChannelTypeCommand('/change-channel-type', 'changeChannelType'),
+    new PunishCommand('/punish', 'applyPunishment'),
+    new UnPunishCommand('/un-punish', 'cancelPunishment'),
+    new SetUnsetAdminCommand('/set-admin', 'toggleAdminRole', true),
+    new SetUnsetAdminCommand('/unset-admin', 'toggleAdminRole', false),
   ];
 
-  function getCommandToSend() : AbstractCommand {
+  function getCommandToSend(): AbstractCommand {
     for (let i = 0; i < commands.length; i++) {
       if (commands[i].prefix.toLowerCase() === commandName.toLowerCase()) {
         return commands[i];
@@ -47,76 +57,13 @@ const parseCommand = (channelId: number, command: string) => {
 
   if (commandToSend) {
     commandToSend.emitCommand(commandToSend.getCommandData(channelId, commandArgs));
+    // console.log(commandToSend.getCommandData(channelId, commandArgs));
+    return;
   }
 
-  switch (commandName) {
-    case `/${Command.INVITE}`:
-      SOCKET_SERVER.emit('inviteUser',
-          {
-            channelId: channelId,
-            nickname: commandArgs[0],
-          }
-      );
-      break;
-    case `/${Command.SET_PASSWORD}`:
-      //TODO setPassword(channelId, commandArgs);
-      break;
-    case `/${Command.UNSET_PASSWORD}`:
-      //TODO unsetPassword(channelId, commandArgs);
-      break;
-    case `/${Command.PUNISH}`:
-      const date = new Date(commandArgs[2]);
-
-      SOCKET_SERVER.emit('applyPunishment',
-          {
-            channelId: channelId,
-            nickname: commandArgs[0],
-            punishmentType: commandArgs[1],
-            date: date,
-          }
-      );
-      break;
-    case `/${Command.UN_PUNISH}`:
-      SOCKET_SERVER.emit('cancelPunishment',
-          {
-            channelId: channelId,
-            nickname: commandArgs[0],
-            punishmentType: commandArgs[1],
-          }
-      );
-      break;
-
-    case `/${Command.SET_ADMIN}`:
-      SOCKET_SERVER.emit('toggleAdminRole',
-          {
-            channelId: channelId,
-            nickname: commandArgs[0],
-            giveAdminRole: true,
-          }
-      );
-      break;
-    case `/${Command.UNSET_ADMIN}`:
-      SOCKET_SERVER.emit('toggleAdminRole',
-          {
-            channelId: channelId,
-            nickname: commandArgs[0],
-            giveAdminRole: false,
-          }
-      );
-      break;
-
-    case `/${Command.CHANGE_CHANNEL_TYPE}`:
-      SOCKET_SERVER.emit('changeChannelType',
-          {
-            channelId: channelId,
-            channelType: commandArgs[0],
-          }
-      );
-      break;
-
-    default:
-      // help(channelId, commandArgs);
-      break;
+  //in case of we cant find the command
+  for (const command of commands) {
+    console.log(command.getCommandHelp());
   }
 }
 const logout = () => {
@@ -202,7 +149,7 @@ const joinChannel = () => {
 
 const createChannel = () => {
   SOCKET_SERVER.emit('createChannel', {
-    name : 'default',
+    name: 'default',
     channelType: 'PUBLIC',
     // password: '1234Y34GFYSDGF8T7',
   });
@@ -215,20 +162,22 @@ const sendChatMessage = () => {
   });
 }
 
-const getChannel= () =>{
+const getChannel = () => {
   SOCKET_SERVER.emit('getChannel', {
     id: 1,
   });
 }
-
 </script>
 
 <template>
+  <div class="wrapper">
+<!--    <input v-model="text" @keyup.enter="handleKeyPress" type="text" />-->
+  </div>
   <header>
-<!--    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125"/>-->
+    <!--    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125"/>-->
 
     <div class="wrapper">
-<!--      <HelloWorld msg="You did it!"/>-->
+      <!--      <HelloWorld msg="You did it!"/>-->
 
       <nav>
         <RouterLink to="/home">Home</RouterLink>
@@ -250,6 +199,7 @@ const getChannel= () =>{
         <button @click="createChannel">CREATE-CHANNEL</button>
         <button @click="parseCommand(1, '/invite u1o40tkN')">invite</button>
         <button @click="parseCommand(1, '/change-channel-type private')">change-channel-type</button>
+        <button @click="parseCommand(1, '/h2763ggf u1o40tkN')">WRONG COMMAND</button>
         <button @click="sendChatMessage">SENDMESSAGE</button>
         <button @click="getChannel">GETCHANNEL</button>
 
@@ -258,7 +208,7 @@ const getChannel= () =>{
   </header>
 
   <RouterView/>
-  <a href="https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-daf495cf13fd1f090c114ac2c7c8c9c0c15d11dee8de959157b2c07821a76d0d&redirect_uri=http%3A%2F%2Flocalhost:8000%2Fauth%2Fintra&response_type=code">LOGIN</a>
+  <a href="https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-8a1970373872e17eb5f24b04324c141e145ae1f4e9cc6c86de28dbbe8586b6e1&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fauth%2Fintra%2F&response_type=code">LOGIN</a>
 </template>
 
 <style scoped>

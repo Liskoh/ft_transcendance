@@ -1,6 +1,6 @@
 import { AbstractCommand } from '../abstract.command';
 
-export class InviteCommand extends AbstractCommand {
+export class ChangeChannelTypeCommand extends AbstractCommand {
 
     constructor(prefix: string, key: string) {
         super(prefix, key);
@@ -9,11 +9,11 @@ export class InviteCommand extends AbstractCommand {
     public getCommandData(channelId: number, commandArgs: string[]): Object {
         return {
             channelId: channelId,
-            nickname: commandArgs[0],
+            channelType: commandArgs[0],
         };
     }
 
     public getCommandHelp(): string {
-        return this.prefix + ' ' + '<nickname> - Invite <nickname> to the channel'
+        return this.prefix + ' ' + '<channelType> - Change channel type to <channelType>'
     }
 }

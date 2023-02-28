@@ -88,17 +88,25 @@ export class ChannelService {
      * create private channel with another user
      * @param {User} user1
      * @param {User} user2
+     * @param {Channel[]} channels
      * @returns {Promise<Channel>}
      */
-    async createDirectMessageChannel(user1: User, user2: User): Promise<Channel> {
+    async createDirectMessageChannel(user1: User, user2: User, channels: Channel[]): Promise<Channel> {
 
-        if (this.isDirectChannelExist(user1, user2, await this.getChannels()))
+        // if (this.isDirectChannelExist(user1, user2, await this.getChannels()))
+        //     throw new HttpException(
+        //         'This DM already exist',
+        //         HttpStatus.FORBIDDEN
+        //     );
+        let channel = this.getDirectChannel(user1, user2, channels);
+
+        if (channel)
             throw new HttpException(
                 'This DM already exist',
                 HttpStatus.FORBIDDEN
             );
 
-        let channel = new Channel(user1, ChannelType.DM);
+        channel = new Channel(user1, ChannelType.DM);
 
         channel.name = user1.login + " & " + user2.login;
         channel.owner = user1;
@@ -330,6 +338,12 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
+        if (!this.isOwner(channel, user) && this.isAdministrator(channel, user))
+            throw new HttpException(
+                'You can not punish administrator',
+                HttpStatus.BAD_REQUEST
+            );
+
         if (this.usersService.isSameUser(owner, user))
             throw new HttpException(
                 'You can not punish yourself',
@@ -392,17 +406,6 @@ export class ChannelService {
                 'User is not punished',
                 HttpStatus.BAD_REQUEST
             );
-
-        // for (let i = 0; i < channel.punishments.length; i++) {
-        //     const p = channel.punishments[i];
-        //
-        //     if (p.user.id === user.id)
-        //         console.log("same ID");
-        //     if (p.punishmentType === punishmentType)
-        //         console.log("same type");
-        //     if (p.endDate !== null)
-        //         console.log("not null");
-        // }
 
         //in case if the punishment is permanent (we have to remove it)
         let punishment = channel.punishments.find(
@@ -525,6 +528,24 @@ export class ChannelService {
     }
 
     /**
+     * send direct message to user
+     * @param {User} sender
+     * @param {User} receiver
+     * @param {string} text
+     * @returns {Promise<User[]>}
+     */
+    async sendDirectMessage(sender: User, receiver: User, text: string): Promise<User []> {
+        const channels = await this.getChannels();
+        let channel = this.getDirectChannel(sender, receiver, channels);
+
+        if (!channel) {
+            channel = await this.createDirectMessageChannel(sender, receiver, channels);
+        }
+
+        return await this.sendMessage(channel, sender, text);
+    }
+
+    /**
      * send message to channel
      * @param {Channel} channel
      * @param {User} user
@@ -538,16 +559,9 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        //check if user is muted
-        if (this.isPunished(channel, user, PunishmentType.MUTE))
+        if (this.isPunished(channel, user, PunishmentType.BAN) || this.isPunished(channel, user, PunishmentType.KICK))
             throw new HttpException(
-                'You are muted in this channel',
-                HttpStatus.FORBIDDEN
-            );
-
-        if (this.isPunished(channel, user, PunishmentType.BAN))
-            throw new HttpException(
-                'You are banned in this channel',
+                'You are punished in this channel',
                 HttpStatus.FORBIDDEN
             );
 
@@ -556,8 +570,6 @@ export class ChannelService {
                 'You must wait before sending another message',
                 HttpStatus.FORBIDDEN
             );
-        else
-            console.log('User ' + user.id + ' is not on cooldown');
 
         const message = new Message(user, text);
         channel.messages.push(message);
@@ -671,11 +683,11 @@ export class ChannelService {
      * @param {Channel[]} channels
      * @returns {boolean}
      */
-    isDirectChannelExist(user1: User, user2: User, channels: Channel[]): boolean {
-        return channels.some(channel => {
+    getDirectChannel(user1: User, user2: User, channels: Channel[]): Channel {
+        return channels.find(channel => {
             if (channel.channelType === ChannelType.DM) {
                 if (channel.users.includes(user1) && channel.users.includes(user2)) {
-                    return true;
+                    return channel;
                 }
             }
         });

@@ -10,18 +10,27 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-import { Controller, Get, Post, Body, Param, UseGuards, Req } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards,Request, Req } from "@nestjs/common";
 import { CreateAuthDto } from "./dtos/auth.dto";
 import { Auth42Service } from "./auth42.service";
 import axios from "axios";
 import { ConfigModule } from "@nestjs/config";
 import { UserService } from "src/user/service/user.service";
 import { LoginNicknameDto } from "src/user/dto/login-nickname.dto";
+import {DisabledAuth} from "./jwt.guard";
+
 
 @Controller('auth') 
 export class AuthController {
 	constructor(private readonly authService: Auth42Service, private readonly userService: UserService) {
 
+	}
+
+
+	@DisabledAuth()
+	@Post('auth/login')
+	async login(@Request() req) {
+		return this.authService.login(req.user);
 	}
 
 	@Post('auth')

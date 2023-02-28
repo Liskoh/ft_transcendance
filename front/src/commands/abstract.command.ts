@@ -14,4 +14,6 @@ export abstract class AbstractCommand {
     }
 
     public abstract getCommandData(channelId: number, commandArgs: string[]): Object;
+
+    public abstract getCommandHelp(): string;
 }
