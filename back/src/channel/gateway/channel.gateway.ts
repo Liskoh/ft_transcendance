@@ -199,8 +199,9 @@ export class ChannelGateway implements OnGatewayConnection {
             const user = await this.getUserBySocket(socket);
             const userId = payload.id;
             const targetUser = await this.usersService.getUserById(userId);
+            const channels = await this.channelsService.getChannels();
 
-            const channel = await this.channelsService.createDirectMessageChannel(user, targetUser);
+            const channel = await this.channelsService.createDirectMessageChannel(user, targetUser, channels);
 
             socket.emit('createDirectChannelSuccess', channel);
         } catch (error) {
@@ -263,6 +264,7 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+
     /**
      * send a message to a channel
      * @param {Socket} socket
@@ -287,6 +289,24 @@ export class ChannelGateway implements OnGatewayConnection {
             }
 
             socket.emit('sendMessageSuccess');
+        } catch (error) {
+            await this.sendErrorToClient(socket, 'channelError', error);
+        }
+    }
+
+    @SubscribeMessage('sendDirectMessage')
+    async sendDirectMessage(socket: Socket, payload: any): Promise<any> {
+        try {
+            const dto = new SendMessageDto(payload);
+            await validateOrReject(dto);
+
+            const user = await this.getUserBySocket(socket);
+            const targetUser = await this.usersService.getUserById(dto.channelId);
+
+            const users = await this.channelsService.sendDirectMessage(user, targetUser, dto.text);
+            for (const user of users) {
+                //TODO: send message to user
+            }
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -343,7 +363,7 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
 
-    async sendErrorToClient(socket: Socket, name: string, error: any) : Promise<void> {
+    async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
         console.log(socket.id + ' socketId send an invalid request: ' + error);
 
         if (error instanceof HttpException) {
