@@ -11,7 +11,6 @@ import {ChangeChannelTypeCommand} from "@/commands/impl/change-channel-type.comm
 import {SetUnsetAdminCommand} from "@/commands/impl/set-unset-admin.command";
 
 
-
 const parseCommand = (channelId: number, command: string) => {
 
   const enum Command {
@@ -167,17 +166,44 @@ const getChannel = () => {
     id: 1,
   });
 }
+
+import axios from 'axios';
+
+let username: string;
+
+async function login() {
+  await axios.post('http://localhost:8000/auth/login', {
+    login: username,
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then(response => {
+    console.log(response);
+  }).catch(error => {
+    console.log('error');
+  });
+}
+
 </script>
 
 <template>
   <div class="wrapper">
-<!--    <input v-model="text" @keyup.enter="handleKeyPress" type="text" />-->
+    <!--    <input v-model="text" @keyup.enter="handleKeyPress" type="text" />-->
   </div>
   <header>
     <!--    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125"/>-->
 
     <div class="wrapper">
       <!--      <HelloWorld msg="You did it!"/>-->
+
+      <div>
+        <p>Username: {{ username }}</p>
+        <form @submit.prevent="login">
+          <input v-model="username" type="text" placeholder="Username">
+          <button type="submit">Login</button>
+        </form>
+      </div>
 
       <nav>
         <RouterLink to="/home">Home</RouterLink>

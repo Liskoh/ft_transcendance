@@ -12,6 +12,8 @@ import {UserService} from "../service/user.service";
 import {validate, validateOrReject, ValidationError} from "class-validator";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
+import {JwtService} from "@nestjs/jwt";
+import {AuthService} from "../../auth/auth.service";
 
 // @WebSocketGateway(
 //     3500,
@@ -28,11 +30,27 @@ import {LoginNicknameDto} from "../dto/login-nickname.dto";
 )
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
-    constructor(private readonly usersService: UserService) {
+    constructor(private readonly usersService: UserService,
+                private readonly authService: AuthService
+    ) {
+    // ){
     }
     @WebSocketServer() server: Server;
 
     usersMap: Map<Socket, number> = new Map<Socket, number>();
+
+    async authMiddleware(socket: Socket, next: (err?: any) => void) {
+        const token = socket.handshake.query.token;
+        if (typeof token === "string") {
+            // const decoded = this.jwtService.verify(token);
+            //
+            // if (decoded) {
+            //     socket['user'] = decoded;
+            // }
+        }
+
+        return next();
+    }
 
     async getUserBySocket(socket: Socket): Promise<User> {
         const userId = this.usersMap.get(socket);

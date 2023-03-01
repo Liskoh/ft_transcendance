@@ -5,6 +5,7 @@ import {ChannelService} from "./channel/service/channel.service";
 import {ChannelType} from "./channel/enum/channel-type.enum";
 import {ValidationPipe} from "@nestjs/common";
 import {PunishmentType} from "./channel/enum/punishment-type.enum";
+import {CorsOptions} from "@nestjs/common/interfaces/external/cors-options.interface";
 
 function makeid(length: number) {
     let result = '';
@@ -95,6 +96,13 @@ function makeid(length: number) {
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.useGlobalPipes(new ValidationPipe());
+
+   const cors: CorsOptions = {
+        origin: 'http://localhost:8000',
+        optionsSuccessStatus: 200,
+    };
+
+    app.enableCors(cors);
 
     await app.listen(8000);
 

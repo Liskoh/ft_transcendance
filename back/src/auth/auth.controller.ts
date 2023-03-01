@@ -12,7 +12,7 @@
 
 import { Controller, Get, Post, Body, Param, UseGuards,Request, Req } from "@nestjs/common";
 import { CreateAuthDto } from "./dtos/auth.dto";
-import { Auth42Service } from "./auth42.service";
+import { AuthService } from "./auth.service";
 import axios from "axios";
 import { ConfigModule } from "@nestjs/config";
 import { UserService } from "src/user/service/user.service";
@@ -22,15 +22,31 @@ import {DisabledAuth} from "./jwt.guard";
 
 @Controller('auth') 
 export class AuthController {
-	constructor(private readonly authService: Auth42Service, private readonly userService: UserService) {
+	constructor(private readonly authService: AuthService, private readonly userService: UserService) {
 
 	}
 
+	@DisabledAuth()
+	@Post('register')
+	async register(@Request() req) : Promise<any>{
+		const login = req.body.login;
+
+		if (typeof login !== 'string')
+			return;
+		console.log(login);
+		return this.authService.register(login);
+	}
 
 	@DisabledAuth()
-	@Post('auth/login')
-	async login(@Request() req) {
-		return this.authService.login(req.user);
+	@Post('login')
+	async login(@Request() req) : Promise<any>{
+		const login = req.body.login;
+		console.log('request');
+		if (typeof login !== 'string')
+			return;
+		console.log(login);
+
+		return this.authService.login(login);
 	}
 
 	@Post('auth')

@@ -16,6 +16,7 @@ import {CreateChannelDto} from "../dto/create-channel.dto";
 import {InviteUserDto} from "../dto/invite-user.dto";
 import {ChangeChannelTypeDto} from "../dto/change-channel-type.dto";
 import {HttpException, UsePipes} from "@nestjs/common";
+import {JwtService} from "@nestjs/jwt";
 
 @WebSocketGateway(
     {
@@ -30,6 +31,7 @@ export class ChannelGateway implements OnGatewayConnection {
     constructor(
         private readonly channelsService: ChannelService,
         private readonly usersService: UserService,
+        // private readonly jwtService: JwtService,
     ) {
     }
 
@@ -38,6 +40,19 @@ export class ChannelGateway implements OnGatewayConnection {
 
     //create a map with socket and user:
     usersMap: Map<Socket, number> = new Map<Socket, number>();
+
+    // async authMiddleware(socket: Socket, next: (err?: any) => void) {
+    //     const token = socket.handshake.query.token;
+    //     if (typeof token === "string") {
+    //         const decoded = this.jwtService.verify(token);
+    //
+    //         if (decoded) {
+    //             socket['user'] = decoded;
+    //         }
+    //     }
+    //
+    //     return next();
+    // }
 
     async getUserBySocket(socket: Socket): Promise<User> {
         // const userId = this.usersMap.get(socket);

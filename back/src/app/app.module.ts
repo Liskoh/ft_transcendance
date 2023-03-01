@@ -11,6 +11,7 @@ import {Channel} from "diagnostics_channel";
 import {ChannelModule} from "../channel/channel.module";
 import {GameModule} from "../game/game.module";
 import { AuthModule } from "src/auth/auth.module"
+import {JwtModule} from "@nestjs/jwt";
 @Module({
     imports: [
         ConfigModule.forRoot(),
@@ -18,7 +19,7 @@ import { AuthModule } from "src/auth/auth.module"
         UserModule,
         ChannelModule,
         GameModule,
-		AuthModule
+		AuthModule,
     ],
     controllers: [AppController],
     providers: [AppService],
