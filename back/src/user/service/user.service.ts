@@ -5,12 +5,15 @@ import {User} from "../entity/user.entity";
 import {HttpException, HttpStatus, Injectable} from "@nestjs/common";
 import {validate} from "class-validator";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
+import {Socket} from "socket.io";
+import {AuthService} from "../../auth/auth.service";
 
 @Injectable()
 export class UserService {
 
     constructor(@InjectRepository(User)
-                private usersRepository: Repository<User>
+                private usersRepository: Repository<User>,
+                // private readonly authService: AuthService
     ) {
     }
 
@@ -55,6 +58,7 @@ export class UserService {
 
         return user;
     }
+
 
     /**
      * find and return user by nickname

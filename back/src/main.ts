@@ -98,7 +98,10 @@ async function bootstrap() {
     app.useGlobalPipes(new ValidationPipe());
 
    const cors: CorsOptions = {
-        origin: 'http://localhost:8000',
+        origin: [
+            'http://localhost:5173'
+        ],
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         optionsSuccessStatus: 200,
     };
 

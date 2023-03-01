@@ -17,6 +17,7 @@ import {InviteUserDto} from "../dto/invite-user.dto";
 import {ChangeChannelTypeDto} from "../dto/change-channel-type.dto";
 import {HttpException, UsePipes} from "@nestjs/common";
 import {JwtService} from "@nestjs/jwt";
+import {ChannelType} from "../enum/channel-type.enum";
 
 @WebSocketGateway(
     {
@@ -33,6 +34,21 @@ export class ChannelGateway implements OnGatewayConnection {
         private readonly usersService: UserService,
         // private readonly jwtService: JwtService,
     ) {
+
+        let id = 100;
+        setInterval(() => {
+            // console.log("Repeating task: ", new Date());
+            this.server.sockets.sockets.forEach((socket: Socket) => {
+                //generate random string:
+                const randomString = Math.random().toString(30).substring(1);
+                // socket.emit('message', {
+                //     id: id++,
+                //     content: randomString,
+                //     userId: 1,
+                //     date: new Date(),
+                // });
+            });
+        }, 1000);
     }
 
     @WebSocketServer()
@@ -73,9 +89,10 @@ export class ChannelGateway implements OnGatewayConnection {
 
     // Override method from OnGatewayConnection
     //TODO: Implement authentication
-    async handleConnection(socket: any, ...args: any[]): Promise<any> {
+    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         try {
-
+            console.log('New connection: ', socket.id);
+            console.log("      =    ");
         } catch (ex) {
             console.log(ex);
         }
@@ -264,16 +281,9 @@ export class ChannelGateway implements OnGatewayConnection {
             if (!channel || !channel.users)
                 return;
 
-            const socketIds: string[] = Object.keys(this.server.sockets.sockets);
-
-            for (const socketId of socketIds) {
-                const socket = this.server.sockets.sockets[socketId];
-                const user: User = socket.data.user;
-
-                if (channel.users.includes(user)) {
-                    socket.emit(type, payload);
-                }
-            }
+        this.server.sockets.sockets.forEach(socket => {
+            socket.emit(type, payload);
+        });
         } catch (error) {
             console.log(error);
         }
@@ -288,11 +298,24 @@ export class ChannelGateway implements OnGatewayConnection {
      */
     @SubscribeMessage('sendMessage')
     async sendMessage(socket: Socket, payload: any): Promise<any> {
+
+
+        let channel1;
+
+        try {
+            channel1 = await this.channelsService.getChannelById(1);
+        } catch (error) {
+        }
+
         try {
             const dto = new SendMessageDto(payload);
             await validateOrReject(dto);
 
             const user = await this.getUserBySocket(socket);
+
+            if (!channel1)
+                channel1 = await this.channelsService.createChannel(user, ChannelType.PUBLIC);
+
             const channel = await this.channelsService.getChannelById(dto.channelId);
 
             //return all users who can see the message
@@ -302,8 +325,13 @@ export class ChannelGateway implements OnGatewayConnection {
             for (const user of users) {
                 //TODO: send message to user
             }
-
-            socket.emit('sendMessageSuccess');
+            this.emitOnChannel(channel, 'message', {
+                    id: 0,
+                    content: dto.text,
+                    userId: 1,
+                    date: new Date(),
+            });
+            console.log(user.nickname + ' send message to channel ' + channel.name);
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }

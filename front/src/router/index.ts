@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import Chat from "@/components/Chat.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -13,6 +14,11 @@ const router = createRouter({
       path: '/home',
       name: 'home',
       component: HomeView
+    },
+    {
+      path: '/chat',
+      name: 'chat',
+      component: Chat
     },
     {
       path: '/playerprofile',

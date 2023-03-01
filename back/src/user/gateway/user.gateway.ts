@@ -7,13 +7,14 @@ import {
     WebSocketServer
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {HttpException, Logger, UsePipes, ValidationPipe} from "@nestjs/common";
+import {HttpException, Logger, UseGuards, UsePipes, ValidationPipe} from "@nestjs/common";
 import {UserService} from "../service/user.service";
 import {validate, validateOrReject, ValidationError} from "class-validator";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 import {JwtService} from "@nestjs/jwt";
 import {AuthService} from "../../auth/auth.service";
+import {AuthGuard} from "@nestjs/passport";
 
 // @WebSocketGateway(
 //     3500,
@@ -33,23 +34,29 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(private readonly usersService: UserService,
                 private readonly authService: AuthService
     ) {
+        // super();
+        // this.use(this.authMiddleware);
     // ){
     }
     @WebSocketServer() server: Server;
 
     usersMap: Map<Socket, number> = new Map<Socket, number>();
 
-    async authMiddleware(socket: Socket, next: (err?: any) => void) {
-        const token = socket.handshake.query.token;
-        if (typeof token === "string") {
-            // const decoded = this.jwtService.verify(token);
-            //
-            // if (decoded) {
-            //     socket['user'] = decoded;
-            // }
-        }
 
-        return next();
+    async handleConnection(client: Socket, ...args: any[]): Promise<any> {
+        // console.log('connected ' + client.id);
+
+        // console.log('Client connected:', client['user']);
+        //
+        // try {
+        //     const user = await this.authService.getUserByWebSocket(client);
+        //     client.emit('user', user);
+        // } catch (e) {
+        //     console.log(e);
+        // }
+    }
+
+    async handleDisconnect(client: any): Promise<any> {
     }
 
     async getUserBySocket(socket: Socket): Promise<User> {
@@ -82,15 +89,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return;
         }
     }
-
-    async handleConnection(client: Socket, ...args: any[]): Promise<any> {
-        console.log('connected ' + client.id);
-
-        // client.emit('connected', 'connected');
-    }
-
-    async handleDisconnect(client: any): Promise<any> {
-    }
+    // @UseGuards(AuthGuard('jwt'))
 
     @SubscribeMessage('register')
     async register(client: any, payload: any): Promise<any> {
