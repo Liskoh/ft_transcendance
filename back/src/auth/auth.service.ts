@@ -10,7 +10,8 @@ import {Socket} from "socket.io";
 export class AuthService {
 
     constructor(private readonly userService: UserService,
-                private readonly jwtService: JwtService) {}
+                private readonly jwtService: JwtService) {
+    }
 
     async getUserByWebSocket(client: Socket): Promise<User> {
         const authorization = client.handshake.headers.authorization;
@@ -41,6 +42,27 @@ export class AuthService {
         return user;
     }
 
+
+    async verifyJWTFromSocket(socket: Socket): Promise<any> {
+        const token = socket.handshake.headers.authorization?.split(' ')[1];
+
+        if (!token)
+            throw new HttpException(
+                'No token provided',
+                HttpStatus.UNAUTHORIZED
+            );
+
+        const decoded = await this.verifyJwt(token);
+
+        if (!decoded)
+            throw new HttpException(
+                'Invalid token',
+                HttpStatus.UNAUTHORIZED
+            );
+
+        return decoded;
+    }
+
     async register(login: string): Promise<any> {
         let user: User;
         console.log(login);
@@ -48,8 +70,9 @@ export class AuthService {
             user = await this.userService.getUserByLogin(login);
         } catch (error) {
             user = await this.userService.saveNewUser(login);
-            const payload = { username: user.login, sub: user.id };
+            const payload = {username: user.login, sub: user.id};
             return {
+                status: HttpStatus.OK,
                 access_token: this.jwtService.sign(payload),
             }
         }
@@ -71,18 +94,23 @@ export class AuthService {
                 HttpStatus.NOT_FOUND);
         }
 
-        const payload = { username: user.login, sub: user.id };
+        const payload = {username: user.login, sub: user.id};
         return {
+            status: HttpStatus.OK,
             access_token: this.jwtService.sign(payload),
         }
     }
 
-     signJwt(login: string, sub: number): string {
-        const payload = { username: login, sub: sub };
+    signJwt(login: string, sub: number): string {
+        const payload = {username: login, sub: sub};
         return this.jwtService.sign(payload);
     }
 
     verifyJwt(token: string): any {
-        return this.jwtService.verify(token);
+        try {
+            return this.jwtService.verify(token);
+        } catch (e) {
+            return null;
+        }
     }
 }

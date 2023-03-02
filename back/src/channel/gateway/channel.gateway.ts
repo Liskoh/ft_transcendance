@@ -15,9 +15,10 @@ import {ToggleAdminRoleDto} from "../dto/toggle-admin-role.dto";
 import {CreateChannelDto} from "../dto/create-channel.dto";
 import {InviteUserDto} from "../dto/invite-user.dto";
 import {ChangeChannelTypeDto} from "../dto/change-channel-type.dto";
-import {HttpException, UsePipes} from "@nestjs/common";
+import {HttpException, HttpStatus, UsePipes} from "@nestjs/common";
 import {JwtService} from "@nestjs/jwt";
 import {ChannelType} from "../enum/channel-type.enum";
+import {AuthService} from "../../auth/auth.service";
 
 @WebSocketGateway(
     {
@@ -32,6 +33,7 @@ export class ChannelGateway implements OnGatewayConnection {
     constructor(
         private readonly channelsService: ChannelService,
         private readonly usersService: UserService,
+        private readonly authService: AuthService,
         // private readonly jwtService: JwtService,
     ) {
     }
@@ -39,7 +41,7 @@ export class ChannelGateway implements OnGatewayConnection {
     @WebSocketServer()
     server: Server;
 
-     private sockets: Socket[] = [];
+    private usersMap: Map<Socket, string> = new Map();
 
     /**
      * send a socket message to all user in a channel
@@ -54,9 +56,8 @@ export class ChannelGateway implements OnGatewayConnection {
                 return;
 
             //get all the sockets from the server:
-
-            this.sockets.forEach(socket => {
-                socket.emit(type, payload);
+            this.usersMap.forEach((value, key) => {
+                key.emit(type, payload);
             });
 
         } catch (error) {
@@ -64,43 +65,60 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
-    // Override method from OnGatewayConnection
-    //TODO: Implement authentication
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
+        let payload: any;
         try {
-            console.log('New connection: ', socket.id);
-            console.log("      {+ Member}    ");
-            this.sockets.push(socket);
-        } catch (ex) {
-            console.log(ex);
+            payload = await this.authService.verifyJWTFromSocket(socket);
+        } catch (error) {
+            await this.sendErrorToClient(socket, 'channelError', error);
+            socket.disconnect();
+        }
+
+        if (payload) {
+            if (Array.from(this.usersMap.values()).includes(payload.username)) {
+                await this.sendErrorToClient(socket, 'channelError', 'User already connected');
+                socket.disconnect();
+                return;
+            }
+
+            this.usersMap.set(socket, payload.username);
+            console.log('New connection: ', socket.id + ' - ' + payload.username);
         }
     }
 
     async handleDisconnect(socket: any): Promise<any> {
         try {
-            console.log('New disconnection: ', socket.id);
-            console.log("    {-}    ");
-            this.sockets = this.sockets.filter(s => s.id !== socket.id);
+            const username = this.usersMap.get(socket);
+            this.usersMap.delete(socket);
+            console.log('Disconnected: ', socket.id + ' - ' + username);
         } catch (ex) {
             console.log(ex);
         }
     }
 
     async getUserBySocket(socket: Socket): Promise<User> {
-        // const userId = this.usersMap.get(socket);
-        // if (!userId) {
-        //     this.usersMap.set(socket, 1);
-        // }
-        //
-        // const users = await this.usersService.getUsers();
-        // const randomIndex = Math.floor(Math.random() * users.length);
-
-        const user = await this.usersService.getUserById(1);
-
-        if (!user)
-            throw new Error('User not found')
+        let user: User;
+        try {
+            const login: string = this.usersMap.get(socket);
+            user = await this.usersService.getUserByLogin(login);
+        } catch (error) {
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND,
+            )
+        }
 
         return user;
+    }
+
+    async getSocketsByUser(user: User): Promise<Socket> {
+        let socket: Socket;
+        this.usersMap.forEach((value, key) => {
+            if (value === user.login)
+                socket = key;
+        });
+
+        return socket;
     }
 
     @SubscribeMessage('getChannels')
@@ -191,8 +209,13 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.inviteUser(channel, user, targetUser);
 
-            socket.emit('inviteUserSuccess', channel);
-            console.log('inviteUserSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You invited ' + targetUser.nickname + ' to the channel');
+            const targetSocket: Socket = await this.getSocketsByUser(targetUser);
+
+            if (targetSocket) {
+                await this.sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname +
+                    ' invited you to the channel ' + channel.name);
+            }
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -269,7 +292,6 @@ export class ChannelGateway implements OnGatewayConnection {
             });
 
             socket.emit('getChannelSuccess', channelToReturn);
-            console.log('getChannelSuccess ' + channelToReturn);
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }

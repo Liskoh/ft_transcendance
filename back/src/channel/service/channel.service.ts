@@ -296,11 +296,11 @@ export class ChannelService {
      */
     async inviteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
 
-        if (channel.channelType !== ChannelType.PRIVATE)
-            throw new HttpException(
-                'You can not invite someone to public channel',
-                HttpStatus.BAD_REQUEST
-            );
+        // if (channel.channelType !== ChannelType.PRIVATE)
+        //     throw new HttpException(
+        //         'You can not invite someone to public channel',
+        //         HttpStatus.BAD_REQUEST
+        //     );
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
