@@ -1,4 +1,4 @@
-import {Message} from "@/models/message.model";
+import type {Message} from "@/models/message.model";
 
 export class Channel {
 

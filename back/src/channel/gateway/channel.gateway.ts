@@ -259,7 +259,12 @@ export class ChannelGateway implements OnGatewayConnection {
                     id: user.id,
                     nickname: user.nickname,
                 })),
-                messages: this.channelsService.getMessagesForUser(channel, user),
+                messages: this.channelsService.getMessagesForUser(channel, user).map(message => ({
+                    id: message.id,
+                    content: message.text,
+                    userId: message.user.id,
+                    date: message.date,
+                })),
             });
 
             socket.emit('getChannelSuccess', channelToReturn);
@@ -298,8 +303,6 @@ export class ChannelGateway implements OnGatewayConnection {
      */
     @SubscribeMessage('sendMessage')
     async sendMessage(socket: Socket, payload: any): Promise<any> {
-
-
         let channel1;
 
         try {
@@ -332,6 +335,9 @@ export class ChannelGateway implements OnGatewayConnection {
                     date: new Date(),
             });
             console.log(user.nickname + ' send message to channel ' + channel.name);
+            socket.emit('channelSuccess', {
+                message: 'Message sent with success'
+            });
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -440,7 +446,9 @@ export class ChannelGateway implements OnGatewayConnection {
             const date = dto.date;
 
             await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
-            socket.emit('applyPunishmentSuccess');
+            socket.emit('channelSuccess', {
+                message: 'Punishment applied with success'
+            });
             console.log('applyPunishmentSuccess');
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);

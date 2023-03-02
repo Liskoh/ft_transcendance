@@ -5,11 +5,15 @@ import App from './App.vue'
 import router from './router'
 
 import './assets/main.css'
-import Vue3Notification from '@kyvg/vue3-notification'
+import Vuex from 'vuex'
+import {store} from "@/stores/store";
+import {Notyf} from "notyf";
+
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(Vue3Notification);
+app.use(store);
+app.config.globalProperties.$notyf = new Notyf()
 
 app.mount('#app')
