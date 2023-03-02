@@ -47,7 +47,7 @@ export class AuthService {
         try {
             user = await this.userService.getUserByLogin(login);
         } catch (error) {
-            user = await this.userService.saveNewUser(new LoginNicknameDto(login));
+            user = await this.userService.saveNewUser(login);
             const payload = { username: user.login, sub: user.id };
             return {
                 access_token: this.jwtService.sign(payload),

@@ -24,7 +24,7 @@ import {ChannelType} from "../enum/channel-type.enum";
         cors: {
             origin: '*',
         },
-        // namespace: 'channels'
+        namespace: 'channels'
     }
 )
 export class ChannelGateway implements OnGatewayConnection {
@@ -39,6 +39,8 @@ export class ChannelGateway implements OnGatewayConnection {
     @WebSocketServer()
     server: Server;
 
+     private sockets: Socket[] = [];
+
     /**
      * send a socket message to all user in a channel
      * @param {Channel} channel
@@ -51,9 +53,9 @@ export class ChannelGateway implements OnGatewayConnection {
             if (!channel || !channel.users)
                 return;
 
-            const connectedSockets = this.server.of('/').sockets;
+            //get all the sockets from the server:
 
-            connectedSockets.forEach(socket => {
+            this.sockets.forEach(socket => {
                 socket.emit(type, payload);
             });
 
@@ -68,6 +70,7 @@ export class ChannelGateway implements OnGatewayConnection {
         try {
             console.log('New connection: ', socket.id);
             console.log("      {+ Member}    ");
+            this.sockets.push(socket);
         } catch (ex) {
             console.log(ex);
         }
@@ -77,6 +80,7 @@ export class ChannelGateway implements OnGatewayConnection {
         try {
             console.log('New disconnection: ', socket.id);
             console.log("    {-}    ");
+            this.sockets = this.sockets.filter(s => s.id !== socket.id);
         } catch (ex) {
             console.log(ex);
         }

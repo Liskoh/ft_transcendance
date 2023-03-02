@@ -53,8 +53,8 @@ export default {
 
   created() {
     // this.setChannelSocket(SOCKET_SERVER);
-    // this.$store.commit('setChannelSocket', io('http://localhost:8000/channels'));
-    this.$store.commit('setChannelSocket', io('http://localhost:8000/'));
+    this.$store.commit('setChannelSocket', io('http://localhost:8000/channels'));
+    // this.$store.commit('setChannelSocket', io('http://localhost:8000/'));
 
 
     this.getChannelSocket.emit('getChannel', {
