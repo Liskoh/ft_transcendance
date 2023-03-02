@@ -2,7 +2,6 @@
 import {RouterLink, RouterView} from 'vue-router'
 import io from 'socket.io-client'
 import HelloWorld from './components/HelloWorld.vue'
-import {SOCKET_SERVER} from "@/consts";
 import {AbstractCommand} from "@/commands/abstract.command";
 import {InviteCommand} from "@/commands/impl/invite.command";
 import {PunishCommand} from "@/commands/impl/punish.command";

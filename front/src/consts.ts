@@ -6,7 +6,7 @@ import {PunishCommand} from "@/commands/impl/punish.command";
 import {UnPunishCommand} from "@/commands/impl/un-punish.command";
 import {SetUnsetAdminCommand} from "@/commands/impl/set-unset-admin.command";
 
-export const SOCKET_SERVER = io('http://localhost:8000/');
+// export const SOCKET_SERVER = io('http://localhost:8000/');
 
 export const COMMANDS: AbstractCommand[] = [] = [
     new InviteCommand('/invite', 'inviteUser'),

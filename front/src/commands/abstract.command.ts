@@ -1,4 +1,4 @@
-import {SOCKET_SERVER} from "@/consts";
+import {Socket} from "socket.io-client";
 
 export abstract class AbstractCommand {
     public readonly prefix: string;
@@ -9,8 +9,8 @@ export abstract class AbstractCommand {
         this.key = key;
     }
 
-    public emitCommand(object: Object): void {
-        SOCKET_SERVER.emit(this.key, object);
+    public emitCommand(object: Object, socket: Socket): void {
+        socket.emit(this.key, object);
     }
 
     public abstract getCommandData(channelId: number, commandArgs: string[]): Object;

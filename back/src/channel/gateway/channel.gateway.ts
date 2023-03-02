@@ -34,41 +34,53 @@ export class ChannelGateway implements OnGatewayConnection {
         private readonly usersService: UserService,
         // private readonly jwtService: JwtService,
     ) {
-
-        let id = 100;
-        setInterval(() => {
-            // console.log("Repeating task: ", new Date());
-            this.server.sockets.sockets.forEach((socket: Socket) => {
-                //generate random string:
-                const randomString = Math.random().toString(30).substring(1);
-                // socket.emit('message', {
-                //     id: id++,
-                //     content: randomString,
-                //     userId: 1,
-                //     date: new Date(),
-                // });
-            });
-        }, 1000);
     }
 
     @WebSocketServer()
     server: Server;
 
-    //create a map with socket and user:
-    usersMap: Map<Socket, number> = new Map<Socket, number>();
+    /**
+     * send a socket message to all user in a channel
+     * @param {Channel} channel
+     * @param {string} type
+     * @param {any} payload
+     * @returns {void}
+     */
+    emitOnChannel(channel: Channel, type: string, payload: any): void {
+        try {
+            if (!channel || !channel.users)
+                return;
 
-    // async authMiddleware(socket: Socket, next: (err?: any) => void) {
-    //     const token = socket.handshake.query.token;
-    //     if (typeof token === "string") {
-    //         const decoded = this.jwtService.verify(token);
-    //
-    //         if (decoded) {
-    //             socket['user'] = decoded;
-    //         }
-    //     }
-    //
-    //     return next();
-    // }
+            const connectedSockets = this.server.of('/').sockets;
+
+            connectedSockets.forEach(socket => {
+                socket.emit(type, payload);
+            });
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    // Override method from OnGatewayConnection
+    //TODO: Implement authentication
+    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
+        try {
+            console.log('New connection: ', socket.id);
+            console.log("      {+ Member}    ");
+        } catch (ex) {
+            console.log(ex);
+        }
+    }
+
+    async handleDisconnect(socket: any): Promise<any> {
+        try {
+            console.log('New disconnection: ', socket.id);
+            console.log("    {-}    ");
+        } catch (ex) {
+            console.log(ex);
+        }
+    }
 
     async getUserBySocket(socket: Socket): Promise<User> {
         // const userId = this.usersMap.get(socket);
@@ -85,21 +97,6 @@ export class ChannelGateway implements OnGatewayConnection {
             throw new Error('User not found')
 
         return user;
-    }
-
-    // Override method from OnGatewayConnection
-    //TODO: Implement authentication
-    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
-        try {
-            console.log('New connection: ', socket.id);
-            console.log("      =    ");
-        } catch (ex) {
-            console.log(ex);
-        }
-    }
-
-    async handleDisconnect(socket: any): Promise<any> {
-
     }
 
     @SubscribeMessage('getChannels')
@@ -274,26 +271,6 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
-    /**
-     * send a socket message to all user in a channel
-     * @param {Channel} channel
-     * @param {string} type
-     * @param {any} payload
-     * @returns {void}
-     */
-    emitOnChannel(channel: Channel, type: string, payload: any): void {
-        try {
-            if (!channel || !channel.users)
-                return;
-
-        this.server.sockets.sockets.forEach(socket => {
-            socket.emit(type, payload);
-        });
-        } catch (error) {
-            console.log(error);
-        }
-    }
-
 
     /**
      * send a message to a channel
@@ -329,15 +306,13 @@ export class ChannelGateway implements OnGatewayConnection {
                 //TODO: send message to user
             }
             this.emitOnChannel(channel, 'message', {
-                    id: 0,
-                    content: dto.text,
-                    userId: 1,
-                    date: new Date(),
+                id: 0,
+                content: dto.text,
+                userId: 1,
+                date: new Date(),
             });
             console.log(user.nickname + ' send message to channel ' + channel.name);
-            socket.emit('channelSuccess', {
-                message: 'Message sent with success'
-            });
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'message sent with success');
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -380,7 +355,8 @@ export class ChannelGateway implements OnGatewayConnection {
             await this.channelsService.joinChannel(channel, user, password);
 
             socket.emit('joinChannelSuccess');
-            console.log('joinChannelSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have joined the channel '
+                + channel.name + 'with success');
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -392,7 +368,6 @@ export class ChannelGateway implements OnGatewayConnection {
      * @param {any} payload => {id: number}
      * @returns {Promise<any>}
      */
-    //TODO: SEND SOCKET WHEN OWNER CHANGE ?
     @SubscribeMessage('leaveChannel')
     async leaveChannel(socket: Socket, payload: any): Promise<any> {
         try {
@@ -405,13 +380,21 @@ export class ChannelGateway implements OnGatewayConnection {
             await this.channelsService.leaveChannel(channel, user);
             socket.emit('leaveChannelSuccess', dto.id);
 
-            console.log('leaveChannelSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have left the channel '
+                + channel.name + 'with success');
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
 
+    /**
+     * send an error to a client
+     * @param {Socket} socket
+     * @param {string} name
+     * @param {any} error
+     * @returns {Promise<void>}
+     */
     async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
         console.log(socket.id + ' socketId send an invalid request: ' + error);
 
@@ -421,9 +404,20 @@ export class ChannelGateway implements OnGatewayConnection {
         }
 
         if (error instanceof Object) {
-            socket.emit(name, {message: "Invalid request, please check your data"});
+            socket.emit(name, {message: "Invalid request, please check your data (/help)"});
             return;
         }
+    }
+
+    /**
+     * send a success message to a client
+     * @param {Socket} socket
+     * @param {string} name
+     * @param {string} message
+     * @returns {Promise<void>}
+     */
+    async sendSuccessToClient(socket: Socket, name: string, message: string): Promise<void> {
+        socket.emit(name, {message: message});
     }
 
     /**
@@ -446,10 +440,8 @@ export class ChannelGateway implements OnGatewayConnection {
             const date = dto.date;
 
             await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
-            socket.emit('channelSuccess', {
-                message: 'Punishment applied with success'
-            });
-            console.log('applyPunishmentSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have applied a punishment to ' +
+                userToPunish.nickname + ' with success');
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -475,7 +467,8 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.cancelPunishment(channel, user, userToCancel, punishmentType);
             socket.emit('cancelPunishmentSuccess');
-            console.log('cancelPunishmentSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have canceled a punishment to ' +
+                userToCancel.nickname + ' with success');
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }

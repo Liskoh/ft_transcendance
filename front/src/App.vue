@@ -1,7 +1,5 @@
 <script setup lang="ts">
 
-import {SOCKET_SERVER} from "@/consts";
-import io from 'socket.io-client'
 
 </script>
 
@@ -13,7 +11,6 @@ import io from 'socket.io-client'
           <li><router-link to="/chat">Chat</router-link></li>
           <li><router-link to="/settings">Settings</router-link></li>
           <li><router-link to="/pong">Pong</router-link></li>
-          <li><router-link to="/testchat">testChat</router-link></li>
         </ul>
       </nav>
     </header>
