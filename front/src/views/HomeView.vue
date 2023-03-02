@@ -13,6 +13,6 @@ import PageLoad from '@/components/PageLoad.vue';
   </div>
 
   <main>
-    <PageLoad pageName="home page" />
+
   </main>
 </template>

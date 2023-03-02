@@ -1,0 +1,9 @@
+:root .t-bonus {
+	--color-text: #282828;
+	--color-text-soft: #505050;
+	--color-background: #e0e0e0;
+	--color-background-header: linear-gradient(0deg, #58C8F2 0 20%, #EDA4B2 20% 40%, #F7F7F7 40% 60%,#EDA4B2 60% 80%, #58C8F2 80% 100%);
+	--color-border-header: #8040a0;
+	--color-nav-accent: #c444b1;
+	--color-theme-button-background: linear-gradient(115deg, #F7F7F7 0 50%, #58C8F2 50% 70%,#EDA4B2 70% 100%);
+}
