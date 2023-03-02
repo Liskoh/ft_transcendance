@@ -37,6 +37,13 @@ export class ChannelController {
                 punishmentType: punishment.punishmentType,
                 endDate: punishment.endDate,
                                                                 })),
+            messages: channel.messages.map(message => ({
+                id: message.id,
+                userId: message.user.id,
+                nickname: message.user.nickname,
+                content: message.text,
+                date: message.date,
+                                                       })),
             channelType: channel.channelType,
         }))
     }

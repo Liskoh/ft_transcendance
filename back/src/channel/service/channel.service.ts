@@ -585,7 +585,7 @@ export class ChannelService {
         const messages = channel.messages;
 
         return messages.filter(m =>
-            user.blockedList.includes(m.user.id));
+            !user.blockedList.includes(m.user.id));
     }
 
     /*

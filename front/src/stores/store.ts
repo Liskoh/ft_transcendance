@@ -4,21 +4,20 @@ import {User} from "@/models/user.model";
 import {Socket} from "socket.io-client";
 import {SOCKET_SERVER} from "@/consts";
 
-const store = createStore({
-   state: {
-       joinedChannels: <Channel[]> [],
-       availableChannels: <Channel[]> [],
-       currentChannelId: 0,
-       channelSocket: <Socket | unknown> null,
-   },
+export const store = createStore({
+    state: {
+        joinedChannels: <Channel[]>[],
+        availableChannels: <Channel[]>[],
+        currentChannelId: 0,
+        currentChannel: <Channel | unknown>null,
+        channelSocket: <Socket | unknown>null,
+    },
     getters: {
         getJoinedChannels: state => state.joinedChannels,
         getAvailableChannels: state => state.availableChannels,
         getCurrentChannelId: state => state.currentChannelId,
 
-        getCurrentChannel: state => {
-            return state.joinedChannels.find(channel => channel.id === state.currentChannelId);
-        },
+        getCurrentChannel: state => state.currentChannel,
 
         getChannelSocket: state => state.channelSocket,
     },
@@ -31,9 +30,10 @@ const store = createStore({
             state.availableChannels = availableChannels;
         },
 
-        setCurrentChannelId(state, currentChannelId) {
-            state.currentChannelId = currentChannelId;
+        setCurrentChannel(state, currentChannel) {
+            state.currentChannel = currentChannel;
         },
+
 
         setChannelSocket(state) {
             state.channelSocket = SOCKET_SERVER;
