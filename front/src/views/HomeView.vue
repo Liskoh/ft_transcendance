@@ -4,6 +4,6 @@ import PageLoad from '@/components/PageLoad.vue';
 
 <template>
   <main>
-    <PageLoad pageName="home page" />
+
   </main>
 </template>

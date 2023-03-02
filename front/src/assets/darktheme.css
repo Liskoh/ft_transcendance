@@ -1,0 +1,9 @@
+:root .t-dark {
+	--color-text: #f8f8f8;
+	--color-text-soft: #b0b0b0;
+	--color-background: #282828;
+	--color-background-header: linear-gradient(45deg, #404040, #808080);
+	--color-border-header: #602060;
+	--color-nav-accent: #c444b1;
+	--color-theme-button-background: linear-gradient(115deg, #806080 0 50%, #a0a0a0 50% 100%);
+}
