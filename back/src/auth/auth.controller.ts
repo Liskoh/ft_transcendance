@@ -73,7 +73,7 @@ export class AuthController {
 		let user = await this.userService.getUserByLogin(login);
 
 		if (!user)
-			user = await this.userService.saveNewUser(new LoginNicknameDto(login));
+			user = await this.userService.saveNewUser(login);
 		return `Hello ${user}`
 	}
 }

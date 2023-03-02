@@ -52,11 +52,24 @@ export default {
   },
 
   created() {
-    // this.setChannelSocket(SOCKET_SERVER);
-    // this.$store.commit('setChannelSocket', io('http://localhost:8000/channels'));
-    this.$store.commit('setChannelSocket', io('http://localhost:8000/'));
+    console.log('created token ' + localStorage.getItem('token'));
+    // this.$store.commit('setChannelSocket', io('http://localhost:8000/channels'), {
+    //       // transportOptions: {
+    //       //   polling: {
+    //           extraHeaders: {Authorization: 'Bearer ' + localStorage.getItem('token')}
+    //         // },
+    //       // }
+    //     }
+    // );
+
+    this.$store.commit('setChannelSocket', io('http://localhost:8000/channels', {
+      extraHeaders: {
+        Authorization: 'Bearer ' + localStorage.getItem('token')
+      }
+    }));
 
 
+    console.log(localStorage.getItem('token'));
     this.getChannelSocket.emit('getChannel', {
       id: 1,
     })

@@ -2,6 +2,7 @@ import {Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn
 import {Channel} from "../../channel/entity/channel.entity";
 import {MatchHistory} from "../../game/entity/match-history.entity";
 import {UserStatus} from "../enum/user-status.enum";
+import {MAX_LOGIN_LENGTH} from "../../consts";
 
 
 @Entity({name: "users"})
@@ -18,7 +19,7 @@ export class User {
     @Column( {unique: true, length: 8} )
     login: string;
 
-    @Column( {unique: true} )
+    @Column( {unique: true})
     nickname: string;
 
     @Column({default: UserStatus.OFFLINE})

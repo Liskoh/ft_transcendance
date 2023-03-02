@@ -25,6 +25,14 @@ export class UserService {
         return await this.usersRepository.find();
     }
 
+    async saveUser(user: User): Promise<User> {
+        try {
+            return await this.usersRepository.save(user);
+        } catch (e) {
+            return null;
+        }
+    }
+
     /**
      find and return user by id
      * @param {number} id
@@ -121,37 +129,16 @@ export class UserService {
 
     /**
      * save and return new user (using dto)
-     * @param {LoginNicknameDto} dto => {login: string}
+     * @param {string} login => {login: string}
      * @returns {Promise<User>}
      */
-    async saveNewUser(dto: LoginNicknameDto): Promise<User> {
-        try {
-            await validate(dto);
-        } catch (errors) {
-            throw new HttpException(
-                errors,
-                HttpStatus.BAD_REQUEST
-            );
-        }
-        let existingUser;
+    async saveNewUser(login: string): Promise<User> {
+        const user = new User(login);
 
-        //if user is unique
-        try {
-            existingUser = await this.getUserByLoginOrNickname(dto.login);
-        } catch (error) {
-            existingUser = null;
-        }
+        //generate random uid:
 
-        if (existingUser !== null)
-            throw new HttpException(
-                "User with this login already exists",
-                HttpStatus.BAD_REQUEST
-            );
 
-        const user = new User(dto.login);
-
-        await this.usersRepository.save(user);
-        return user;
+        return await this.usersRepository.save(user);
     }
 
     /**
@@ -250,18 +237,6 @@ export class UserService {
 
             return await this.usersRepository.save(from);
     }
-
-    // getChannelCount(user: User): number {
-    //     let count = 0;
-    //
-    //     for (const channel of user.channel) {
-    //         if (channel.channelType !== ChannelType.DM) {
-    //             count++;
-    //         }
-    //     }
-    //
-    //     return count;
-    // }
 
     /**
      * check if two user are the same

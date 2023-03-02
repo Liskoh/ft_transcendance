@@ -296,11 +296,11 @@ export class ChannelService {
      */
     async inviteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
 
-        if (channel.channelType !== ChannelType.PRIVATE)
-            throw new HttpException(
-                'You can not invite someone to public channel',
-                HttpStatus.BAD_REQUEST
-            );
+        // if (channel.channelType !== ChannelType.PRIVATE)
+        //     throw new HttpException(
+        //         'You can not invite someone to public channel',
+        //         HttpStatus.BAD_REQUEST
+        //     );
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
@@ -565,11 +565,17 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        if (this.isOnCoolDown(user.id))
+        const coolDownTime: number = this.getCoolDownTime(user.id);
+
+        if (coolDownTime > 0) {
+            const seconds = Math.floor(coolDownTime / 1000);
+            const milliseconds = coolDownTime - seconds * 1000;
             throw new HttpException(
-                'You must wait before sending another message',
+                'You must wait ' + seconds + '.' + milliseconds +
+                ' seconds before sending another message',
                 HttpStatus.FORBIDDEN
             );
+        }
 
         const message = new Message(user, text);
         channel.messages.push(message);
@@ -705,6 +711,19 @@ export class ChannelService {
 
     isOwner(channel: Channel, user: User) {
         return channel.owner.id === user.id;
+    }
+
+    getCoolDownTime(userId: number): number {
+        const lastMessage = this.coolDownMap.get(userId);
+        const now = new Date();
+        if (lastMessage) {
+            const diff = now.getTime() - lastMessage.getTime();
+            if (diff < CHAT_COOLDOWN_IN_MILLISECONDS) {
+                return CHAT_COOLDOWN_IN_MILLISECONDS - diff;
+            }
+        }
+        this.coolDownMap.set(userId, now);
+        return 0;
     }
 
     isOnCoolDown(userId: number): boolean {
