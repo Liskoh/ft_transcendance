@@ -2,7 +2,6 @@ import {createStore} from "vuex";
 import {Channel} from "@/models/channel.model";
 import {User} from "@/models/user.model";
 import {Socket} from "socket.io-client";
-import {SOCKET_SERVER} from "@/consts";
 
 export const store = createStore({
     state: {
@@ -35,8 +34,8 @@ export const store = createStore({
         },
 
 
-        setChannelSocket(state) {
-            state.channelSocket = SOCKET_SERVER;
+        setChannelSocket(state, channelSocket) {
+            state.channelSocket = channelSocket;
         }
     }
 });

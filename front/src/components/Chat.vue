@@ -19,11 +19,12 @@
 import {mapGetters, mapMutations} from "vuex";
 import { Message } from "@/models/message.model";
 import { Channel } from "@/models/channel.model";
-import {COMMANDS, getCommandByName, SOCKET_SERVER} from "@/consts";
+import {COMMANDS, getCommandByName} from "@/consts";
 import {AbstractCommand} from "@/commands/abstract.command";
 import {store} from "@/stores/store";
 import {Notyf} from "notyf";
 import 'notyf/notyf.min.css';
+import io, {Socket} from "socket.io-client";
 
 export default {
   name: "Chat",
@@ -51,18 +52,27 @@ export default {
   },
 
   created() {
+    // this.setChannelSocket(SOCKET_SERVER);
+    // this.$store.commit('setChannelSocket', io('http://localhost:8000/channels'));
+    this.$store.commit('setChannelSocket', io('http://localhost:8000/'));
 
-    // SOCKET_SERVER.emit('getChannel', {
-    //   channelId: 1,
-    // })
 
-    SOCKET_SERVER.emit('getChannel', {
+    this.getChannelSocket.emit('getChannel', {
       id: 1,
     })
-
     console.log('created');
   },
+  beforeRouteLeave(to, from, next) {
+    this.getChannelSocket.disconnect();
+    next();
+  },
   computed: {
+    getChannelSocket() {
+      return this.$store.getters.getChannelSocket;
+    },
+    setChannelSocket(socket) {
+      this.$store.commit('setChannelSocket', socket);
+    },
     // // ...mapGetters(["getCurrentChannelId"]),
     // ...mapGetters(["getChannelSocket"]),
     // ...mapMutations(["setChannelSocket"]),
@@ -81,7 +91,7 @@ export default {
 
   mounted() {
 
-    SOCKET_SERVER.on('getChannelSuccess', (data) => {
+    this.getChannelSocket.on('getChannelSuccess', (data) => {
           const channel = new Channel(
               data.id,
               data.name,
@@ -97,15 +107,15 @@ export default {
         }
     );
 
-    SOCKET_SERVER.on('channelError', (data) => {
+    this.getChannelSocket.on('channelError', (data) => {
       this.showNotification(data, 'error');
     });
 
-    SOCKET_SERVER.on('channelSuccess', (data) => {
+    this.getChannelSocket.on('channelSuccess', (data) => {
       this.showNotification(data, 'success');
     });
 
-    SOCKET_SERVER.on('message', (data) => {
+    this.getChannelSocket.on('message', (data) => {
       const message = new Message(
           data.id,
           data.content,
@@ -133,7 +143,7 @@ export default {
         const command = getCommandByName(commandName);
         // this.newMessage = "";
         if (command) {
-          command.emitCommand(command.getCommandData(1, commandArgs));
+          command.emitCommand(command.getCommandData(1, commandArgs), this.getChannelSocket);
           return;
         }
 
@@ -141,7 +151,7 @@ export default {
         return;
       }
 
-      SOCKET_SERVER.emit('sendMessage', {
+      this.getChannelSocket.emit('sendMessage', {
         channelId: 1,
         text: this.newMessage,
       });
