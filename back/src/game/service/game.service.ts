@@ -126,8 +126,9 @@ export class GameService {
     /*                                          */
     /*                  DUELS                   */
     /*                                          */
-
     /********************************************/
+
+
 
     getWaitingDuelsForUser(user: User): Duel[] {
         return this.duels.filter(duel => duel.secondUserId === user.id);
