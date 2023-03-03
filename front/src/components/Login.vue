@@ -34,23 +34,13 @@ export default {
 
           if (dataRegister.status === HttpStatusCode.Ok) {
             console.log("success");
-            localStorage.setItem("token", dataRegister.token);
+            localStorage.setItem("token", dataRegister.access_token);
             return;
           }
-
-          const login = await fetch(
-              "http://localhost:8000/auth/login",
-              requestOptions
-          );
-          const dataLogin = await login.json();
-          if (dataLogin.status === HttpStatusCode.Ok) {
-            localStorage.setItem("token", dataLogin.access_token);
-            console.log(localStorage.getItem("token"));
-            return;
-          }
-        } catch (e) {
-          console.log(e);
+        } catch (error) {
+          console.log(error);
         }
+
       },
     };
   },

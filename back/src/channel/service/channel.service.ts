@@ -59,30 +59,9 @@ export class ChannelService {
         return channel;
     }
 
-    //TODO: check version typeorm and fix this
-    /**
-     * Get channel by id with filtered data (for socket)
-     * @param {number} id
-     * @param {string[]} requiredFields
-     * @returns {Promise<Channel>}
-     */
-    // async getFilteredChannelById(id: number, select: string[]): Promise<Channel> {
-    //
-    //     // const options = { select };
-    //     // this.channelsRepository.
-    //     // const channel = await this.channelsRepository.findOne({ id }, {
-    //     //     password: false,
-    //     //     punishments: false
-    //     // });
-    //     //
-    //     // if (!channel)
-    //     //     throw new HttpException(
-    //     //         'Channel not found',
-    //     //         HttpStatus.NOT_FOUND
-    //     //     );
-    //     //
-    //     // return channel;
-    // }
+    async saveChannel(channel: Channel): Promise<Channel> {
+        return await this.channelsRepository.save(channel);
+    }
 
     /**
      * create private channel with another user
@@ -115,8 +94,7 @@ export class ChannelService {
         return await this.channelsRepository.save(channel);
     }
 
-    async getAvailableChannelsByUser(user: User): Promise<Channel[]> {
-        let channels = await this.getChannels();
+    async getAvailableChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
         channels = channels.filter(c => c.channelType === ChannelType.PUBLIC &&
             !this.isMember(c, user) &&
             !this.isPunished(c, user, PunishmentType.BAN));
@@ -124,10 +102,16 @@ export class ChannelService {
         return channels;
     }
 
-    async getJoinedChannelsByUser(user: User): Promise<Channel[]> {
-        let channels = await this.getChannels();
+    async getJoinedChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
         channels = channels.filter(c => this.isMember(c, user) &&
             !this.isPunished(c, user, PunishmentType.BAN));
+
+        return channels;
+    }
+
+    async getDirectChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
+        channels = channels.filter(c => this.isDirectChannel(c) &&
+            this.isMember(c, user));
 
         return channels;
     }
