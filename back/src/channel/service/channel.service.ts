@@ -127,6 +127,9 @@ export class ChannelService {
     async createChannel(owner: User, type: ChannelType, name?: string, password?: string): Promise<Channel> {
         let channel = new Channel(owner, type);
 
+        if (!type)
+            type = ChannelType.PUBLIC;
+
         const channels: Channel[] = await this.channelsRepository
             .createQueryBuilder("channel")
             .leftJoinAndSelect("channel.owner", "owner")
@@ -518,7 +521,7 @@ export class ChannelService {
      * @param {string} text
      * @returns {Promise<User[]>}
      */
-    async sendDirectMessage(sender: User, receiver: User, text: string): Promise<User []> {
+    async sendDirectMessage(sender: User, receiver: User, text: string): Promise<Channel> {
         const channels = await this.getChannels();
         let channel = this.getDirectChannel(sender, receiver, channels);
 
@@ -526,7 +529,14 @@ export class ChannelService {
             channel = await this.createDirectMessageChannel(sender, receiver, channels);
         }
 
-        return await this.sendMessage(channel, sender, text);
+        if (this.usersService.isBlockedByUser(receiver, sender) || this.usersService.isBlockedByUser(sender, receiver))
+            throw new HttpException(
+                'You can not send message to this user',
+                HttpStatus.FORBIDDEN
+            );
+
+        await this.sendMessage(channel, sender, text);
+        return channel;
     }
 
     /**

@@ -48,16 +48,32 @@ export class ChannelGateway implements OnGatewayConnection {
      * @param {Channel} channel
      * @param {string} type
      * @param {any} payload
-     * @returns {void}
+     * @param {User[]} users
+     * @returns {Promise<void>}
      */
-    emitOnChannel(channel: Channel, type: string, payload: any): void {
+    emitOnChannel(channel: Channel, type: string, payload: any, users?: User[]): void {
         try {
             if (!channel || !channel.users)
                 return;
 
-            //get all the sockets from the server:
             this.usersMap.forEach((value, key) => {
-                key.emit(type, payload);
+
+                //in case if we need to send message to specific users
+                if (users) {
+                    users.forEach(user => {
+                        if (user.login === value)
+                            key.emit(type, payload);
+                    });
+                    return;
+                }
+
+                //we need to send message to all users in channel
+                channel.users.forEach(user => {
+                    if (user.login === value) {
+                        key.emit(type, payload);
+                    }
+                    return;
+                });
             });
 
         } catch (error) {
@@ -139,13 +155,14 @@ export class ChannelGateway implements OnGatewayConnection {
         try {
             const user = await this.getUserBySocket(socket);
             const channels = await this.channelsService.getAvailableChannelsByUser(user, dataChannels);
+            console.log(channels.length);
 
             const joinAbleChannels = [];
 
             for (const channel of channels)
                 joinAbleChannels.push(this.getChannelToSend(channel, user));
 
-            socket.emit('availableChannels', joinAbleChannels);
+            socket.emit('joinableChannels', joinAbleChannels);
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -202,8 +219,9 @@ export class ChannelGateway implements OnGatewayConnection {
             const password = dto.password;
 
             const channel = await this.channelsService.createChannel(user, channelType, name, password);
-            console.log('createChannelSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'Channel ' + channel.name + ' created');
         } catch (error) {
+            console.log(error);
             await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
@@ -282,6 +300,12 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
 
+    /**
+     * get all data from a channel
+     * @param {Socket} socket
+     * @param {any} payload => {id: number}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('getChannel')
     async getChannel(socket: Socket, payload: any): Promise<any> {
         try {
@@ -334,13 +358,18 @@ export class ChannelGateway implements OnGatewayConnection {
             //return all users who can see the message
             const users = await this.channelsService.sendMessage(channel, user, dto.text);
 
-            this.emitOnChannel(channel, 'message', {
-                id: 0,
-                content: dto.text,
-                userId: 1,
-                nickname: user.nickname,
-                date: new Date(),
-            });
+            this.emitOnChannel(
+                channel,
+                'message',
+                {
+                    id: 0,
+                    content: dto.text,
+                    userId: 1,
+                    nickname: user.nickname,
+                    date: new Date(),
+                },
+                users
+            );
             console.log(user.nickname + ' send message to channel ' + channel.name);
             await this.sendSuccessToClient(socket, 'channelSuccess', 'message sent with success');
         } catch (error) {
@@ -348,6 +377,12 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /**
+     * send a direct message to a user
+     * @param {Socket} socket
+     * @param {any} payload => {channelId: number, text: string}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('sendDirectMessage')
     async sendDirectMessage(socket: Socket, payload: any): Promise<any> {
         try {
@@ -356,11 +391,25 @@ export class ChannelGateway implements OnGatewayConnection {
 
             const user = await this.getUserBySocket(socket);
             const targetUser = await this.usersService.getUserById(dto.channelId);
+            const channel = await this.channelsService.sendDirectMessage(user, targetUser, dto.text);
 
-            const users = await this.channelsService.sendDirectMessage(user, targetUser, dto.text);
-            for (const user of users) {
-                //TODO: send message to user
+            this.emitOnChannel(
+                channel,
+                'message',
+                {
+                    id: 0,
+                    content: dto.text,
+                    userId: 1,
+                    nickname: user.nickname,
+                    date: new Date(),
+                },
+            );
+
+            const targetSocket = await this.getSocketsByUser(targetUser);
+            if (targetSocket) {
+                await this.sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a message!');
             }
+
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
@@ -540,6 +589,12 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    /**
+     * get a channel who can be sent to a client
+     * @param {Channel} channel
+     * @param {User} user
+     * @returns {any}
+     */
     getChannelToSend(channel: Channel, user: User): any {
         const channelToReturn = ({
             id: channel.id,

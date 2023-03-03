@@ -1,4 +1,4 @@
-import {IsEnum, IsOptional, IsString, MinLength} from "class-validator";
+import {IsEnum, IsNotEmpty, IsOptional, IsString, MinLength} from "class-validator";
 import {MIN_CHANNEL_NAME_LENGTH} from "../../consts";
 import {ChannelType} from "../enum/channel-type.enum";
 
@@ -15,6 +15,8 @@ export class CreateChannelDto {
     name?: string;
 
     @IsEnum(ChannelType)
+    @IsString()
+    @IsNotEmpty()
     channelType: ChannelType;
 
     @IsString()

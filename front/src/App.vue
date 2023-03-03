@@ -10,6 +10,7 @@
         <ul>
           <li><router-link to="/chat">Chat</router-link></li>
           <li><router-link to="/login">Login</router-link></li>
+          <li><router-link to="/upload">Upload</router-link></li>
           <li><router-link to="/settings">Settings</router-link></li>
           <li><router-link to="/pong">Pong</router-link></li>
         </ul>

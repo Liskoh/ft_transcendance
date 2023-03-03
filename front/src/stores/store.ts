@@ -7,14 +7,14 @@ export const store = createStore({
     state: {
         joinedChannels: <Channel[]>[],
         availableChannels: <Channel[]>[],
-        currentChannelId: 0,
+        directChannels: <Channel[]>[],
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
     },
     getters: {
         getJoinedChannels: state => state.joinedChannels,
         getAvailableChannels: state => state.availableChannels,
-        getCurrentChannelId: state => state.currentChannelId,
+        getDirectChannels: state => state.directChannels,
 
         getCurrentChannel: state => state.currentChannel,
 
@@ -27,6 +27,10 @@ export const store = createStore({
 
         setAvailableChannels(state, availableChannels) {
             state.availableChannels = availableChannels;
+        },
+
+        setDirectChannels(state, directChannels) {
+            state.directChannels = directChannels;
         },
 
         setCurrentChannel(state, currentChannel) {
