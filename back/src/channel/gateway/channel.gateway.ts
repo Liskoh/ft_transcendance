@@ -324,17 +324,19 @@ export class ChannelGateway implements OnGatewayConnection {
 
             const channel = await this.channelsService.getChannelById(dto.channelId);
 
+            if (!this.channelsService.isMember(channel, user)) {
+                channel.users.push(user);
+                await this.channelsService.saveChannel(channel);
+            }
+
             //return all users who can see the message
             const users = await this.channelsService.sendMessage(channel, user, dto.text);
 
-            //get all users who can see the message
-            for (const user of users) {
-                //TODO: send message to user
-            }
             this.emitOnChannel(channel, 'message', {
                 id: 0,
                 content: dto.text,
                 userId: 1,
+                nickname: user.nickname,
                 date: new Date(),
             });
             console.log(user.nickname + ' send message to channel ' + channel.name);
@@ -422,7 +424,6 @@ export class ChannelGateway implements OnGatewayConnection {
      * @returns {Promise<void>}
      */
     async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
-        console.log(socket.id + ' socketId send an invalid request: ' + error);
 
         if (error instanceof HttpException) {
             socket.emit(name, error);
@@ -519,8 +520,19 @@ export class ChannelGateway implements OnGatewayConnection {
             const giveAdminRole = dto.giveAdminRole;
 
             await this.channelsService.toggleAdminRole(channel, user, userToToggle, giveAdminRole);
-            socket.emit('toggleAdminRoleSuccess');
-            console.log('toggleAdminRoleSuccess');
+
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have toggled admin role to ' +
+                userToToggle.nickname + ' with success');
+
+            const userToToggleSocket = await this.getSocketsByUser(userToToggle);
+
+            if (userToToggleSocket) {
+                if (giveAdminRole) {
+                    await this.sendSuccessToClient(userToToggleSocket, 'channelSuccess', 'You have been given admin role in ' + channel.name)
+                } else {
+                    await this.sendErrorToClient(userToToggleSocket, 'channelError', 'You have been removed from admin role in ' + channel.name)
+                }
+            }
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }

@@ -133,9 +133,10 @@ export default {
           data.id,
           data.content,
           data.userId,
+          data.nickname,
           data.date
       );
-
+      message.content = data.nickname + ': ' + message.content;
       this.currentChannelMessages.push(message);
       console.log(message);
       this.$forceUpdate();
