@@ -94,8 +94,7 @@ export class ChannelService {
         return await this.channelsRepository.save(channel);
     }
 
-    async getAvailableChannelsByUser(user: User): Promise<Channel[]> {
-        let channels = await this.getChannels();
+    async getAvailableChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
         channels = channels.filter(c => c.channelType === ChannelType.PUBLIC &&
             !this.isMember(c, user) &&
             !this.isPunished(c, user, PunishmentType.BAN));
@@ -103,10 +102,16 @@ export class ChannelService {
         return channels;
     }
 
-    async getJoinedChannelsByUser(user: User): Promise<Channel[]> {
-        let channels = await this.getChannels();
+    async getJoinedChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
         channels = channels.filter(c => this.isMember(c, user) &&
             !this.isPunished(c, user, PunishmentType.BAN));
+
+        return channels;
+    }
+
+    async getDirectChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
+        channels = channels.filter(c => this.isDirectChannel(c) &&
+            this.isMember(c, user));
 
         return channels;
     }

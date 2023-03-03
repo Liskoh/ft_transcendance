@@ -77,11 +77,13 @@ export class AuthService {
             }
         }
 
-        return new HttpException(
-            'user already exist',
-            HttpStatus.BAD_REQUEST
-        );
-
+        if (user) {
+            const payload = {username: user.login, sub: user.id};
+            return {
+                status: HttpStatus.OK,
+                access_token: this.jwtService.sign(payload),
+            }
+        }
     }
 
     async login(login: string) {

@@ -124,49 +124,65 @@ export class ChannelGateway implements OnGatewayConnection {
     @SubscribeMessage('getChannels')
     async getChannels(socket: Socket, payload: any): Promise<any> {
         try {
-            await this.getJoinableChannels(socket, payload);
-            await this.getJoinedChannels(socket, payload);
+            const channels: Channel[] = await this.channelsService.getChannels();
+
+            await this.sendJoinedChannels(socket, channels);
+            await this.sendJoinAbleChannels(socket, channels);
+            await this.sendDirectChannels(socket, channels);
         } catch (error) {
-            socket.emit('channelError', error);
+
         }
     }
 
-    @SubscribeMessage('getJoinableChannels')
-    async getJoinableChannels(socket: Socket, payload: any): Promise<any> {
+
+    async sendJoinAbleChannels(socket: Socket, dataChannels: Channel[]): Promise<any> {
         try {
             const user = await this.getUserBySocket(socket);
-            const channels = await this.channelsService.getAvailableChannelsByUser(user);
+            const channels = await this.channelsService.getAvailableChannelsByUser(user, dataChannels);
 
-            const channelList = channels.map(channel => ({
-                id: channel.id,
-                name: channel.name,
-                channelType: channel.channelType,
-            }));
+            const joinAbleChannels = [];
 
-            socket.emit('availableChannels', channelList);
+            for (const channel of channels)
+                joinAbleChannels.push(this.getChannelToSend(channel, user));
+
+            socket.emit('availableChannels', joinAbleChannels);
         } catch (error) {
-
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
-    @SubscribeMessage('getJoinedChannels')
-    async getJoinedChannels(socket: Socket, payload: any): Promise<any> {
+    async sendJoinedChannels(socket: Socket, dataChannels: Channel[]): Promise<any> {
         try {
             const user = await this.getUserBySocket(socket);
-            const channels = await this.channelsService.getJoinedChannelsByUser(user);
+            const channels = await this.channelsService.getJoinedChannelsByUser(user, dataChannels);
 
-            const channelList = channels.map(channel => ({
-                id: channel.id,
-                name: channel.name,
-                password: (channel.password !== null),
-                channelType: channel.channelType,
-            }));
+            const joinedChannels = [];
 
-            socket.emit('joinedChannels', channelList);
+            for (const channel of channels)
+                joinedChannels.push(this.getChannelToSend(channel, user));
+
+            socket.emit('joinedChannels', joinedChannels);
         } catch (error) {
-
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
+
+    async sendDirectChannels(socket: Socket, dataChannels: Channel[]): Promise<any> {
+        try {
+            const user = await this.getUserBySocket(socket);
+            const channels = await this.channelsService.getDirectChannelsByUser(user, dataChannels);
+
+            const joinedChannels = [];
+
+            for (const channel of channels)
+                joinedChannels.push(this.getChannelToSend(channel, user));
+
+            socket.emit('directChannels', joinedChannels);
+        } catch (error) {
+            await this.sendErrorToClient(socket, 'channelError', error);
+        }
+    }
+
 
     /**
      * create a new channel
@@ -275,21 +291,7 @@ export class ChannelGateway implements OnGatewayConnection {
             const user = await this.getUserBySocket(socket);
             const channel = await this.channelsService.getChannelById(dto.id);
 
-            const channelToReturn = ({
-                id: channel.id,
-                name: channel.name,
-                channelType: channel.channelType,
-                users: channel.users.map(user => ({
-                    id: user.id,
-                    nickname: user.nickname,
-                })),
-                messages: this.channelsService.getMessagesForUser(channel, user).map(message => ({
-                    id: message.id,
-                    content: message.text,
-                    userId: message.user.id,
-                    date: message.date,
-                })),
-            });
+            const channelToReturn = this.getChannelToSend(channel, user);
 
             socket.emit('getChannelSuccess', channelToReturn);
         } catch (error) {
@@ -536,6 +538,27 @@ export class ChannelGateway implements OnGatewayConnection {
         } catch (error) {
             await this.sendErrorToClient(socket, 'channelError', error);
         }
+    }
+
+    getChannelToSend(channel: Channel, user: User): any {
+        const channelToReturn = ({
+            id: channel.id,
+            name: channel.name,
+            channelType: channel.channelType,
+            users: channel.users.map(user => ({
+                id: user.id,
+                nickname: user.nickname,
+            })),
+            password: this.channelsService.hasPassword(channel),
+            messages: this.channelsService.getMessagesForUser(channel, user).map(message => ({
+                id: message.id,
+                content: message.text,
+                userId: message.user.id,
+                date: message.date,
+            })),
+        });
+
+        return channelToReturn;
     }
 
 }

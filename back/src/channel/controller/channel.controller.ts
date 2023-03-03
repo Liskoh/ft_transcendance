@@ -48,27 +48,27 @@ export class ChannelController {
         }))
     }
 
-    @Get('me')
-    async getMyChannels(): Promise<any> {
-        const user = await this.usersService.getUserById(1);
-        const channels = await this.channelsService.getJoinedChannelsByUser(user);
-
-        console.log("dsfsfsdfsdf " + user.id);
-        // return channels;
-        return channels.map(channel => ({
-            id: channel.id,
-            name: channel.name,
-            password: channel.password !== null,
-
-            users: channel.users.map(user => ({
-                id: user.id,
-                login: user.login,
-                nickname: user.nickname,
-                status: user.status,
-            })),
-
-            channelType: channel.channelType,
-        }))
-    }
+    // @Get('me')
+    // async getMyChannels(): Promise<any> {
+    //     const user = await this.usersService.getUserById(1);
+    //     const channels = await this.channelsService.getJoinedChannelsByUser(user);
+    //
+    //     console.log("dsfsfsdfsdf " + user.id);
+    //     // return channels;
+    //     return channels.map(channel => ({
+    //         id: channel.id,
+    //         name: channel.name,
+    //         password: channel.password !== null,
+    //
+    //         users: channel.users.map(user => ({
+    //             id: user.id,
+    //             login: user.login,
+    //             nickname: user.nickname,
+    //             status: user.status,
+    //         })),
+    //
+    //         channelType: channel.channelType,
+    //     }))
+    // }
 
 }
