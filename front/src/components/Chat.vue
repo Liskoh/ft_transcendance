@@ -1,24 +1,79 @@
 <template>
-  <div>
-    <h1>Chat</h1>
+  <div class="container">
+    <div class="channels-column">
+      <div class="channels">
+        ----------------- Joined channels -----------------
+        <div v-for="channel in joinedChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
+        </div>
+      </div>
+      ----------------- Direct channels -----------------
+      <div class="channels">
+        <div v-for="channel in directChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
+        </div>
+      </div>
+      <div class="channels">
+        ----------------- Available channels -----------------
+        <div v-for="channel in availableChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
+        </div>
+      </div>
+      <button @click="createChannel">Create Channel</button>
+    </div>
 
-    <div>
+    <div class="messages">
       <div v-for="message in currentChannelMessages" :key="message.id">
         {{ message.content }}
       </div>
-    </div>
 
-    <form @submit.prevent="sendMessage">
-      <input type="text" v-model="newMessage" placeholder="Type your message...">
-      <button type="submit">Send</button>
-    </form>
+      <form @submit.prevent="sendMessage">
+        <input type="text" v-model="newMessage">
+        <button type="submit">Send</button>
+      </form>
+    </div>
   </div>
 </template>
 
-<script>
+<style>
+.container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.channels-column {
+  flex-basis: 30%;
+}
+
+.messages-column {
+  flex-basis: 70%;
+}
+
+.channels {
+  margin-bottom: 10px;
+}
+
+.channel-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leave-button {
+  margin-left: auto;
+}
+</style>
+
+
+<script lang="ts">
 import {mapGetters, mapMutations} from "vuex";
-import { Message } from "@/models/message.model";
-import { Channel } from "@/models/channel.model";
+import {Message} from "@/models/message.model";
+import {Channel} from "@/models/channel.model";
 import {COMMANDS, getCommandByName} from "@/consts";
 import {AbstractCommand} from "@/commands/abstract.command";
 import {store} from "@/stores/store";
@@ -31,7 +86,7 @@ export default {
   store,
 
   setup() {
-    const notyf = new Notyf({
+    const notyf: Notyf = new Notyf({
       duration: 2500,
       position: {
         x: 'right',
@@ -39,12 +94,13 @@ export default {
       }
     });
 
-    const showNotification = (message, type) => {
-      if (type === 'success')
+    const showNotification = (message: string, type: 'success' | 'error'): void => {
+      if (type === 'success') {
         notyf.success(message);
-      else
+      } else {
         notyf.error(message);
-    }
+      }
+    };
 
     return {
       showNotification
@@ -53,14 +109,6 @@ export default {
 
   created() {
     console.log('created token ' + localStorage.getItem('token'));
-    // this.$store.commit('setChannelSocket', io('http://localhost:8000/channels'), {
-    //       // transportOptions: {
-    //       //   polling: {
-    //           extraHeaders: {Authorization: 'Bearer ' + localStorage.getItem('token')}
-    //         // },
-    //       // }
-    //     }
-    // );
 
     this.$store.commit('setChannelSocket', io('http://localhost:8000/channels', {
       extraHeaders: {
@@ -68,11 +116,8 @@ export default {
       }
     }));
 
-
-    console.log(localStorage.getItem('token'));
-    this.getChannelSocket.emit('getChannel', {
-      id: 1,
-    })
+    this.getChannelSocket.emit('getChannels');
+    console.log('get channels with success');
     console.log('created');
   },
   beforeRouteLeave(to, from, next) {
@@ -86,36 +131,48 @@ export default {
     setChannelSocket(socket) {
       this.$store.commit('setChannelSocket', socket);
     },
-    // // ...mapGetters(["getCurrentChannelId"]),
-    // ...mapGetters(["getChannelSocket"]),
-    // ...mapMutations(["setChannelSocket"]),
-    // ...mapGetters(["getCurrentChannel"]),
-    // ...mapMutations(["setCurrentChannel"]),
-    currentChannelMessages() {
-
-      return [];
+    joinedChannels(): Channel[] {
+      return this.$store.getters.getJoinedChannels;
+    },
+    availableChannels(): Channel[] {
+      return this.$store.getters.getAvailableChannels;
+    },
+    directChannels(): Channel[] {
+      return this.$store.getters.getDirectChannels;
+    },
+    channelMessages(): Message[] {
+      return this.$store.getters.getCurrentChannel.messages;
+    },
+    createChannel() {
+      const randomName = Math.random().toString(36).substring(7);
+      this.getChannelSocket.emit('createChannel', {
+        name: randomName,
+      });
+      this.getChannelSocket.emit('getChannels');
+      console.log('create channel with success');
     },
   },
   data() {
     return {
       newMessage: "",
+      currentChannelMessages() {
+        return [];
+      },
     };
   },
 
   mounted() {
 
     this.getChannelSocket.on('getChannelSuccess', (data) => {
-          const channel = new Channel(
-              data.id,
-              data.name,
-              data.messages
-          );
+          const channel = data;
+          this.$store.commit('setCurrentChannel', channel);
 
-          console.log(channel);
+          const channelFromStore = this.$store.getters.getCurrentChannel;
+          console.log('channel from store ' + channelFromStore.name);
+          if (channelFromStore)
+            this.currentChannelMessages = channelFromStore.messages;
 
-          for (const message of channel.messages) {
-            this.currentChannelMessages.push(message);
-          }
+
           this.$forceUpdate();
         }
     );
@@ -128,6 +185,27 @@ export default {
       this.showNotification(data, 'success');
     });
 
+    this.getChannelSocket.on('channelInfo', (data) => {
+      this.showNotification(data, 'info');
+    });
+
+    //channels data:
+    this.getChannelSocket.on('joinableChannels', (data) => {
+      this.$store.commit('setAvailableChannels', data);
+      this.$forceUpdate();
+    });
+
+    this.getChannelSocket.on('joinedChannels', (data) => {
+      this.$store.commit('setJoinedChannels', data);
+      this.$forceUpdate();
+    });
+
+    this.getChannelSocket.on('directChannels', (data) => {
+      this.$store.commit('setDirectChannels', data);
+      this.$forceUpdate();
+    });
+
+
     this.getChannelSocket.on('message', (data) => {
       const message = new Message(
           data.id,
@@ -136,7 +214,7 @@ export default {
           data.nickname,
           data.date
       );
-      message.content = data.nickname + ': ' + message.content;
+      // message.content = data.nickname + ': ' + message.content;
       this.currentChannelMessages.push(message);
       console.log(message);
       this.$forceUpdate();
@@ -145,6 +223,22 @@ export default {
   },
 
   methods: {
+    joinChannel(id: number, password?: string) {
+      this.getChannelSocket.emit('joinChannel', {
+        id: id,
+        password: password
+      });
+      this.getChannelSocket.emit('getChannels');
+      console.log('join channel with success');
+    },
+
+    selectChannel(channelId: number) {
+      console.log('select channel ' + channelId);
+      this.getChannelSocket.emit('getChannel', {
+        id: channelId,
+      });
+      this.joinChannel(channelId);
+    },
     sendMessage() {
       if (!this.newMessage)
         return;
@@ -165,8 +259,15 @@ export default {
         return;
       }
 
+      const channel = this.$store.getters.getCurrentChannel;
+
+      if (!channel) {
+        this.showNotification('You are not in any channel', 'error');
+        return;
+      }
+
       this.getChannelSocket.emit('sendMessage', {
-        channelId: 1,
+        channelId: channel.id,
         text: this.newMessage,
       });
 

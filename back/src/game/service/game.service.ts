@@ -122,6 +122,88 @@ export class GameService {
         return false;
     }
 
+    /********************************************/
+    /*                                          */
+    /*                  DUELS                   */
+    /*                                          */
+
+    /********************************************/
+
+    getWaitingDuelsForUser(user: User): Duel[] {
+        return this.duels.filter(duel => duel.secondUserId === user.id);
+    }
+
+    /**
+     * accept a duel
+     * @param {User} user
+     * @param {User} target
+     * @returns {Duel}
+     */
+    acceptDuel(user: User, target: User): Duel {
+        this.removeExpiredDuels();
+
+        this.getWaitingDuelsForUser(user).forEach(duel => {
+            if (duel.firstUserId === target.id) {
+                return duel;
+            }
+        });
+
+        throw new HttpException(
+            'Duel not found or expired',
+            HttpStatus.NOT_FOUND
+        );
+    }
+
+    /**
+     * return if a duel exist or not
+     * @param {User} user
+     * @param {User} target
+     */
+    isDuelExist(user: User, target: User): boolean {
+        this.duels.forEach(duel => {
+            if (duel.firstUserId === user.id && duel.secondUserId === target.id) {
+                return true;
+            }
+        });
+        return false;
+    }
+
+    /**
+     * create a duel
+     * @param {User} user
+     * @param {User} target
+     * @returns {Duel}
+     */
+    createDuel(user: User, target: User): Duel {
+        this.removeExpiredDuels();
+
+        if (this.isDuelExist(user, target)) {
+            throw new HttpException(
+                'Duel already exist',
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const duel: Duel = {
+            firstUserId: user.id,
+            secondUserId: target.id,
+            expirationDate: new Date(new Date().getTime() + 30 * 1000), //30 seconds
+            accepted: false
+        };
+
+        this.duels.push(duel);
+        return duel;
+    }
+
+    /**
+     * remove expired duels
+     * @returns {void}
+     */
+    removeExpiredDuels(): void {
+        const now = new Date();
+        this.duels = this.duels.filter(duel => duel.expirationDate > now);
+    }
+
     getQueue(): string[] {
         return this.queueIds;
     }
