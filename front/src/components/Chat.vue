@@ -5,36 +5,36 @@
         ----------------- Joined channels -----------------
         <div v-for="channel in joinedChannels" :key="channel.id" class="channel-item">
           {{ channel.name }}
-          <button @click="selectChannel(channel.id)" class="leave-button">Leave</button>
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
         </div>
       </div>
       ----------------- Direct channels -----------------
       <div class="channels">
         <div v-for="channel in directChannels" :key="channel.id" class="channel-item">
           {{ channel.name }}
-          <button @click="selectChannel(channel.id)" class="leave-button">Leave</button>
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
         </div>
       </div>
       <div class="channels">
         ----------------- Available channels -----------------
         <div v-for="channel in availableChannels" :key="channel.id" class="channel-item">
           {{ channel.name }}
-          <button @click="selectChannel(channel.id)" class="leave-button">Join</button>
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
         </div>
       </div>
       <button @click="createChannel">Create Channel</button>
     </div>
 
-      <div class="messages">
-        <div v-for="message in currentChannelMessages" :key="message.id">
-          {{ message.content }}
-        </div>
-
-        <form @submit.prevent="sendMessage">
-          <input type="text" v-model="newMessage">
-          <button type="submit">Send</button>
-        </form>
+    <div class="messages">
+      <div v-for="message in currentChannelMessages" :key="message.id">
+        {{ message.content }}
       </div>
+
+      <form @submit.prevent="sendMessage">
+        <input type="text" v-model="newMessage">
+        <button type="submit">Send</button>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -118,9 +118,6 @@ export default {
 
     this.getChannelSocket.emit('getChannels');
     console.log('get channels with success');
-    this.getChannelSocket.emit('getChannel', {
-      id: 1,
-    })
     console.log('created');
   },
   beforeRouteLeave(to, from, next) {
@@ -134,15 +131,6 @@ export default {
     setChannelSocket(socket) {
       this.$store.commit('setChannelSocket', socket);
     },
-
-    // // ...mapGetters(["getCurrentChannelId"]),
-    // ...mapGetters(["getChannelSocket"]),
-    // ...mapMutations(["setChannelSocket"]),
-    // ...mapGetters(["getCurrentChannel"]),
-    // ...mapMutations(["setCurrentChannel"]),
-    currentChannelMessages() {
-      return [];
-    },
     joinedChannels(): Channel[] {
       return this.$store.getters.getJoinedChannels;
     },
@@ -152,33 +140,39 @@ export default {
     directChannels(): Channel[] {
       return this.$store.getters.getDirectChannels;
     },
+    channelMessages(): Message[] {
+      return this.$store.getters.getCurrentChannel.messages;
+    },
     createChannel() {
+      const randomName = Math.random().toString(36).substring(7);
       this.getChannelSocket.emit('createChannel', {
-        name: 'test',
+        name: randomName,
       });
-      // this.getChannelSocket.emit('getChannels');
+      this.getChannelSocket.emit('getChannels');
+      console.log('create channel with success');
     },
   },
   data() {
     return {
       newMessage: "",
+      currentChannelMessages() {
+        return [];
+      },
     };
   },
 
   mounted() {
 
     this.getChannelSocket.on('getChannelSuccess', (data) => {
-          const channel = new Channel(
-              data.id,
-              data.name,
-              data.messages
-          );
+          const channel = data;
+          this.$store.commit('setCurrentChannel', channel);
 
-          console.log(channel);
+          const channelFromStore = this.$store.getters.getCurrentChannel;
+          console.log('channel from store ' + channelFromStore.name);
+          if (channelFromStore)
+            this.currentChannelMessages = channelFromStore.messages;
 
-          for (const message of channel.messages) {
-            this.currentChannelMessages.push(message);
-          }
+
           this.$forceUpdate();
         }
     );
@@ -196,16 +190,19 @@ export default {
     });
 
     //channels data:
-    this.getChannelSocket.on('availableChannels', (data) => {
+    this.getChannelSocket.on('joinableChannels', (data) => {
       this.$store.commit('setAvailableChannels', data);
+      this.$forceUpdate();
     });
 
     this.getChannelSocket.on('joinedChannels', (data) => {
       this.$store.commit('setJoinedChannels', data);
+      this.$forceUpdate();
     });
 
     this.getChannelSocket.on('directChannels', (data) => {
       this.$store.commit('setDirectChannels', data);
+      this.$forceUpdate();
     });
 
 
@@ -217,7 +214,7 @@ export default {
           data.nickname,
           data.date
       );
-      message.content = data.nickname + ': ' + message.content;
+      // message.content = data.nickname + ': ' + message.content;
       this.currentChannelMessages.push(message);
       console.log(message);
       this.$forceUpdate();
@@ -226,6 +223,22 @@ export default {
   },
 
   methods: {
+    joinChannel(id: number, password?: string) {
+      this.getChannelSocket.emit('joinChannel', {
+        id: id,
+        password: password
+      });
+      this.getChannelSocket.emit('getChannels');
+      console.log('join channel with success');
+    },
+
+    selectChannel(channelId: number) {
+      console.log('select channel ' + channelId);
+      this.getChannelSocket.emit('getChannel', {
+        id: channelId,
+      });
+      this.joinChannel(channelId);
+    },
     sendMessage() {
       if (!this.newMessage)
         return;
@@ -246,19 +259,20 @@ export default {
         return;
       }
 
+      const channel = this.$store.getters.getCurrentChannel;
+
+      if (!channel) {
+        this.showNotification('You are not in any channel', 'error');
+        return;
+      }
+
       this.getChannelSocket.emit('sendMessage', {
-        channelId: 1,
+        channelId: channel.id,
         text: this.newMessage,
       });
 
       // this.newMessage = "";
 
-    },
-
-    selectChannel(channelId: number) {
-      console.log('select channel ' + channelId)
-      const channels: Channel[] = this.joinedChannels.concat(this.availableChannels).concat(this.directChannels);
-      this.$store.commit('setCurrentChannel', channels.find(channel => channel.id === channelId));
     },
 
     sendHelp() {
