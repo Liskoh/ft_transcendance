@@ -6,7 +6,7 @@ import {SendMessageDto} from "../dto/send-message.dto";
 import {UserService} from "../../user/service/user.service";
 import {User} from "../../user/entity/user.entity";
 import {Channel} from "../entity/channel.entity";
-import {validate, ValidationError} from "class-validator";
+import {validate, validateOrReject, ValidationError} from "class-validator";
 import {DateDto} from "../dto/date.dto";
 import {JoinChannelDto} from "../dto/join-channel.dto";
 import {ApplyPunishmentDto} from "../dto/apply-punishment.dto";
@@ -15,11 +15,17 @@ import {ToggleAdminRoleDto} from "../dto/toggle-admin-role.dto";
 import {CreateChannelDto} from "../dto/create-channel.dto";
 import {InviteUserDto} from "../dto/invite-user.dto";
 import {ChangeChannelTypeDto} from "../dto/change-channel-type.dto";
+import {HttpException, HttpStatus, UsePipes} from "@nestjs/common";
+import {JwtService} from "@nestjs/jwt";
+import {ChannelType} from "../enum/channel-type.enum";
+import {AuthService} from "../../auth/auth.service";
 
 @WebSocketGateway(
     {
-        namespace: 'channels',
-        port: 3001,
+        cors: {
+            origin: '*',
+        },
+        namespace: 'channels'
     }
 )
 export class ChannelGateway implements OnGatewayConnection {
@@ -27,138 +33,257 @@ export class ChannelGateway implements OnGatewayConnection {
     constructor(
         private readonly channelsService: ChannelService,
         private readonly usersService: UserService,
+        private readonly authService: AuthService,
+        // private readonly jwtService: JwtService,
     ) {
     }
 
     @WebSocketServer()
     server: Server;
 
-    //create a map with socket and user:
-    usersMap: Map<Socket, User> = new Map<Socket, User>();
+    private usersMap: Map<Socket, string> = new Map();
 
-    async getUserBySocket(socket: Socket, update?: boolean): Promise<User> {
-        const user = this.usersMap.get(socket);
-        if (!user)
-            throw new Error('User not found');
+    /**
+     * send a socket message to all user in a channel
+     * @param {Channel} channel
+     * @param {string} type
+     * @param {any} payload
+     * @param {User[]} users
+     * @returns {Promise<void>}
+     */
+    emitOnChannel(channel: Channel, type: string, payload: any, users?: User[]): void {
+        try {
+            if (!channel || !channel.users)
+                return;
 
-        if (update) {
-            const updatedUser = await this.usersService.getUserById(user.id);
-            this.usersMap.set(socket, updatedUser);
-            return updatedUser;
+            this.usersMap.forEach((value, key) => {
+
+                //in case if we need to send message to specific users
+                if (users) {
+                    users.forEach(user => {
+                        if (user.login === value)
+                            key.emit(type, payload);
+                    });
+                    return;
+                }
+
+                //we need to send message to all users in channel
+                channel.users.forEach(user => {
+                    if (user.login === value) {
+                        key.emit(type, payload);
+                    }
+                    return;
+                });
+            });
+
+        } catch (error) {
+            console.log(error);
         }
-
-        return user;
     }
 
-    // Override method from OnGatewayConnection
-    //TODO: Implement authentication
-    async handleConnection(socket: any, ...args: any[]): Promise<any> {
+    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
+        let payload: any;
         try {
+            payload = await this.authService.verifyJWTFromSocket(socket);
+        } catch (error) {
+            socket.disconnect();
+            return;
+        }
 
+        if (payload) {
+            if (Array.from(this.usersMap.values()).includes(payload.username)) {
+                socket.disconnect();
+                return;
+            }
+
+            try {
+                await this.usersService.getUserByLogin(payload.username);
+            } catch (error) {
+                await this.sendErrorToClient(socket, 'channelError', 'User not found');
+                return;
+            }
+
+            this.usersMap.set(socket, payload.username);
+            console.log('New connection: ', socket.id + ' - ' + payload.username);
+        }
+    }
+
+    async handleDisconnect(socket: any): Promise<any> {
+        try {
+            const username = this.usersMap.get(socket);
+            this.usersMap.delete(socket);
+            console.log('Disconnected: ', socket.id + ' - ' + username);
         } catch (ex) {
             console.log(ex);
         }
     }
 
-    async handleDisconnect(socket: any): Promise<any> {
+    async getUserBySocket(socket: Socket): Promise<User> {
+        let user: User;
+        try {
+            const login: string = this.usersMap.get(socket);
+            user = await this.usersService.getUserByLogin(login);
+        } catch (error) {
+            throw new HttpException(
+                'User not found',
+                HttpStatus.NOT_FOUND,
+            )
+        }
 
+        return user;
+    }
+
+    async getSocketsByUser(user: User): Promise<Socket> {
+        let socket: Socket;
+        this.usersMap.forEach((value, key) => {
+            if (value === user.login)
+                socket = key;
+        });
+
+        return socket;
     }
 
     @SubscribeMessage('getChannels')
     async getChannels(socket: Socket, payload: any): Promise<any> {
         try {
-            await this.getJoinableChannels(socket, payload);
-            await this.getJoinedChannels(socket, payload);
+            const channels: Channel[] = await this.channelsService.getChannels();
+
+            await this.sendJoinedChannels(socket, channels);
+            await this.sendJoinAbleChannels(socket, channels);
+            await this.sendDirectChannels(socket, channels);
         } catch (error) {
-            socket.emit('channelError', error);
+
         }
     }
 
-    @SubscribeMessage('getJoinableChannels')
-    async getJoinableChannels(socket: Socket, payload: any): Promise<any> {
+
+    async sendJoinAbleChannels(socket: Socket, dataChannels: Channel[]): Promise<any> {
         try {
-            const user = await this.getUserBySocket(socket, true);
-            const channels = await this.channelsService.getAvailableChannelsByUser(user);
+            const user = await this.getUserBySocket(socket);
+            const channels = await this.channelsService.getAvailableChannelsByUser(user, dataChannels);
+            console.log(channels.length);
 
-            const channelList = channels.map(channel => ({
-                id: channel.id,
-                name: channel.name,
-                channelType: channel.channelType,
-            }));
+            const joinAbleChannels = [];
 
-            socket.emit('availableChannels', channelList);
+            for (const channel of channels)
+                joinAbleChannels.push(this.getChannelToSend(channel, user));
+
+            socket.emit('joinableChannels', joinAbleChannels);
         } catch (error) {
-
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
-    @SubscribeMessage('getJoinedChannels')
-    async getJoinedChannels(socket: Socket, payload: any): Promise<any> {
+    async sendJoinedChannels(socket: Socket, dataChannels: Channel[]): Promise<any> {
         try {
-            const user = await this.getUserBySocket(socket, true);
-            const channels = await this.channelsService.getJoinedChannelsByUser(user);
+            const user = await this.getUserBySocket(socket);
+            const channels = await this.channelsService.getJoinedChannelsByUser(user, dataChannels);
 
-            const channelList = channels.map(channel => ({
-                id: channel.id,
-                name: channel.name,
-                password: (channel.password !== null),
-                channelType: channel.channelType,
-            }));
+            const joinedChannels = [];
 
-            socket.emit('joinedChannels', channelList);
+            for (const channel of channels)
+                joinedChannels.push(this.getChannelToSend(channel, user));
+
+            socket.emit('joinedChannels', joinedChannels);
         } catch (error) {
-
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
+    async sendDirectChannels(socket: Socket, dataChannels: Channel[]): Promise<any> {
+        try {
+            const user = await this.getUserBySocket(socket);
+            const channels = await this.channelsService.getDirectChannelsByUser(user, dataChannels);
+
+            const joinedChannels = [];
+
+            for (const channel of channels)
+                joinedChannels.push(this.getChannelToSend(channel, user));
+
+            socket.emit('directChannels', joinedChannels);
+        } catch (error) {
+            await this.sendErrorToClient(socket, 'channelError', error);
+        }
+    }
+
+
+    /**
+     * create a new channel
+     * @param {Socket} socket
+     * @param {CreateChannelDto} payload => {name: string, channelType: ChannelType, password: string}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('createChannel')
-    async createChannel(socket: Socket, payload: CreateChannelDto): Promise<any> {
+    async createChannel(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new CreateChannelDto(payload);
+            await validateOrReject(payload);
 
-            const user = await this.getUserBySocket(socket, true);
-            const name = payload.name;
-            const channelType = payload.channelType;
-            const password = payload.password;
+            const user = await this.getUserBySocket(socket);
+            const name = dto.name;
+            const channelType = dto.channelType;
+            const password = dto.password;
 
             const channel = await this.channelsService.createChannel(user, channelType, name, password);
-
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'Channel ' + channel.name + ' created');
         } catch (error) {
-            socket.emit('channelError', error);
+            console.log(error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
+    /**
+     * Invites a user to a channel
+     * @param {Socket} socket
+     * @param{InviteUserDto} payload => {channelId: number, nickname: string}
+     */
     @SubscribeMessage('inviteUser')
-    async inviteUser(socket: Socket, payload: InviteUserDto): Promise<any> {
+    async inviteUser(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new InviteUserDto(payload);
+            await validateOrReject(payload);
 
-            const user = await this.getUserBySocket(socket, true);
-            const channel = await this.channelsService.getChannelById(payload.channelId);
-            const targetUser = await this.usersService.getUserById(payload.userId);
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.channelId);
+            const targetUser = await this.usersService.getUserByNickname(dto.nickname);
 
             await this.channelsService.inviteUser(channel, user, targetUser);
 
-            socket.emit('inviteUserSuccess', channel);
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You invited ' + targetUser.nickname + ' to the channel');
+            const targetSocket: Socket = await this.getSocketsByUser(targetUser);
+
+            if (targetSocket) {
+                await this.sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname +
+                    ' invited you to the channel ' + channel.name);
+            }
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
+    /**
+     * change the channelType of a channel
+     * @param {Socket} socket
+     * @param {any} payload => {channelId: number, channelType: ChannelType}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('changeChannelType')
-    async changeChannelType(socket: Socket, payload: ChangeChannelTypeDto): Promise<any> {
+    async changeChannelType(socket: Socket, payload: any): Promise<any> {
+        socket.emit('changeChannelTypeSuccess');
         try {
-            await validate(payload);
+            const dto = new ChangeChannelTypeDto(payload);
+            await validateOrReject(dto);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
             const channel = await this.channelsService.getChannelById(payload.channelId);
             const channelType = payload.channelType;
 
             await this.channelsService.changeChannelType(channel, user, channelType);
 
-            socket.emit('changeChannelTypeSuccess', channel);
+            console.log('changeChannelTypeSuccess');
+            socket.emit('changeChannelTypeSuccess');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -167,11 +292,12 @@ export class ChannelGateway implements OnGatewayConnection {
         try {
             await validate(payload);
 
-            const user = await this.getUserBySocket(socket, true);
+            const user = await this.getUserBySocket(socket);
             const userId = payload.id;
             const targetUser = await this.usersService.getUserById(userId);
+            const channels = await this.channelsService.getChannels();
 
-            const channel = await this.channelsService.createDirectMessageChannel(user, targetUser);
+            const channel = await this.channelsService.createDirectMessageChannel(user, targetUser, channels);
 
             socket.emit('createDirectChannelSuccess', channel);
         } catch (error) {
@@ -180,72 +306,104 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
 
-
-
-    @SubscribeMessage('getChannel')
-    async getChannel(socket: Socket, payload: IdDto): Promise<any> {
-        try {
-            await validate(payload);
-
-            const channel = await this.channelsService.getChannelById(payload.id);
-
-            socket.emit('getChannelSuccess', channel);
-        } catch (error) {
-            socket.emit('channelError', error);
-        }
-    }
-
     /**
-     * send a socket message to all user in a channel
-     * @param {Channel} channel
-     * @param {string} type
-     * @param {any} payload
-     * @returns {void}
+     * get all data from a channel
+     * @param {Socket} socket
+     * @param {any} payload => {id: number}
+     * @returns {Promise<any>}
      */
-    emitOnChannel(channel: Channel, type: string, payload: any): void {
+    @SubscribeMessage('getChannel')
+    async getChannel(socket: Socket, payload: any): Promise<any> {
+        console.log('getChannel ' + payload.id);
         try {
-            if (!channel || !channel.users)
-                return;
+            const dto = new IdDto(payload);
+            await validateOrReject(dto);
 
-            const socketIds: string[] = Object.keys(this.server.sockets.sockets);
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.id);
 
-            for (const socketId of socketIds) {
-                const socket = this.server.sockets.sockets[socketId];
-                const user: User = socket.data.user;
+            const channelToReturn = this.getChannelToSend(channel, user);
 
-                if (channel.users.includes(user)) {
-                    socket.emit(type, payload);
-                }
-            }
+            socket.emit('getChannelSuccess', channelToReturn);
+
         } catch (error) {
-            console.log(error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
+
 
     /**
      * send a message to a channel
      * @param {Socket} socket
-     * @param {SendMessageDto} payload => {id: number, text: string}
+     * @param {any} payload => {channelId: number, text: string}
      * @returns {Promise<any>}
      */
     @SubscribeMessage('sendMessage')
-    async sendMessage(socket: Socket, payload: SendMessageDto): Promise<any> {
+    async sendMessage(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new SendMessageDto(payload);
+            await validateOrReject(dto);
 
-            const channel = await this.channelsService.getChannelById(payload.id);
-            const user = socket.data.user;
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.channelId);
 
-            const users = await this.channelsService.sendMessage(channel, user, payload.text);
+            //return all users who can see the message
+            const users = await this.channelsService.sendMessage(channel, user, dto.text);
 
-            //get all users who can see the message
-            for (const user of users) {
-                //TODO: send message to user
+            this.emitOnChannel(
+                channel,
+                'message',
+                {
+                    id: 0,
+                    content: dto.text,
+                    userId: 1,
+                    nickname: user.nickname,
+                    date: new Date(),
+                },
+                users
+            );
+            console.log(user.nickname + ' send message to channel ' + channel.name);
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'message sent with success');
+        } catch (error) {
+            await this.sendErrorToClient(socket, 'channelError', error);
+        }
+    }
+
+    /**
+     * send a direct message to a user
+     * @param {Socket} socket
+     * @param {any} payload => {channelId: number, text: string}
+     * @returns {Promise<any>}
+     */
+    @SubscribeMessage('sendDirectMessage')
+    async sendDirectMessage(socket: Socket, payload: any): Promise<any> {
+        try {
+            const dto = new SendMessageDto(payload);
+            await validateOrReject(dto);
+
+            const user = await this.getUserBySocket(socket);
+            const targetUser = await this.usersService.getUserById(dto.channelId);
+            const channel = await this.channelsService.sendDirectMessage(user, targetUser, dto.text);
+
+            this.emitOnChannel(
+                channel,
+                'message',
+                {
+                    id: 0,
+                    content: dto.text,
+                    userId: 1,
+                    nickname: user.nickname,
+                    date: new Date(),
+                },
+            );
+
+            const targetSocket = await this.getSocketsByUser(targetUser);
+            if (targetSocket) {
+                await this.sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a message!');
             }
 
-            socket.emit('sendMessageSuccess');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -256,23 +414,22 @@ export class ChannelGateway implements OnGatewayConnection {
      * @returns {Promise<any>}
      */
     @SubscribeMessage('joinChannel')
-    async joinChannel(socket: Socket, payload: JoinChannelDto): Promise<void> {
+    async joinChannel(socket: Socket, payload: any): Promise<void> {
         try {
-            await validate(payload);
+            const dto = new JoinChannelDto(payload);
+            await validateOrReject(dto);
 
-            const channel = await this.channelsService.getChannelById(payload.id);
-            const user = socket.data.user;
-            const password = payload.password;
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.id);
+            const password = dto.password;
 
-            // if (payload.password) {
-                await this.channelsService.joinChannel(channel, user, password);
-            // } else {
-            //     await this.channelsService.joinChannel(channel, user);
-            // }
+            await this.channelsService.joinChannel(channel, user, password);
 
             socket.emit('joinChannelSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have joined the channel '
+                + channel.name + 'with success');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -282,24 +439,56 @@ export class ChannelGateway implements OnGatewayConnection {
      * @param {any} payload => {id: number}
      * @returns {Promise<any>}
      */
-    //TODO: SEND SOCKET WHEN OWNER CHANGE ?
     @SubscribeMessage('leaveChannel')
-    async leaveChannel(socket: Socket, payload: IdDto): Promise<any> {
+    async leaveChannel(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new IdDto(payload);
+            await validateOrReject(dto);
 
-            const user = socket.data.user;
-            const channel = await this.channelsService.getChannelById(payload.id);
+            const user = await this.getUserBySocket(socket);
+            const channel = await this.channelsService.getChannelById(dto.id);
 
             await this.channelsService.leaveChannel(channel, user);
-            socket.emit('leaveChannelSuccess');
+            socket.emit('leaveChannelSuccess', dto.id);
 
-            //TODO: Send message to all user in channel
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have left the channel '
+                + channel.name + 'with success');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
+
+    /**
+     * send an error to a client
+     * @param {Socket} socket
+     * @param {string} name
+     * @param {any} error
+     * @returns {Promise<void>}
+     */
+    async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
+
+        if (error instanceof HttpException) {
+            socket.emit(name, error);
+            return;
+        }
+
+        if (error instanceof Object) {
+            socket.emit(name, {message: "Invalid request, please check your data (/help)"});
+            return;
+        }
+    }
+
+    /**
+     * send a success message to a client
+     * @param {Socket} socket
+     * @param {string} name
+     * @param {string} message
+     * @returns {Promise<void>}
+     */
+    async sendSuccessToClient(socket: Socket, name: string, message: string): Promise<void> {
+        socket.emit(name, {message: message});
+    }
 
     /**
      * apply punishment to a user
@@ -308,21 +497,23 @@ export class ChannelGateway implements OnGatewayConnection {
      * @returns {Promise<any>}
      */
     @SubscribeMessage('applyPunishment')
-    async applyPunishment(socket: Socket, payload: ApplyPunishmentDto): Promise<any> {
+    async applyPunishment(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new ApplyPunishmentDto(payload);
+            await validateOrReject(dto);
 
-            const user = socket.data.user;
+            const user = await this.getUserBySocket(socket);
 
-            const channel = await this.channelsService.getChannelById(payload.channelId);
-            const userToPunish = await this.usersService.getUserById(payload.userId);
-            const punishmentType = payload.punishmentType;
-            const date = payload.date;
+            let channel = await this.channelsService.getChannelById(dto.channelId);
+            const userToPunish = await this.usersService.getUserByNickname(dto.nickname);
+            const punishmentType = dto.punishmentType;
+            const date = dto.date;
 
             await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
-            socket.emit('applyPunishmentSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have applied a punishment to ' +
+                userToPunish.nickname + ' with success');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -333,39 +524,88 @@ export class ChannelGateway implements OnGatewayConnection {
      * @returns {Promise<any>}
      */
     @SubscribeMessage('cancelPunishment')
-    async cancelPunishment(socket: Socket, payload: CancelPunishmentDto): Promise<any> {
+    async cancelPunishment(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new CancelPunishmentDto(payload);
+            await validateOrReject(dto);
 
-            const user = socket.data.user;
+            const user = await this.getUserBySocket(socket);
 
-            const channel = await this.channelsService.getChannelById(payload.channelId);
-            const userToCancel = await this.usersService.getUserById(payload.userId);
-            const punishmentType = payload.punishmentType;
+            const channel = await this.channelsService.getChannelById(dto.channelId);
+            const userToCancel = await this.usersService.getUserByNickname(dto.nickname);
+            const punishmentType = dto.punishmentType;
 
             await this.channelsService.cancelPunishment(channel, user, userToCancel, punishmentType);
             socket.emit('cancelPunishmentSuccess');
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have canceled a punishment to ' +
+                userToCancel.nickname + ' with success');
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
     }
 
+    /**
+     * toggle admin role to a user
+     * @param {Socket} socket
+     * @param {any} payload => {channelId: number, userId: number, giveAdminRole: boolean}
+     * @returns {Promise<any>}
+     */
     @SubscribeMessage('toggleAdminRole')
-    async toggleAdminRole(socket: Socket, payload: ToggleAdminRoleDto): Promise<any> {
+    async toggleAdminRole(socket: Socket, payload: any): Promise<any> {
         try {
-            await validate(payload);
+            const dto = new ToggleAdminRoleDto(payload);
+            await validateOrReject(payload);
 
-            const user = socket.data.user;
+            const user = await this.getUserBySocket(socket);
 
-            const channel = await this.channelsService.getChannelById(payload.channelId);
-            const userToToggle = await this.usersService.getUserById(payload.userId);
-            const giveAdminRole = payload.giveAdminRole;
+            const channel = await this.channelsService.getChannelById(dto.channelId);
+            const userToToggle = await this.usersService.getUserByNickname(dto.nickname);
+            const giveAdminRole = dto.giveAdminRole;
 
             await this.channelsService.toggleAdminRole(channel, user, userToToggle, giveAdminRole);
-            socket.emit('toggleAdminRoleSuccess', giveAdminRole);
+
+            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have toggled admin role to ' +
+                userToToggle.nickname + ' with success');
+
+            const userToToggleSocket = await this.getSocketsByUser(userToToggle);
+
+            if (userToToggleSocket) {
+                if (giveAdminRole) {
+                    await this.sendSuccessToClient(userToToggleSocket, 'channelSuccess', 'You have been given admin role in ' + channel.name)
+                } else {
+                    await this.sendErrorToClient(userToToggleSocket, 'channelError', 'You have been removed from admin role in ' + channel.name)
+                }
+            }
         } catch (error) {
-            socket.emit('channelError', error);
+            await this.sendErrorToClient(socket, 'channelError', error);
         }
+    }
+
+    /**
+     * get a channel who can be sent to a client
+     * @param {Channel} channel
+     * @param {User} user
+     * @returns {any}
+     */
+    getChannelToSend(channel: Channel, user: User): any {
+        const channelToReturn = ({
+            id: channel.id,
+            name: channel.name,
+            channelType: channel.channelType,
+            users: channel.users.map(user => ({
+                id: user.id,
+                nickname: user.nickname,
+            })),
+            password: this.channelsService.hasPassword(channel),
+            messages: this.channelsService.getMessagesForUser(channel, user).map(message => ({
+                id: message.id,
+                content: message.text,
+                userId: message.user.id,
+                date: message.date,
+            })),
+        });
+
+        return channelToReturn;
     }
 
 }

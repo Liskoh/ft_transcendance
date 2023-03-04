@@ -4,15 +4,20 @@ import {Repository} from "typeorm";
 import {Channel} from "../entity/channel.entity";
 import {ChannelType} from "../enum/channel-type.enum";
 import {SetPasswordDto} from "../dto/set-password.dto";
-import {validate} from "class-validator";
+import {validate, validateOrReject} from "class-validator";
 import {Message} from "../entity/message.entity";
 import {UserService} from "../../user/service/user.service";
 import * as bcrypt from 'bcrypt';
-import {BCRYPT_SALT_ROUNDS, CHAT_COOLDOWN_IN_MILLISECONDS} from "../../consts";
+import {
+    BCRYPT_SALT_ROUNDS,
+    CHAT_COOLDOWN_IN_MILLISECONDS, MAX_CHANNELS_PER_USER,
+    MAX_PASSWORD_LENGTH,
+    MIN_PASSWORD_LENGTH
+} from "../../consts";
 import {SetNameDto} from "../dto/set-name.dto";
 import {PunishmentType} from "../enum/punishment-type.enum";
 import {Punishment} from "../entity/punishment.entity";
-import { User } from "src/user/entity/user.entity";
+import {User} from "src/user/entity/user.entity";
 
 
 @Injectable()
@@ -54,46 +59,33 @@ export class ChannelService {
         return channel;
     }
 
-    //TODO: check version typeorm and fix this
-    /**
-     * Get channel by id with filtered data (for socket)
-     * @param {number} id
-     * @param {string[]} requiredFields
-     * @returns {Promise<Channel>}
-     */
-    // async getFilteredChannelById(id: number, select: string[]): Promise<Channel> {
-    //
-    //     // const options = { select };
-    //     // this.channelsRepository.
-    //     // const channel = await this.channelsRepository.findOne({ id }, {
-    //     //     password: false,
-    //     //     punishments: false
-    //     // });
-    //     //
-    //     // if (!channel)
-    //     //     throw new HttpException(
-    //     //         'Channel not found',
-    //     //         HttpStatus.NOT_FOUND
-    //     //     );
-    //     //
-    //     // return channel;
-    // }
+    async saveChannel(channel: Channel): Promise<Channel> {
+        return await this.channelsRepository.save(channel);
+    }
 
     /**
      * create private channel with another user
      * @param {User} user1
      * @param {User} user2
+     * @param {Channel[]} channels
      * @returns {Promise<Channel>}
      */
-    async createDirectMessageChannel(user1: User, user2: User): Promise<Channel> {
+    async createDirectMessageChannel(user1: User, user2: User, channels: Channel[]): Promise<Channel> {
 
-        if (this.isDirectChannelExist(user1, user2, await this.getChannels()))
+        // if (this.isDirectChannelExist(user1, user2, await this.getChannels()))
+        //     throw new HttpException(
+        //         'This DM already exist',
+        //         HttpStatus.FORBIDDEN
+        //     );
+        let channel = this.getDirectChannel(user1, user2, channels);
+
+        if (channel)
             throw new HttpException(
                 'This DM already exist',
                 HttpStatus.FORBIDDEN
             );
 
-        let channel = new Channel(user1, ChannelType.DM);
+        channel = new Channel(user1, ChannelType.DM);
 
         channel.name = user1.login + " & " + user2.login;
         channel.owner = user1;
@@ -102,8 +94,7 @@ export class ChannelService {
         return await this.channelsRepository.save(channel);
     }
 
-    async getAvailableChannelsByUser(user: User): Promise<Channel[]> {
-        let channels = await this.getChannels();
+    async getAvailableChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
         channels = channels.filter(c => c.channelType === ChannelType.PUBLIC &&
             !this.isMember(c, user) &&
             !this.isPunished(c, user, PunishmentType.BAN));
@@ -111,10 +102,16 @@ export class ChannelService {
         return channels;
     }
 
-    async getJoinedChannelsByUser(user: User): Promise<Channel[]> {
-        let channels = await this.getChannels();
+    async getJoinedChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
         channels = channels.filter(c => this.isMember(c, user) &&
             !this.isPunished(c, user, PunishmentType.BAN));
+
+        return channels;
+    }
+
+    async getDirectChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
+        channels = channels.filter(c => this.isDirectChannel(c) &&
+            this.isMember(c, user));
 
         return channels;
     }
@@ -130,11 +127,20 @@ export class ChannelService {
     async createChannel(owner: User, type: ChannelType, name?: string, password?: string): Promise<Channel> {
         let channel = new Channel(owner, type);
 
-        // if (this.usersService.getChannelCount(owner) >= MAX_CHANNELS_PER_USER)
-        //     throw new HttpException(
-        //         'You have reached the maximum number of channel',
-        //         HttpStatus.FORBIDDEN
-        //     );
+        if (!type)
+            type = ChannelType.PUBLIC;
+
+        const channels: Channel[] = await this.channelsRepository
+            .createQueryBuilder("channel")
+            .leftJoinAndSelect("channel.owner", "owner")
+            .where("owner.id = :userId", {userId: owner.id})
+            .getMany();
+
+        if (channels.length >= MAX_CHANNELS_PER_USER)
+            throw new HttpException(
+                'You have reached the maximum number of channels',
+                HttpStatus.FORBIDDEN
+            );
 
         if (!name)
             name = owner.login + "'s channel";
@@ -231,7 +237,7 @@ export class ChannelService {
     async toggleAdminRole(channel: Channel, owner: User, user: User, giveAdminRole: boolean): Promise<Channel> {
 
         //in case 'owner' is not admin
-        if (channel.owner !== owner)
+        if (!this.isOwner(channel, owner))
             throw new HttpException(
                 'You are not owner of this channel',
                 HttpStatus.FORBIDDEN
@@ -243,6 +249,8 @@ export class ChannelService {
                 'User is not member of this channel',
                 HttpStatus.BAD_REQUEST
             );
+
+        const myB: boolean = giveAdminRole;
 
         //in case user is already admin and we want to give him admin role
         if (this.isAdministrator(channel, user) && giveAdminRole)
@@ -275,11 +283,11 @@ export class ChannelService {
      */
     async inviteUser(channel: Channel, owner: User, user: User): Promise<Channel> {
 
-        if (channel.channelType !== ChannelType.PRIVATE)
-            throw new HttpException(
-                'You can not invite someone to public channel',
-                HttpStatus.BAD_REQUEST
-            );
+        // if (channel.channelType !== ChannelType.PRIVATE)
+        //     throw new HttpException(
+        //         'You can not invite someone to public channel',
+        //         HttpStatus.BAD_REQUEST
+        //     );
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
@@ -311,10 +319,20 @@ export class ChannelService {
                 HttpStatus.BAD_REQUEST
             );
 
+        console.log('channelName ' + channel.name);
+        console.log('ownerName: ' + owner.nickname);
+        console.log('channelower: ' + channel.owner.nickname);
+
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
                 'You are not administrator of this channel',
                 HttpStatus.FORBIDDEN
+            );
+
+        if (!this.isOwner(channel, user) && this.isAdministrator(channel, user))
+            throw new HttpException(
+                'You can not punish administrator',
+                HttpStatus.BAD_REQUEST
             );
 
         if (this.usersService.isSameUser(owner, user))
@@ -384,7 +402,7 @@ export class ChannelService {
         let punishment = channel.punishments.find(
             punishment => punishment.user.id === user.id &&
                 punishment.punishmentType === punishmentType &&
-                punishment.endDate === null &&
+                punishment.endDate !== null &&
                 punishmentType !== PunishmentType.KICK
         );
 
@@ -453,14 +471,15 @@ export class ChannelService {
             );
 
         //in case of channel has password
-        if (this.hasPassword(channel) && password) {
+        if (this.hasPassword(channel)) {
             const dto = new SetPasswordDto(password);
-
             try {
-                await validate(dto)
+                await validateOrReject(dto);
             } catch (e) {
                 throw new HttpException(
-                    'Password is required',
+                    'password must be between ' +
+                    MIN_PASSWORD_LENGTH + ' and ' +
+                    MAX_PASSWORD_LENGTH + ' characters long',
                     HttpStatus.BAD_REQUEST
                 );
             }
@@ -500,6 +519,31 @@ export class ChannelService {
     }
 
     /**
+     * send direct message to user
+     * @param {User} sender
+     * @param {User} receiver
+     * @param {string} text
+     * @returns {Promise<User[]>}
+     */
+    async sendDirectMessage(sender: User, receiver: User, text: string): Promise<Channel> {
+        const channels = await this.getChannels();
+        let channel = this.getDirectChannel(sender, receiver, channels);
+
+        if (!channel) {
+            channel = await this.createDirectMessageChannel(sender, receiver, channels);
+        }
+
+        if (this.usersService.isBlockedByUser(receiver, sender) || this.usersService.isBlockedByUser(sender, receiver))
+            throw new HttpException(
+                'You can not send message to this user',
+                HttpStatus.FORBIDDEN
+            );
+
+        await this.sendMessage(channel, sender, text);
+        return channel;
+    }
+
+    /**
      * send message to channel
      * @param {Channel} channel
      * @param {User} user
@@ -513,26 +557,23 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        //check if user is muted
-        if (this.isPunished(channel, user, PunishmentType.MUTE))
+        if (this.isPunished(channel, user, PunishmentType.BAN) || this.isPunished(channel, user, PunishmentType.KICK))
             throw new HttpException(
-                'You are muted in this channel',
+                'You are punished in this channel',
                 HttpStatus.FORBIDDEN
             );
 
-        if (this.isPunished(channel, user, PunishmentType.BAN))
-            throw new HttpException(
-                'You are banned in this channel',
-                HttpStatus.FORBIDDEN
-            );
+        const coolDownTime: number = this.getCoolDownTime(user.id);
 
-        if (this.isOnCoolDown(user.id))
+        if (coolDownTime > 0) {
+            const seconds = Math.floor(coolDownTime / 1000);
+            const milliseconds = coolDownTime - seconds * 1000;
             throw new HttpException(
-                'You must wait before sending another message',
+                'You must wait ' + seconds + '.' + milliseconds +
+                ' seconds before sending another message',
                 HttpStatus.FORBIDDEN
             );
-        else
-            console.log('User ' + user.id + ' is not on cooldown');
+        }
 
         const message = new Message(user, text);
         channel.messages.push(message);
@@ -542,6 +583,13 @@ export class ChannelService {
 
         //return filtered user if blocked etc...
         return channel.users.filter(u => !u.blockedList.includes(user.id));
+    }
+
+    getMessagesForUser(channel: Channel, user: User): Message[] {
+        const messages = channel.messages;
+
+        return messages.filter(m =>
+            !user.blockedList.includes(m.user.id));
     }
 
     /*
@@ -555,6 +603,7 @@ export class ChannelService {
      * @returns {boolean}
      */
     isAdministrator(channel: Channel, user: User): boolean {
+        console.log(channel.owner.id + ' ' + user.id + ' ' + user.nickname);
         if (channel.owner.id === user.id) {
             return true;
         }
@@ -596,9 +645,9 @@ export class ChannelService {
      */
     hasPassword(channel: Channel): boolean {
         if (channel.password)
-            return false;
+            return true;
 
-        return true;
+        return false;
     }
 
     /**
@@ -639,11 +688,11 @@ export class ChannelService {
      * @param {Channel[]} channels
      * @returns {boolean}
      */
-    isDirectChannelExist(user1: User, user2: User, channels: Channel[]): boolean {
-        return channels.some(channel => {
+    getDirectChannel(user1: User, user2: User, channels: Channel[]): Channel {
+        return channels.find(channel => {
             if (channel.channelType === ChannelType.DM) {
                 if (channel.users.includes(user1) && channel.users.includes(user2)) {
-                    return true;
+                    return channel;
                 }
             }
         });
@@ -661,6 +710,19 @@ export class ChannelService {
 
     isOwner(channel: Channel, user: User) {
         return channel.owner.id === user.id;
+    }
+
+    getCoolDownTime(userId: number): number {
+        const lastMessage = this.coolDownMap.get(userId);
+        const now = new Date();
+        if (lastMessage) {
+            const diff = now.getTime() - lastMessage.getTime();
+            if (diff < CHAT_COOLDOWN_IN_MILLISECONDS) {
+                return CHAT_COOLDOWN_IN_MILLISECONDS - diff;
+            }
+        }
+        this.coolDownMap.set(userId, now);
+        return 0;
     }
 
     isOnCoolDown(userId: number): boolean {

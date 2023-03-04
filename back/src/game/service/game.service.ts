@@ -6,6 +6,7 @@ import {User} from "../../user/entity/user.entity";
 import {UserService} from "../../user/service/user.service";
 import {Game} from "../model/game.model";
 import {Socket} from "socket.io";
+import {Duel} from "../interface/duel.interface";
 
 // import { CronJob } from 'cron';
 
@@ -18,13 +19,13 @@ export class GameService {
         @Inject(UserService)
         private readonly userService: UserService
     ) {
-        this.startQueue();
     }
 
     //List of acvtives games
     private activeMatches: MatchHistory[] = [];
     private activeGames: Game[] = [];
     private queueIds: string[] = [];
+    private duels: Duel[] = [];
 
     /**
      * return all match history
@@ -71,41 +72,6 @@ export class GameService {
     }
 
 
-    async handleQueue(): Promise<void> {
-        if (this.activeMatches.length < 1) {
-            return;
-        }
-
-        for (const match of this.activeMatches) {
-            if (match.started) {
-                if (match.firstPlayerScore >= 3 || match.secondPlayerScore >= 3) {
-                    this.activeMatches = this.activeMatches.filter(m => m.id !== match.id);
-
-                    await this.createMatchHistory(match);
-                }
-                continue;
-            }
-
-            if (match.firstPlayerId && match.secondPlayerId) {
-                this.startMatch(match);
-                continue;
-            }
-        }
-    }
-
-    //queue
-    startQueue(): void {
-        setInterval(() => {
-            this.handleQueue().then(r => {
-                // console.log('queue handled');
-            });
-        }, 1000); //<== every 1 second
-    }
-
-    /*
-     * NON ASYNC
-     */
-
     /**
      * return wins for a user
      * @param {User} user
@@ -142,56 +108,6 @@ export class GameService {
         return history;
     }
 
-    createMatch(user: User): MatchHistory {
-        if (this.isUserInActiveMatch(user)) {
-            throw new HttpException(
-                'user already in a match',
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        const match = new MatchHistory();
-        match.firstPlayerId = user.id;
-        this.activeMatches.push(match);
-
-        return match;
-    }
-
-    startMatch(match: MatchHistory): MatchHistory {
-        if (match.started) {
-            throw new HttpException(
-                'match already started',
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        if (match.firstPlayerId && match.secondPlayerId) {
-            match.started = true;
-            return match;
-        }
-
-        throw new HttpException(
-            'match not ready to start',
-            HttpStatus.BAD_REQUEST
-        );
-    }
-
-    findMatch(user: User): MatchHistory {
-        if (this.isUserInActiveMatch(user)) {
-            throw new HttpException(
-                'user already in a match',
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        for (const match of this.activeMatches) {
-            if (!match.secondPlayerId && !match.started) {
-                match.secondPlayerId = user.id;
-                return match;
-            }
-        }
-    }
-
     /**
      * return if a user is in an active match or not
      * @param {User} user
@@ -204,6 +120,89 @@ export class GameService {
         }
 
         return false;
+    }
+
+    /********************************************/
+    /*                                          */
+    /*                  DUELS                   */
+    /*                                          */
+    /********************************************/
+
+
+
+    getWaitingDuelsForUser(user: User): Duel[] {
+        return this.duels.filter(duel => duel.secondUserId === user.id);
+    }
+
+    /**
+     * accept a duel
+     * @param {User} user
+     * @param {User} target
+     * @returns {Duel}
+     */
+    acceptDuel(user: User, target: User): Duel {
+        this.removeExpiredDuels();
+
+        this.getWaitingDuelsForUser(user).forEach(duel => {
+            if (duel.firstUserId === target.id) {
+                return duel;
+            }
+        });
+
+        throw new HttpException(
+            'Duel not found or expired',
+            HttpStatus.NOT_FOUND
+        );
+    }
+
+    /**
+     * return if a duel exist or not
+     * @param {User} user
+     * @param {User} target
+     */
+    isDuelExist(user: User, target: User): boolean {
+        this.duels.forEach(duel => {
+            if (duel.firstUserId === user.id && duel.secondUserId === target.id) {
+                return true;
+            }
+        });
+        return false;
+    }
+
+    /**
+     * create a duel
+     * @param {User} user
+     * @param {User} target
+     * @returns {Duel}
+     */
+    createDuel(user: User, target: User): Duel {
+        this.removeExpiredDuels();
+
+        if (this.isDuelExist(user, target)) {
+            throw new HttpException(
+                'Duel already exist',
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        const duel: Duel = {
+            firstUserId: user.id,
+            secondUserId: target.id,
+            expirationDate: new Date(new Date().getTime() + 30 * 1000), //30 seconds
+            accepted: false
+        };
+
+        this.duels.push(duel);
+        return duel;
+    }
+
+    /**
+     * remove expired duels
+     * @returns {void}
+     */
+    removeExpiredDuels(): void {
+        const now = new Date();
+        this.duels = this.duels.filter(duel => duel.expirationDate > now);
     }
 
     getQueue(): string[] {

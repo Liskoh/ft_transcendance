@@ -5,6 +5,7 @@ import {ChannelService} from "./channel/service/channel.service";
 import {ChannelType} from "./channel/enum/channel-type.enum";
 import {ValidationPipe} from "@nestjs/common";
 import {PunishmentType} from "./channel/enum/punishment-type.enum";
+import {CorsOptions} from "@nestjs/common/interfaces/external/cors-options.interface";
 
 function makeid(length: number) {
     let result = '';
@@ -96,9 +97,18 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.useGlobalPipes(new ValidationPipe());
 
-    await app.listen(8000);
+   const cors: CorsOptions = {
+        origin: [
+            'http://' + process.env.WEB_HOST +':5173',
+            'http://' + process.env.WEB_HOST + ':8000'
+        ],
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        optionsSuccessStatus: 200,
+    };
 
-    // await app.listen(3000);
+    app.enableCors(cors);
+
+    await app.listen(process.env.BACK_PORT);
 
     let channel;
     let user;
@@ -108,62 +118,62 @@ async function bootstrap() {
     const channelsService = app.get(ChannelService);
     const list: string[] = [];
 
-    try {
-        user = await usersService.getUserById(1);
-    } catch (error) {
-        user = await usersService.saveNewUser(usersService.createUser(makeid(8)));
-    }
-
-    try {
-        user2 = await usersService.getUserById(2);
-    } catch (error) {
-        user2 = await usersService.saveNewUser(usersService.createUser(makeid(8)));
-    }
-
-    try {
-        channel = await channelsService.getChannelById(1);
-    } catch (ex) {
-        channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
-    }
-
-    //join channel
-    try {
-        await channelsService.joinChannel(channel, user2);
-    } catch (e) {
-        list.push(e.status + " " + e.message);
-    }
-
-    //set password
-    try {
-        await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
-        // await channelsService.setChannelPassword(channel, user, null);
-    } catch (e) {
-        list.push(e.status + " " + e.message);
-    }
-
-    try {
-        await channelsService.sendMessage(channel, user, "Hello world!");
-        await channelsService.sendMessage(channel, user, "Hello world!");
-    } catch (e) {
-        list.push(e.status + " " + e.message);
-    }
-
-    try {
-        const endDate = new Date();
-        endDate.setMinutes(endDate.getMinutes() + 4);
-
-        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
-        await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
-    } catch (e) {
-        list.push(e.status + " " + e.message);
-    }
-
-    try {
-        await channelsService.sendMessage(channel, user2, "Hello world!");
-        await channelsService.sendMessage(channel, user2, "Hello world!");
-    } catch (e) {
-        list.push(e.status + " " + e.message);
-    }
+    // try {
+    //     user = await usersService.getUserById(-1);
+    // } catch (error) {
+    //     user = await usersService.saveNewUser(usersService.createUser(makeid(8)));
+    // }
+    //
+    // try {
+    //     user2 = await usersService.getUserById(-1);
+    // } catch (error) {
+    //     user2 = await usersService.saveNewUser(usersService.createUser(makeid(8)));
+    // }
+    //
+    // try {
+    //     channel = await channelsService.getChannelById(1);
+    // } catch (ex) {
+    //     channel = await channelsService.createChannel(user, ChannelType.PUBLIC);
+    // }
+    //
+    // //join channel
+    // try {
+    //     await channelsService.joinChannel(channel, user2);
+    // } catch (e) {
+    //     list.push(e.status + " " + e.message);
+    // }
+    //
+    // //set password
+    // try {
+    //     await channelsService.setChannelPassword(channel, user, "1234Y34GFYSDGF8T7");
+    //     // await channelsService.setChannelPassword(channel, user, null);
+    // } catch (e) {
+    //     list.push(e.status + " " + e.message);
+    // }
+    //
+    // try {
+    //     await channelsService.sendMessage(channel, user, "Hello world!");
+    //     await channelsService.sendMessage(channel, user, "Hello world!");
+    // } catch (e) {
+    //     list.push(e.status + " " + e.message);
+    // }
+    //
+    // try {
+    //     const endDate = new Date();
+    //     endDate.setMinutes(endDate.getMinutes() + 4);
+    //
+    //     await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+    //     await channelsService.applyPunishment(channel, user, user2, PunishmentType.MUTE, endDate);
+    // } catch (e) {
+    //     list.push(e.status + " " + e.message);
+    // }
+    //
+    // try {
+    //     await channelsService.sendMessage(channel, user2, "Hello world!");
+    //     await channelsService.sendMessage(channel, user2, "Hello world!");
+    // } catch (e) {
+    //     list.push(e.status + " " + e.message);
+    // }
 
     // console.log("Channel: ", channel);
     for (const s of list) {

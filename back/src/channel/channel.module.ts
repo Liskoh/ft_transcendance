@@ -7,11 +7,13 @@ import {UserModule} from "../user/user.module";
 import {Punishment} from "./entity/punishment.entity";
 import {ChannelGateway} from "./gateway/channel.gateway";
 import {ChannelController} from "./controller/channel.controller";
+import {AuthModule} from "../auth/auth.module";
 
 
 @Module({
     exports: [ChannelService],
     imports: [
+        AuthModule,
         TypeOrmModule.forFeature(
             [
                 Channel,

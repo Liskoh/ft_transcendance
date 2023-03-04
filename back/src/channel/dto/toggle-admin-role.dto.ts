@@ -1,11 +1,11 @@
-import {IsBoolean, IsEnum, IsNumber, Min} from "class-validator";
+import {IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsString, Min} from "class-validator";
 import {PunishmentType} from "../enum/punishment-type.enum";
 
 export class ToggleAdminRoleDto {
 
     constructor(payload: any) {
         this.channelId = payload.channelId;
-        this.userId = payload.userId;
+        this.nickname = payload.nickname;
         this.giveAdminRole = payload.giveAdminRole;
     }
 
@@ -13,9 +13,9 @@ export class ToggleAdminRoleDto {
     @Min(1)
     channelId: number;
 
-    @IsNumber()
-    @Min(1)
-    userId: number;
+    @IsString()
+    @IsNotEmpty()
+    nickname: string;
 
     @IsBoolean()
     giveAdminRole: boolean;

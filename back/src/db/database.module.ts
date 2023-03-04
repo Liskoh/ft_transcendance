@@ -2,6 +2,7 @@ import {Module} from '@nestjs/common';
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {ConfigModule, ConfigService} from "@nestjs/config";
 import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
+import * as process from "process";
 
 @Module({
     imports: [
@@ -12,12 +13,11 @@ import {POSTGRES_NAME, TYPEORM_ENTITIES} from "../consts";
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
                 type: POSTGRES_NAME,
-                //host: "localhost",
-				host: "postgres",
-                //port: 5432,
-                username: "postgres",
-                password: "secret",
-                database: "test",
+				host: configService.get<string>('DB_HOST'),
+                port: configService.get<number>('DB_PORT'),
+                username: configService.get<string>('DB_USERNAME'),
+                password: configService.get<string>('DB_PASSWORD'),
+                database: configService.get<string>('DB_NAME'),
                 /*
                     host: configService.get<string>('DB_HOST'),
                     port: configService.get<number>('DB_PORT'),

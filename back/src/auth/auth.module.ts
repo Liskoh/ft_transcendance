@@ -1,26 +1,32 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   auth.module.ts                                     :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: tnguyen- <tnguyen-@student.42lyon.fr>      +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/02/21 02:03:59 by tnguyen-          #+#    #+#             */
-/*   Updated: 2023/02/25 16:07:00 by tnguyen-         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-import { Module } from '@nestjs/common';
-import { Auth42Service } from './auth42.service';
-import { AuthController } from './auth.controller';
-import { UserService } from 'src/user/service/user.service';
-import { UserModule } from 'src/user/user.module';
+import {forwardRef, Module} from '@nestjs/common';
+import {AuthService} from './auth.service';
+import {AuthController} from './auth.controller';
+import {UserModule} from 'src/user/user.module';
+import {JwtModule} from "@nestjs/jwt";
+import {PassportModule} from "@nestjs/passport";
+import {JwtStrategy} from "./jwt.strategy";
+import {APP_GUARD} from "@nestjs/core";
 
 @Module({
-	imports:[
-		UserModule
-	],
-  providers: [Auth42Service],
-  controllers: [AuthController]
+    imports: [
+        forwardRef(() => UserModule),
+        // UserModule,
+        JwtModule.register({
+            secret: 'secret',
+            signOptions: {expiresIn: '1d'},
+        }),
+        PassportModule
+    ],
+    providers: [
+        AuthService,
+        JwtStrategy,
+        {
+            provide: APP_GUARD,
+            useClass: JwtStrategy,
+        }
+    ],
+    controllers: [AuthController],
+    exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule {
+}

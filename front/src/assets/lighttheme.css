@@ -1,0 +1,9 @@
+:root .t-light {
+	--color-text: #282828;
+	--color-text-soft: #505050;
+	--color-background: #e0e0e0;
+	--color-background-header: linear-gradient(45deg, #a0a0a0, #d0d0d0);
+	--color-border-header: #d0d080;
+	--color-nav-accent: #c444b1;
+	--color-theme-button-background: linear-gradient(115deg, #a0a0a0 0 50%, #d0d080 50% 100%);
+}
