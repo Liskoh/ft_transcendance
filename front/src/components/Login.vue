@@ -27,7 +27,7 @@ export default {
 
         try {
           const register = await fetch(
-              "http://localhost:8000/auth/register",
+              "http://10.13.8.3:8000/auth/register",
               requestOptions
           );
           const dataRegister = await register.json();

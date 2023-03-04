@@ -16,16 +16,154 @@ import PageLoad from '@/components/PageLoad.vue';
 </template>
 
 <script lang="ts">
-import {SOCKET_SERVER} from "@/consts";
 
+import io, {Socket} from "socket.io-client";
+import { store } from "@/stores/store";
+
+export default {
+  name: 'PongView',
+  store,
+
+  created() {
+    console.log('created token ' + localStorage.getItem('token'));
+    this.$store.commit('setPongSocket', io('http://10.13.8.3:8000/game', {
+      extraHeaders: {
+        Authorization: 'Bearer ' + localStorage.getItem('token')
+      }
+    }));
+
+    this.getPongSocket.emit('playerJoin');
+  },
+
+  beforeRouteLeave(to, from, next) {
+    console.log('beforeRouteLeave pong view');
+    const socket : Socket = this.getPongSocket;
+
+    if (!socket) {
+      console.log('socket is null');
+    } else {
+      console.log('socket is not null');
+      this.getPongSocket.disconnect();
+    }
+    next();
+  },
+  computed: {
+    getPongSocket() {
+      return this.$store.getters.getPongSocket;
+    },
+
+    mounted() {
+      this.getPongSocket.on('nbrPlayer', (data) => {
+        const nbrPlayer: number = data.nbrPlayer;
+
+        if (nbrPlayer === 1) {
+          console.log('You are player 1');
+          this.getPongSocket().emit('playerJoin', {
+            ballPosition: ballDoc.getBoundingClientRect(),
+            position: paddle1.getBoundingClientRect(),
+            id: 1,
+            board: board.getBoundingClientRect()
+          });
+        } else if (nbrPlayer === 2) {
+          console.log('You are player 2');
+          this.getPongSocket().emit('playerJoin', {
+            ballPosition: ballDoc.getBoundingClientRect(),
+            position: paddle2.getBoundingClientRect(),
+            id: 2,
+            board: board.getBoundingClientRect()
+          });
+        } else {
+          imSpectator = true;
+          console.log('Spectator');
+          this.getPongSocket().emit('player_join', {id: nbrPlayer});
+        }
+      });
+
+      this.getPongSocket.on('startGame', () => {
+        message.innerHTML = 'Game Start';
+        player1.scoreDoc.innerHTML = '0';
+        player2.scoreDoc.innerHTML = '0';
+      });
+
+      this.getPongSocket.on('resetBall', (data) => {
+        ball.resetPlace(data.top, data.left);
+      });
+
+      this.getPongSocket.on('resetPaddle', (data) => {
+        player1.resetPlace(data);
+        player2.resetPlace(data);
+      });
+
+      this.getPongSocket.on('moveBall', (data) => {
+        ball.move(data.top, data.left);
+      });
+
+      this.getPongSocket.on('movePaddle', (data) => {
+        if (data.id === 1) {
+          player1.move(data.top);
+        } else if (data.id === 2) {
+          player2.move(data.top);
+        }
+      });
+
+      this.getPongSocket.on('updateScore', (data) => {
+        if (data.id === 1) {
+          player1.scoreDoc.innerHTML = '' + data.score;
+        } else if (data.id === 2) {
+          player2.scoreDoc.innerHTML = '' + data.score;
+        }
+      });
+      this.getPongSocket.on('someoneWin', (data) => {
+        if (data.id === 1) {
+          message.innerHTML = 'Player 1 Win';
+        } else if (data.id === 2) {
+          message.innerHTML = 'Player 2 Win';
+        }
+      });
+    }
+  },
+
+  //emit socket
+  methods: {
+    keyDownEvent(event: any) {
+      if (imSpectator) {
+        return ;
+      }
+      this.getPongSocket.emit('onKeyInput', {
+        key: event.key,
+        pressed: true,
+      });
+    },
+
+    keyUpEvent(event: any) {
+      if (imSpectator) {
+        return ;
+      }
+      this.getPongSocket.emit('onKeyInput', {
+        key: event.key,
+        pressed: false,
+      });
+    }
+  },
+}
 
 let imSpectator: boolean = false;
+let message: HTMLElement = document.getElementById('message');
+let ballDoc: HTMLElement = document.getElementById('ball');
+let paddle1: HTMLElement = document.getElementById('paddle1');
+let paddle2: HTMLElement = document.getElementById('paddle2');
+let board: HTMLElement = document.getElementById('board');
+
+document.addEventListener('keydown', keyDownEvent);
+document.addEventListener('keyup', keyUpEvent);
+
 class Player {
   scoreDoc: HTMLElement;
   paddleDoc: HTMLElement;
+
   constructor(score, paddle) {
-    this.scoreDoc = document.getElementById(score);
-    this.paddleDoc = document.getElementById(paddle);
+    this.scoreDoc = document.getElementById('score');
+    this.paddleDoc = document.getElementById('paddle');
   }
 
   move(top: number) {
@@ -39,6 +177,7 @@ class Player {
 
 class Ball {
   ballDoc: HTMLElement;
+
   constructor() {
     this.ballDoc = document.getElementById('ball');
   }
@@ -65,14 +204,14 @@ function keyDownEvent(event) {
   if (imSpectator) {
     return;
   }
-  SOCKET_SERVER.emit('keyDown', event.key);
+  // SOCKET_SERVER.emit('keyDown', event.key);
 }
 
 function keyUpEvent(event) {
   if (imSpectator) {
     return;
   }
-  SOCKET_SERVER.emit('keyUp', event.key);
+  // SOCKET_SERVER.emit('keyUp', event.key);
 }
 
 </script>
