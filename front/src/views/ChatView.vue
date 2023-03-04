@@ -171,6 +171,9 @@ export default {
 		sendMessage() {
 			if (!this.newMessage)
 				return;
+			
+			const msgContent :string = this.newMessage;
+			this.$refs.msgBoxForm.reset();
 
 			const currentChannel = this.$store.getters.getCurrentChannel;
 			if (!currentChannel) {
@@ -178,13 +181,13 @@ export default {
 				return;
 			}
 
-			const commandArray = this.newMessage.split(' ');
+			const commandArray = msgContent.split(' ');
 			const commandName = commandArray[0];
 
 			if (commandName[0] === '/') {
 				const commandArgs = commandArray.slice(1);
 				const command = getCommandByName(commandName);
-				// this.newMessage = "";
+				// msgContent = "";
 				if (command) {
 					command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), this.getChannelSocket);
 					return;
@@ -196,8 +199,10 @@ export default {
 
 			this.getChannelSocket.emit('sendMessage', {
 				channelId: currentChannel.id,
-				text: this.newMessage,
+				text: msgContent,
 			});
+
+
 
 		},
 
@@ -252,14 +257,19 @@ export default {
 		<div class="c-message-area">
 			<div class="c-messages">
 				<div class="c-msg" v-for="message in currentChannelMessages" :key="message.id">
-					{{ message.content }}
+					<div class="c-msg-sender">
+						{{ message.userId }}
+					</div>
+					<div class="c-msg-content">
+						{{ message.content }}
+					</div>
 				</div>
 			</div>
 
 			<div class="c-input-box">
-				<form @submit.prevent="sendMessage">
-					<input type="text" v-model="newMessage">
-					<button type="submit">Send</button>
+				<form class="c-form" ref="msgBoxForm" @submit.prevent="sendMessage">
+					<input class="c-form-input" type="text" v-model="newMessage">
+					<button class="c-form-submit" type="submit">Send</button>
 				</form>
 			</div>
 		</div>
@@ -314,14 +324,46 @@ export default {
 }
 
 .c-input-box {
+	display: flex;
 	background-color: #004000;
-	height: 120px;
 	width: 100%;
+	align-items: center;
+	justify-content: center;
+	padding-top: 24px;
+	padding-bottom: 24px;
+}
+
+.c-form {
+	display: flex;
+	width: 80%;
+	height: 80%;
+	flex-direction: row;
+}
+
+.c-form-input {
+	flex: 8;
+	word-wrap: normal;
+	font-size: 150%;
+}
+
+.c-form-submit {
+	flex: 1;
 }
 
 /* To be put in a component */
 .c-msg {
-	color: var(--color-text);
+	display: flex;
+	flex-direction: row;
+}
+
+.c-msg-sender {
+	flex: 1;
+	background-color: #600000;
+}
+
+.c-msg-content {
+	flex: 8;
+	background-color: #006000;
 }
 
 
