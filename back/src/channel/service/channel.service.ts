@@ -319,6 +319,10 @@ export class ChannelService {
                 HttpStatus.BAD_REQUEST
             );
 
+        console.log('channelName ' + channel.name);
+        console.log('ownerName: ' + owner.nickname);
+        console.log('channelower: ' + channel.owner.nickname);
+
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
                 'You are not administrator of this channel',
@@ -559,17 +563,17 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        // const coolDownTime: number = this.getCoolDownTime(user.id);
-        //
-        // if (coolDownTime > 0) {
-        //     const seconds = Math.floor(coolDownTime / 1000);
-        //     const milliseconds = coolDownTime - seconds * 1000;
-        //     throw new HttpException(
-        //         'You must wait ' + seconds + '.' + milliseconds +
-        //         ' seconds before sending another message',
-        //         HttpStatus.FORBIDDEN
-        //     );
-        // }
+        const coolDownTime: number = this.getCoolDownTime(user.id);
+
+        if (coolDownTime > 0) {
+            const seconds = Math.floor(coolDownTime / 1000);
+            const milliseconds = coolDownTime - seconds * 1000;
+            throw new HttpException(
+                'You must wait ' + seconds + '.' + milliseconds +
+                ' seconds before sending another message',
+                HttpStatus.FORBIDDEN
+            );
+        }
 
         const message = new Message(user, text);
         channel.messages.push(message);
@@ -599,6 +603,7 @@ export class ChannelService {
      * @returns {boolean}
      */
     isAdministrator(channel: Channel, user: User): boolean {
+        console.log(channel.owner.id + ' ' + user.id + ' ' + user.nickname);
         if (channel.owner.id === user.id) {
             return true;
         }

@@ -71,7 +71,7 @@
 
 
 <script lang="ts">
-import {mapGetters, mapMutations} from "vuex";
+import {mapGetters, mapMutations, mapState} from "vuex";
 import {Message} from "@/models/message.model";
 import {Channel} from "@/models/channel.model";
 import {COMMANDS, getCommandByName} from "@/consts";
@@ -162,6 +162,7 @@ export default {
   },
 
   mounted() {
+    // mapState(['joinedChannels', 'availableChannels', 'directChannels']);
 
     this.getChannelSocket.on('getChannelSuccess', (data) => {
           const channel = data;
@@ -243,6 +244,12 @@ export default {
       if (!this.newMessage)
         return;
 
+      const currentChannel = this.$store.getters.getCurrentChannel;
+      if (!currentChannel) {
+        this.showNotification('You are not in any channel', 'error');
+        return;
+      }
+
       const commandArray = this.newMessage.split(' ');
       const commandName = commandArray[0];
 
@@ -251,7 +258,7 @@ export default {
         const command = getCommandByName(commandName);
         // this.newMessage = "";
         if (command) {
-          command.emitCommand(command.getCommandData(1, commandArgs), this.getChannelSocket);
+          command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), this.getChannelSocket);
           return;
         }
 
@@ -259,19 +266,10 @@ export default {
         return;
       }
 
-      const channel = this.$store.getters.getCurrentChannel;
-
-      if (!channel) {
-        this.showNotification('You are not in any channel', 'error');
-        return;
-      }
-
       this.getChannelSocket.emit('sendMessage', {
-        channelId: channel.id,
+        channelId: currentChannel.id,
         text: this.newMessage,
       });
-
-      // this.newMessage = "";
 
     },
 
