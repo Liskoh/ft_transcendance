@@ -56,7 +56,6 @@ export class Game {
 
     getPoint(playerWhoScore): boolean {
         playerWhoScore.score++;
-        console.log('score : ' + playerWhoScore.score);
         this.emitToEveryone('updateScore', {id: playerWhoScore.id, score: playerWhoScore.score});
         if (playerWhoScore.score === MAX_POINTS) {
             this.emitToEveryone('someoneWin', playerWhoScore.id);

@@ -165,7 +165,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             // const game = this.gameService.getCurrentGame(client);
 
             if (!this.game) {
-                await this.sendErrorToClient(client, 'gameError', 'No game found');
+                // await this.sendErrorToClient(client, 'gameError', 'No game found');
                 return;
             }
 
@@ -179,7 +179,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
             if (!player) {
-                await this.sendErrorToClient(client, 'gameError', 'You are not a player in this game');
+                // await this.sendErrorToClient(client, 'gameError', 'You are not a player in this game');
                 return;
             }
 
@@ -187,7 +187,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const pressed = data.pressed;
 
             if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Enter') {
-                await this.sendErrorToClient(client, 'gameError', 'You need to press a valid key');
+                // await this.sendErrorToClient(client, 'gameError', 'You need to press a valid key');
                 return;
             }
             // if (key === 'Enter' && this.game.gameState === GameState.NOT_STARTED && this.game.firstPlayer && this.game.secondPlayer) {
