@@ -12,17 +12,26 @@ export class Game {
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
     }
+
     ball: Ball;
     firstPlayer: Player;
     secondPlayer: Player;
-    gameState: GameState;
+    gameState: GameState = GameState.NOT_STARTED;
     gameLevel: GameLevel;
     document: Document;
 
-    invitations: string[] = [];
 
-    isPrivate: boolean;
-
+    emitToEveryone(event: string, data: any) {
+        try {
+            this.firstPlayer.client.emit(event, data);
+        } catch (error) {
+            console.log('try to emit to a player but he is not connected');
+        }try {
+            this.secondPlayer.client.emit(event, data);
+        } catch (error) {
+            console.log('try to emit to a player but he is not connected');
+        }
+    }
 
     getPlayer(id: string): Player {
         if (this.firstPlayer.id === id) {
@@ -38,28 +47,27 @@ export class Game {
         console.log('reset');
         this.firstPlayer.score = 0;
         this.secondPlayer.score = 0;
-        // emitToEveryone('updateScore', {id: player1.id, score: player1.score});
-        // emitToEveryone('updateScore', {id: player2.id, score: player2.score});
-        // firstPlayer.resetPlace();
-        // secondPlayer.resetPlace();
-        // ball.resetPlace();
+        // this.emitToEveryone('updateScore', {id: this.firstPlayer.id, score: this.firstPlayer.score});
+        // this.emitToEveryone('updateScore', {id: this.secondPlayer.id, score: this.secondPlayer.score});
+        this.firstPlayer.resetPlace();
+        this.secondPlayer.resetPlace();
+        this.ball.resetPlace(this);
     }
 
-    getPoint(playerWhoScore) : boolean {
+    getPoint(playerWhoScore): boolean {
         playerWhoScore.score++;
-        //TODO: SOCKET GATEWAY
-        // emitToEveryone('updateScore', {id: playerWhoScore.id, score: playerWhoScore.score});
-        if (playerWhoScore.score === MAX_POINTS ) {
-            // emitToEveryone('someoneWin', playerWhoScore.id);
+        this.emitToEveryone('updateScore', {id: playerWhoScore.id, score: playerWhoScore.score});
+        if (playerWhoScore.score === MAX_POINTS) {
+            this.emitToEveryone('someoneWin', playerWhoScore.id);
             this.gameState = GameState.NOT_STARTED;
             return false;
         }
 
-        this.ball.resetPlace();
+        this.ball.resetPlace(this);
         return true;
     }
 
-    changeBallDirection(playerWhoHitTheBall: Player) : void {
+    changeBallDirection(playerWhoHitTheBall: Player): void {
         this.ball.directionY = Math.tan((this.ball.coord.coordCenter.y - playerWhoHitTheBall.coord.coordCenter.y) /
             (playerWhoHitTheBall.size.height / 2)) * 1.5;
 
@@ -69,8 +77,10 @@ export class Game {
             this.ball.directionX = -this.ball.speed - (Math.abs(this.ball.directionY) / 2);
     }
 
-    moveBall() : boolean {
-        // if the ball touch the left or right of the board
+    private num = 0;
+
+    moveBall(): boolean {
+        // if the ball touch the left or right of the boar
         if (this.ball.coord.coord.left <= 0) {
             if (this.getPoint(this.secondPlayer))
                 return false;
@@ -116,29 +126,30 @@ export class Game {
             this.ball.directionY = -this.ball.directionY;
         }
 
-        this.ball.move();
+        this.ball.move(this);
+        return true;
     }
 
-    movePaddle() : void {
-        if (this.firstPlayer.keyPress['w']) {
+    movePaddle(): void {
+        if (this.firstPlayer.keyPress['ArrowUp']) {
             this.firstPlayer.move(DirectionState.UP);
-            //emitToEveryone('movePaddle', {top: this.firstPlayer.coord.coord.top, id: this.firstPlayer.id});
+            this.emitToEveryone('movePaddle', {top: this.firstPlayer.coord.coord.top, id: this.firstPlayer.id});
         }
-        if (this.firstPlayer.keyPress['s']) {
+        if (this.firstPlayer.keyPress['ArrowDown']) {
             this.firstPlayer.move(DirectionState.DOWN);
-            // emitToEveryone('movePaddle', {top: this.firstPlayer.coord.coord.top, id: this.firstPlayer.id});
+            this.emitToEveryone('movePaddle', {top: this.firstPlayer.coord.coord.top, id: this.firstPlayer.id});
         }
         if (this.secondPlayer.keyPress['ArrowUp']) {
             this.secondPlayer.move(DirectionState.UP);
-            // emitToEveryone('movePaddle', {top: this.secondPlayer.coord.coord.top, id: this.secondPlayer.id});
+            this.emitToEveryone('movePaddle', {top: this.secondPlayer.coord.coord.top, id: this.secondPlayer.id});
         }
         if (this.secondPlayer.keyPress['ArrowDown']) {
             this.secondPlayer.move(DirectionState.DOWN);
-            // emitToEveryone('movePaddle', {top: this.secondPlayer.coord.coord.top, id: this.secondPlayer.id});
+            this.emitToEveryone('movePaddle', {top: this.secondPlayer.coord.coord.top, id: this.secondPlayer.id});
         }
     }
 
-    moveAll() : void {
+    moveAll(): void {
         if (this.gameState === GameState.NOT_STARTED) {
             return;
         }
@@ -146,21 +157,25 @@ export class Game {
             return;
         }
         if (!this.moveBall())
-            return ;
+            return;
         this.movePaddle();
-        setTimeout(this.moveAll, 10);
+        console.log('mooveALL' + new Date().getMilliseconds());
+        setTimeout(this.moveAll.bind(this), 10);
     }
 
-    checkGameLevel() : void {
-        if (this.gameLevel === GameLevel.EASY) {
-            this.ball.speed -= 0.3;
-        } else if (this.gameLevel === GameLevel.HARD) {
-            // find the way to access to the html page
-        }
-    }
+    // checkGameLevel() : void {
+    //     if (this.gameLevel === GameLevel.EASY) {
+    //         this.ball.speed -= 0.3;
+    //     } else if (this.gameLevel === GameLevel.HARD) {
+    //         // find the way to access to the html page
+    //     }
+    // }
 
-    startGame() : void {
-        this.checkGameLevel();
+    startGame(): void {
+        this.gameState = GameState.STARTED;
+        this.emitToEveryone('newMessage', 'Game Started');
+        // this.checkGameLevel();
+        this.resetGame();
         this.moveAll();
     }
 }

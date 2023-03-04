@@ -38,11 +38,12 @@ export default {
 	created() {
 		console.log('created token ' + localStorage.getItem('token'));
 
-		this.$store.commit('setChannelSocket', io('http://localhost:8000/channels', {
+		this.$store.commit('setChannelSocket', io('http://10.13.8.3:8000/channels', {
 			extraHeaders: {
 				Authorization: 'Bearer ' + localStorage.getItem('token')
 			}
-		}));
+		})
+    );
 
 		this.getChannelSocket.emit('getChannels');
 		console.log('get channels with success');

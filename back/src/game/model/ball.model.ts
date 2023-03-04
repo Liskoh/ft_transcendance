@@ -1,4 +1,5 @@
 import {Coord} from "./coord.model";
+import {Game} from "./game.model";
 
 export class Ball {
     speed: number;
@@ -27,17 +28,16 @@ export class Ball {
     }
 
     // Function to move the paddle on the board, and sending to everyone the new position
-    move() {
+    move(game: Game) {
         this.coord.coordCenter.x += this.directionX * this.speed;
         this.coord.coordCenter.y += this.directionY * this.speed;
         this.getNewPosition();
 
-        //TODO: SOCKET GATEWAY
-        // emitToEveryone('moveBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+        game.emitToEveryone('moveBall', { top: this.coord.coord.top, left: this.coord.coord.left });
     }
 
     // Function to reset the place of the paddle in the board
-    resetPlace() {
+    resetPlace(game: Game) {
         this.coord.coordCenter.x = 50;
         this.coord.coordCenter.y = 50;
         this.getNewPosition();
@@ -45,7 +45,6 @@ export class Ball {
         this.directionX = Math.floor(Math.random() * 2) === 0 ? -1 * this.speed : this.speed;
         this.directionY = 0;
 
-        //TODO: SOCKET GATEWAY
-        // emitToEveryone('resetBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+        game.emitToEveryone('resetBall', { top: this.coord.coord.top, left: this.coord.coord.left });
     }
 }

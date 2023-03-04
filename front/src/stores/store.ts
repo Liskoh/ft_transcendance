@@ -1,7 +1,7 @@
 import {createStore} from "vuex";
 import {Channel} from "@/models/channel.model";
 import {User} from "@/models/user.model";
-import {Socket} from "socket.io-client";
+import io, {Socket} from "socket.io-client";
 
 export const store = createStore({
     state: {
@@ -10,6 +10,8 @@ export const store = createStore({
         directChannels: <Channel[]>[],
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
+        userSocket: <Socket | unknown>null,
+        pongSocket: <Socket | unknown>null,
     },
     getters: {
         getJoinedChannels: state => state.joinedChannels,
@@ -19,6 +21,18 @@ export const store = createStore({
         getCurrentChannel: state => state.currentChannel,
 
         getChannelSocket: state => state.channelSocket,
+
+        getUserSocket: state => {
+            if (!state.userSocket) {
+                state.userSocket = io('http://10.13.8.3:8000/users', {
+                    extraHeaders: {
+                        Authorization: 'Bearer ' + localStorage.getItem('token')
+                    }
+                })
+            }
+            return state.userSocket
+        },
+        getPongSocket: state => state.pongSocket,
     },
     mutations: {
         setJoinedChannels(state, joinedChannels) {
@@ -37,9 +51,12 @@ export const store = createStore({
             state.currentChannel = currentChannel;
         },
 
-
         setChannelSocket(state, channelSocket) {
             state.channelSocket = channelSocket;
-        }
+        },
+
+        setPongSocket(state, pongSocket) {
+            state.pongSocket = pongSocket;
+        },
     }
 });
