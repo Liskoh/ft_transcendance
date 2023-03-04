@@ -159,6 +159,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('onKeyInput')
     async onKeyInput(client: Socket, data: any): Promise<any> {
+        console.log('onKeyInput');
         try {
             await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
 
@@ -179,12 +180,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const key = data.key;
             const pressed = data.pressed;
 
-            if (key !== 'ArrowUp' && key !== 'ArrowDown') {
+            if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Enter') {
                 client.emit('gameError', 'Invalid key');
                 return;
             }
 
-            player.keyPress[key] = pressed;
+            if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
+                console.log('test enter');
+                this.game.startGame();
+            } else if (this.game.firstPlayer && this.game.secondPlayer) {
+                player.keyPress[key] = pressed;
+            }
+
         } catch (error) {
             //TODO: SEND MESSAGE
         }

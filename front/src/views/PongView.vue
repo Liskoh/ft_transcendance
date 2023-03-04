@@ -32,7 +32,7 @@ export default {
       }
     }));
 
-    this.getPongSocket.emit('playerJoin');
+    // this.getPongSocket.emit('playerJoin');
   },
 
   beforeRouteLeave(to, from, next) {
@@ -126,6 +126,7 @@ export default {
   //emit socket
   methods: {
     keyDownEvent(event: any) {
+      console.log('keyDownEvent');
       if (imSpectator) {
         return ;
       }
@@ -162,8 +163,8 @@ class Player {
   paddleDoc: HTMLElement;
 
   constructor(score, paddle) {
-    this.scoreDoc = document.getElementById('score');
-    this.paddleDoc = document.getElementById('paddle');
+    this.scoreDoc = document.getElementById(score);
+    this.paddleDoc = document.getElementById(paddle);
   }
 
   move(top: number) {
@@ -199,20 +200,6 @@ let ball = new Ball();
 
 document.addEventListener('keydown', keyDownEvent);
 document.addEventListener('keyup', keyUpEvent);
-
-function keyDownEvent(event) {
-  if (imSpectator) {
-    return;
-  }
-  // SOCKET_SERVER.emit('keyDown', event.key);
-}
-
-function keyUpEvent(event) {
-  if (imSpectator) {
-    return;
-  }
-  // SOCKET_SERVER.emit('keyUp', event.key);
-}
 
 </script>
 

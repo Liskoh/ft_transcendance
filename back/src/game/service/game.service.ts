@@ -232,11 +232,6 @@ export class GameService {
             return false;
         }
 
-        if (game.isPrivate && !game.invitations.includes(socket.id)) {
-            return false;
-        }
-
-        game.invitations = [];
         return true;
     }
 
