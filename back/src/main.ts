@@ -99,8 +99,8 @@ async function bootstrap() {
 
    const cors: CorsOptions = {
         origin: [
-            'http://127.0.0.1:5173',
-            'http://127.0.0.1:8000'
+            'http://' + process.env.WEB_HOST +':5173',
+            'http://' + process.env.WEB_HOST + ':8000'
         ],
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         optionsSuccessStatus: 200,
@@ -108,9 +108,7 @@ async function bootstrap() {
 
     app.enableCors(cors);
 
-    await app.listen(8000);
-
-    // await app.listen(3000);
+    await app.listen(process.env.BACK_PORT);
 
     let channel;
     let user;
