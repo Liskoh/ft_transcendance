@@ -16,7 +16,7 @@ export class Game {
     ball: Ball;
     firstPlayer: Player;
     secondPlayer: Player;
-    gameState: GameState;
+    gameState: GameState = GameState.NOT_STARTED;
     gameLevel: GameLevel;
     document: Document;
 
@@ -47,16 +47,16 @@ export class Game {
         console.log('reset');
         this.firstPlayer.score = 0;
         this.secondPlayer.score = 0;
-        this.emitToEveryone('updateScore', {id: this.firstPlayer.id, score: this.firstPlayer.score});
-        this.emitToEveryone('updateScore', {id: this.secondPlayer.id, score: this.secondPlayer.score});
+        // this.emitToEveryone('updateScore', {id: this.firstPlayer.id, score: this.firstPlayer.score});
+        // this.emitToEveryone('updateScore', {id: this.secondPlayer.id, score: this.secondPlayer.score});
         this.firstPlayer.resetPlace();
         this.secondPlayer.resetPlace();
-        this.ball.resetPlace();
+        this.ball.resetPlace(this);
     }
 
     getPoint(playerWhoScore): boolean {
         playerWhoScore.score++;
-        //TODO: SOCKET GATEWAY
+        console.log('score : ' + playerWhoScore.score);
         this.emitToEveryone('updateScore', {id: playerWhoScore.id, score: playerWhoScore.score});
         if (playerWhoScore.score === MAX_POINTS) {
             this.emitToEveryone('someoneWin', playerWhoScore.id);
@@ -64,7 +64,7 @@ export class Game {
             return false;
         }
 
-        this.ball.resetPlace();
+        this.ball.resetPlace(this);
         return true;
     }
 
@@ -78,8 +78,10 @@ export class Game {
             this.ball.directionX = -this.ball.speed - (Math.abs(this.ball.directionY) / 2);
     }
 
+    private num = 0;
+
     moveBall(): boolean {
-        // if the ball touch the left or right of the board
+        // if the ball touch the left or right of the boar
         if (this.ball.coord.coord.left <= 0) {
             if (this.getPoint(this.secondPlayer))
                 return false;
@@ -125,15 +127,16 @@ export class Game {
             this.ball.directionY = -this.ball.directionY;
         }
 
-        this.ball.move();
+        this.ball.move(this);
+        return true;
     }
 
     movePaddle(): void {
-        if (this.firstPlayer.keyPress['w']) {
+        if (this.firstPlayer.keyPress['ArrowUp']) {
             this.firstPlayer.move(DirectionState.UP);
             this.emitToEveryone('movePaddle', {top: this.firstPlayer.coord.coord.top, id: this.firstPlayer.id});
         }
-        if (this.firstPlayer.keyPress['s']) {
+        if (this.firstPlayer.keyPress['ArrowDown']) {
             this.firstPlayer.move(DirectionState.DOWN);
             this.emitToEveryone('movePaddle', {top: this.firstPlayer.coord.coord.top, id: this.firstPlayer.id});
         }
@@ -157,7 +160,8 @@ export class Game {
         if (!this.moveBall())
             return;
         this.movePaddle();
-        setTimeout(this.moveAll, 10);
+        console.log('mooveALL' + new Date().getMilliseconds());
+        setTimeout(this.moveAll.bind(this), 10);
     }
 
     // checkGameLevel() : void {
@@ -169,6 +173,8 @@ export class Game {
     // }
 
     startGame(): void {
+        this.gameState = GameState.STARTED;
+        this.emitToEveryone('newMessage', 'Game Started');
         // this.checkGameLevel();
         this.resetGame();
         this.moveAll();

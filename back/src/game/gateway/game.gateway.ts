@@ -6,17 +6,16 @@ import {
     WebSocketServer
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {validate, validateOrReject, ValidationError} from "class-validator";
+import {validateOrReject} from "class-validator";
 import {GameService} from "../service/game.service";
 import {Game} from "../model/game.model";
 import {OnKeyInputDto} from "../dto/on-key-input.dto";
-import {Channel} from "../../channel/entity/channel.entity";
-import {User} from "../../user/entity/user.entity";
 import {AuthService} from "../../auth/auth.service";
 import {UserService} from "../../user/service/user.service";
 import {HttpException} from "@nestjs/common";
 import {Player} from "../model/player.model";
 import {Ball} from "../model/ball.model";
+import {GameState} from "../enum/game-state.enum";
 
 @WebSocketGateway(
     {
@@ -84,7 +83,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     async checkClient(client: Socket): Promise<any> {
         // const game = this.gameService.getCurrentGame(client);
-
+        //
+        // if (game === null) {
+        //     game = new Game(null, null, null);
+        // }
         if (!this.game.firstPlayer) {
             client.emit('nbrPlayer', {
                 nbrPlayer: 1,
@@ -139,9 +141,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('playerJoin')
     async onPlayerJoin(client: Socket, data: any): Promise<any> {
-        for (let i = 0; i < 10; i++)
-            console.log('hello world');
-
 
         // const game = this.gameService.getCurrentGame(client);
 
@@ -161,19 +160,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async onKeyInput(client: Socket, data: any): Promise<any> {
         console.log('onKeyInput');
         try {
-            await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
+            // await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
 
             // const game = this.gameService.getCurrentGame(client);
 
             if (!this.game) {
-                client.emit('gameError', 'You are not in a game');
+                await this.sendErrorToClient(client, 'gameError', 'No game found');
                 return;
             }
 
-            const player = this.game.getPlayer(client.id);
+            // const player = this.game.getPlayer(client.id);
+            let player;
+
+            if (this.game.firstPlayer && this.game.firstPlayer.client.id === client.id)
+                player = this.game.firstPlayer;
+            else if (this.game.secondPlayer && this.game.secondPlayer.client.id === client.id)
+                player = this.game.secondPlayer;
+
 
             if (!player) {
-                client.emit('gameError', 'You are not in this game');
+                await this.sendErrorToClient(client, 'gameError', 'You are not a player in this game');
                 return;
             }
 
@@ -181,19 +187,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const pressed = data.pressed;
 
             if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Enter') {
-                client.emit('gameError', 'Invalid key');
+                await this.sendErrorToClient(client, 'gameError', 'You need to press a valid key');
                 return;
             }
-
-            if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
-                console.log('test enter');
-                this.game.startGame();
+            // if (key === 'Enter' && this.game.gameState === GameState.NOT_STARTED && this.game.firstPlayer && this.game.secondPlayer) {
+                if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
+                    this.game.startGame();
             } else if (this.game.firstPlayer && this.game.secondPlayer) {
                 player.keyPress[key] = pressed;
             }
 
         } catch (error) {
             //TODO: SEND MESSAGE
+            console.log(error);
         }
     }
 
@@ -209,15 +215,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
     async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
-        if (error instanceof HttpException) {
-            socket.emit(name, error);
-            return;
-        }
+        // if (error instanceof HttpException) {
+        //     socket.emit(name, error);
+        //     return;
+        // }
+        //
+        // if (error instanceof Object) {
+        //     socket.emit(name, {message: "Invalid request, please check your data (/help)"});
+        //     return;
+        // }
 
-        if (error instanceof Object) {
-            socket.emit(name, {message: "Invalid request, please check your data (/help)"});
-            return;
-        }
     }
 
 

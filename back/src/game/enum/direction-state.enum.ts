@@ -1,4 +1,4 @@
 export enum DirectionState {
-    UP = 1,
-    DOWN = -1,
+    UP = -1,
+    DOWN = 1,
 }
