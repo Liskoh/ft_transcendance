@@ -1,6 +1,5 @@
 import {createRouter, createWebHistory} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import Chat from "@/components/Chat.vue";
 import Login from "@/components/Login.vue";
 import Upload from "@/components/Upload.vue";
 
@@ -20,7 +19,7 @@ const router = createRouter({
         {
             path: '/chat',
             name: 'chat',
-            component: Chat
+            component: () => import('../views/ChatView.vue') 
         },
         {
             path: '/playerprofile',
