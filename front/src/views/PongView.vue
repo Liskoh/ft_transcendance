@@ -234,6 +234,19 @@ body {
   border-radius: 2px;
 }
 
+/*//cente*/
+/*.board {*/
+/*  position: absolute;*/
+/*  top: 50%;*/
+/*  left: 50%;*/
+/*  transform: translate(-50%, -50%);*/
+/*  height: 85vh;*/
+/*  width: 80vw;*/
+/*  background: #000000;*/
+/*  border: solid 5px #ffffff;*/
+/*  border-radius: 2px;*/
+/*}*/
+
 .ball {
   position: absolute;
   height: 30px;
@@ -309,4 +322,13 @@ body {
     align-items: center;
   }
 }
+
+/*@media (min-width: 1024px) {*/
+/*  .about {*/
+/*    min-height: 100vh;*/
+/*    display: flex;*/
+/*    justify-content: center;*/
+/*    align-items: center;*/
+/*  }*/
+/*}*/
 </style>
