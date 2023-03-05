@@ -7,6 +7,7 @@
 </template>
 
 <script lang="ts">
+import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST } from "@/consts";
 import { HttpStatusCode } from "axios";
 
 interface ComponentData {
@@ -15,6 +16,10 @@ interface ComponentData {
 }
 
 export default {
+  mounted() {
+    console.log(VUE_APP_WEB_HOST);
+    console.log('test');
+  },
   data(): ComponentData {
     return {
       username: "",
@@ -24,10 +29,10 @@ export default {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ login: this.username }),
         };
-
+        const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/auth/register';
         try {
           const register = await fetch(
-              "http://localhost:8000/auth/register",
+              input,
               requestOptions
           );
           const dataRegister = await register.json();

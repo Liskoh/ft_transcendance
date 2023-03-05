@@ -1,7 +1,8 @@
 import {createStore} from "vuex";
 import {Channel} from "@/models/channel.model";
 import {User} from "@/models/user.model";
-import {Socket} from "socket.io-client";
+import io, {Socket} from "socket.io-client";
+import * as process from "process";
 
 export const store = createStore({
     state: {
@@ -10,6 +11,8 @@ export const store = createStore({
         directChannels: <Channel[]>[],
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
+        userSocket: <Socket | unknown>null,
+        pongSocket: <Socket | unknown>null,
     },
     getters: {
         getJoinedChannels: state => state.joinedChannels,
@@ -19,6 +22,8 @@ export const store = createStore({
         getCurrentChannel: state => state.currentChannel,
 
         getChannelSocket: state => state.channelSocket,
+        getUserSocket: state => state.userSocket,
+        getPongSocket: state => state.pongSocket,
     },
     mutations: {
         setJoinedChannels(state, joinedChannels) {
@@ -37,9 +42,12 @@ export const store = createStore({
             state.currentChannel = currentChannel;
         },
 
-
         setChannelSocket(state, channelSocket) {
             state.channelSocket = channelSocket;
-        }
+        },
+
+        setPongSocket(state, pongSocket) {
+            state.pongSocket = pongSocket;
+        },
     }
 });

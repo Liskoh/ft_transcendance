@@ -6,37 +6,99 @@ import {
     WebSocketServer
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {validate, validateOrReject, ValidationError} from "class-validator";
+import {validateOrReject} from "class-validator";
 import {GameService} from "../service/game.service";
 import {Game} from "../model/game.model";
 import {OnKeyInputDto} from "../dto/on-key-input.dto";
+import {AuthService} from "../../auth/auth.service";
+import {UserService} from "../../user/service/user.service";
+import {HttpException} from "@nestjs/common";
+import {Player} from "../model/player.model";
+import {Ball} from "../model/ball.model";
+import {GameState} from "../enum/game-state.enum";
+import {sendErrorToClient} from "../../utils";
 
 @WebSocketGateway(
     {
         cors: {
             origin: '*'
-        }
+        },
+        namespace: 'game'
     }
 )
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
-        private readonly gameService: GameService
+        private readonly gameService: GameService,
+        private readonly authService: AuthService,
+        private readonly usersService: UserService,
     ) {
     }
+
     @WebSocketServer()
     server: Server;
 
-    async handleConnection(client: Socket, ...args: any[]): Promise<any> {
+    private usersMap: Map<Socket, string> = new Map();
+
+    async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
+        let payload: any;
+        console.log('handle conncection from game gateway');
+        console.log('New pong connection: ', socket.id);
+        try {
+            payload = await this.authService.verifyJWTFromSocket(socket);
+        } catch (error) {
+            socket.disconnect();
+            return;
+        }
+
+        if (payload) {
+            if (Array.from(this.usersMap.values()).includes(payload.username)) {
+                socket.disconnect();
+                return;
+            }
+
+            try {
+                await this.usersService.getUserByLogin(payload.username);
+            } catch (error) {
+                await sendErrorToClient(socket, 'channelError', 'User not found');
+                return;
+            }
+
+            this.usersMap.set(socket, payload.username);
+            console.log('New connection: ', socket.id + ' - ' + payload.username);
+            console.log("usersMap: ", this.usersMap.size);
+            await this.checkClient(socket);
+        }
     }
 
-    async handleDisconnect(client: Socket): Promise<any> {
-        const game = this.gameService.getCurrentGame(client);
 
-        if (!game)
-            return
+    async handleDisconnect(socket: any): Promise<any> {
+        try {
+            const username = this.usersMap.get(socket);
+            console.log('Disconnected: ', socket.id + ' - ' + username);
+            this.usersMap.delete(socket);
+        } catch (ex) {
+            console.log(ex);
+        }
+    }
 
-        //stop the match
+    private game: Game = new Game(null, null, null);
+
+    async checkClient(client: Socket): Promise<any> {
+        // const game = this.gameService.getCurrentGame(client);
+        //
+        // if (game === null) {
+        //     game = new Game(null, null, null);
+        // }
+        if (!this.game.firstPlayer) {
+            client.emit('nbrPlayer', {
+                nbrPlayer: 1,
+            })
+        } else if (!this.game.secondPlayer) {
+            client.emit('nbrPlayer', {
+                nbrPlayer: 2,
+            })
+        }
     }
 
     @SubscribeMessage('joinQueue')
@@ -44,7 +106,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await this.gameService.joinQueue(client);
         } catch (error) {
-            client.emit('joinQueueError', error)
+            await sendErrorToClient(client, 'joinQueueError', error.message);
             return;
         }
 
@@ -73,36 +135,68 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
+
+    @SubscribeMessage('playerJoin')
+    async onPlayerJoin(client: Socket, data: any): Promise<any> {
+
+        // const game = this.gameService.getCurrentGame(client);
+
+        if (data.id === 1) {
+            console.log('Player ' + data.id + 'join');
+            this.game.firstPlayer = new Player(data.position, data.id, client, data.board);
+        } else if (data.id === 2) {
+            console.log('Player ' + data.id + 'join');
+            this.game.secondPlayer = new Player(data.position, data.id, client, data.board);
+        }
+
+        if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer)
+            this.game.ball = new Ball(data.ballPosition, data.board);
+    }
+
     @SubscribeMessage('onKeyInput')
     async onKeyInput(client: Socket, data: any): Promise<any> {
+        console.log('onKeyInput');
         try {
-            await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
+            // await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
 
-            const game = this.gameService.getCurrentGame(client);
+            // const game = this.gameService.getCurrentGame(client);
 
-            if (!game) {
-                client.emit('gameError', 'You are not in a game');
+            if (!this.game) {
+                // await this.sendErrorToClient(client, 'gameError', 'No game found');
                 return;
             }
 
-            const player = game.getPlayer(client.id);
+            // const player = this.game.getPlayer(client.id);
+            let player;
+
+            if (this.game.firstPlayer && this.game.firstPlayer.client.id === client.id)
+                player = this.game.firstPlayer;
+            else if (this.game.secondPlayer && this.game.secondPlayer.client.id === client.id)
+                player = this.game.secondPlayer;
+
 
             if (!player) {
-                client.emit('gameError', 'You are not in this game');
+                // await this.sendErrorToClient(client, 'gameError', 'You are not a player in this game');
                 return;
             }
 
             const key = data.key;
             const pressed = data.pressed;
 
-            if (key !== 'ArrowUp' && key !== 'ArrowDown') {
-                client.emit('gameError', 'Invalid key');
+            if (key !== 'ArrowUp' && key !== 'ArrowDown' && key !== 'Enter') {
+                // await this.sendErrorToClient(client, 'gameError', 'You need to press a valid key');
                 return;
             }
+            // if (key === 'Enter' && this.game.gameState === GameState.NOT_STARTED && this.game.firstPlayer && this.game.secondPlayer) {
+                if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
+                    this.game.startGame();
+            } else if (this.game.firstPlayer && this.game.secondPlayer) {
+                player.keyPress[key] = pressed;
+            }
 
-            player.keyPress[key] = pressed;
         } catch (error) {
             //TODO: SEND MESSAGE
+            console.log(error);
         }
     }
 
@@ -115,7 +209,5 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async onJoin(client: Socket, data: any): Promise<any> {
 
     }
-
-
 
 }

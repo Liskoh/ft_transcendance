@@ -19,6 +19,7 @@ import {HttpException, HttpStatus, UsePipes} from "@nestjs/common";
 import {JwtService} from "@nestjs/jwt";
 import {ChannelType} from "../enum/channel-type.enum";
 import {AuthService} from "../../auth/auth.service";
+import {sendErrorToClient, sendSuccessToClient} from "../../utils";
 
 @WebSocketGateway(
     {
@@ -81,6 +82,10 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
+    async tryHandleConnection(socket: Socket, usersMap:Map<Socket, any> ...args: any[]): Promise<any> {
+
+    }
+
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         let payload: any;
         try {
@@ -99,7 +104,7 @@ export class ChannelGateway implements OnGatewayConnection {
             try {
                 await this.usersService.getUserByLogin(payload.username);
             } catch (error) {
-                await this.sendErrorToClient(socket, 'channelError', 'User not found');
+                await sendErrorToClient(socket, 'channelError', 'User not found');
                 return;
             }
 
@@ -170,7 +175,7 @@ export class ChannelGateway implements OnGatewayConnection {
 
             socket.emit('joinableChannels', joinAbleChannels);
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -186,7 +191,7 @@ export class ChannelGateway implements OnGatewayConnection {
 
             socket.emit('joinedChannels', joinedChannels);
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -202,7 +207,7 @@ export class ChannelGateway implements OnGatewayConnection {
 
             socket.emit('directChannels', joinedChannels);
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -225,10 +230,10 @@ export class ChannelGateway implements OnGatewayConnection {
             const password = dto.password;
 
             const channel = await this.channelsService.createChannel(user, channelType, name, password);
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'Channel ' + channel.name + ' created');
+            await sendSuccessToClient(socket, 'channelSuccess', 'Channel ' + channel.name + ' created');
         } catch (error) {
             console.log(error);
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -249,15 +254,15 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.inviteUser(channel, user, targetUser);
 
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'You invited ' + targetUser.nickname + ' to the channel');
+            await sendSuccessToClient(socket, 'channelSuccess', 'You invited ' + targetUser.nickname + ' to the channel');
             const targetSocket: Socket = await this.getSocketsByUser(targetUser);
 
             if (targetSocket) {
-                await this.sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname +
+                await sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname +
                     ' invited you to the channel ' + channel.name);
             }
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -283,7 +288,7 @@ export class ChannelGateway implements OnGatewayConnection {
             console.log('changeChannelTypeSuccess');
             socket.emit('changeChannelTypeSuccess');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -327,7 +332,7 @@ export class ChannelGateway implements OnGatewayConnection {
             socket.emit('getChannelSuccess', channelToReturn);
 
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -363,9 +368,9 @@ export class ChannelGateway implements OnGatewayConnection {
                 users
             );
             console.log(user.nickname + ' send message to channel ' + channel.name);
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'message sent with success');
+            await sendSuccessToClient(socket, 'channelSuccess', 'message sent with success');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -399,11 +404,11 @@ export class ChannelGateway implements OnGatewayConnection {
 
             const targetSocket = await this.getSocketsByUser(targetUser);
             if (targetSocket) {
-                await this.sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a message!');
+                await sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a message!');
             }
 
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -426,10 +431,10 @@ export class ChannelGateway implements OnGatewayConnection {
             await this.channelsService.joinChannel(channel, user, password);
 
             socket.emit('joinChannelSuccess');
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have joined the channel '
+            await sendSuccessToClient(socket, 'channelSuccess', 'You have joined the channel '
                 + channel.name + 'with success');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -451,44 +456,15 @@ export class ChannelGateway implements OnGatewayConnection {
             await this.channelsService.leaveChannel(channel, user);
             socket.emit('leaveChannelSuccess', dto.id);
 
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have left the channel '
+            await sendSuccessToClient(socket, 'channelSuccess', 'You have left the channel '
                 + channel.name + 'with success');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
 
-    /**
-     * send an error to a client
-     * @param {Socket} socket
-     * @param {string} name
-     * @param {any} error
-     * @returns {Promise<void>}
-     */
-    async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
 
-        if (error instanceof HttpException) {
-            socket.emit(name, error);
-            return;
-        }
-
-        if (error instanceof Object) {
-            socket.emit(name, {message: "Invalid request, please check your data (/help)"});
-            return;
-        }
-    }
-
-    /**
-     * send a success message to a client
-     * @param {Socket} socket
-     * @param {string} name
-     * @param {string} message
-     * @returns {Promise<void>}
-     */
-    async sendSuccessToClient(socket: Socket, name: string, message: string): Promise<void> {
-        socket.emit(name, {message: message});
-    }
 
     /**
      * apply punishment to a user
@@ -510,10 +486,10 @@ export class ChannelGateway implements OnGatewayConnection {
             const date = dto.date;
 
             await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have applied a punishment to ' +
+            await sendSuccessToClient(socket, 'channelSuccess', 'You have applied a punishment to ' +
                 userToPunish.nickname + ' with success');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -537,10 +513,10 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.cancelPunishment(channel, user, userToCancel, punishmentType);
             socket.emit('cancelPunishmentSuccess');
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have canceled a punishment to ' +
+            await sendSuccessToClient(socket, 'channelSuccess', 'You have canceled a punishment to ' +
                 userToCancel.nickname + ' with success');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 
@@ -564,20 +540,20 @@ export class ChannelGateway implements OnGatewayConnection {
 
             await this.channelsService.toggleAdminRole(channel, user, userToToggle, giveAdminRole);
 
-            await this.sendSuccessToClient(socket, 'channelSuccess', 'You have toggled admin role to ' +
+            await sendSuccessToClient(socket, 'channelSuccess', 'You have toggled admin role to ' +
                 userToToggle.nickname + ' with success');
 
             const userToToggleSocket = await this.getSocketsByUser(userToToggle);
 
             if (userToToggleSocket) {
                 if (giveAdminRole) {
-                    await this.sendSuccessToClient(userToToggleSocket, 'channelSuccess', 'You have been given admin role in ' + channel.name)
+                    await sendSuccessToClient(userToToggleSocket, 'channelSuccess', 'You have been given admin role in ' + channel.name)
                 } else {
-                    await this.sendErrorToClient(userToToggleSocket, 'channelError', 'You have been removed from admin role in ' + channel.name)
+                    await sendErrorToClient(userToToggleSocket, 'channelError', 'You have been removed from admin role in ' + channel.name)
                 }
             }
         } catch (error) {
-            await this.sendErrorToClient(socket, 'channelError', error);
+            await sendErrorToClient(socket, 'channelError', error);
         }
     }
 

@@ -16,64 +16,207 @@ import PageLoad from '@/components/PageLoad.vue';
 </template>
 
 <script lang="ts">
-import {SOCKET_SERVER} from "@/consts";
+import {Player} from "@/views/models/player.model";
+import {Ball} from "@/views/models/ball.model";
+import io, {Socket} from "socket.io-client";
+import {store} from "@/stores/store";
+import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 
+export default {
+  name: 'PongView',
+  store,
 
-let imSpectator: boolean = false;
-class Player {
-  scoreDoc: HTMLElement;
-  paddleDoc: HTMLElement;
-  constructor(score, paddle) {
-    this.scoreDoc = document.getElementById(score);
-    this.paddleDoc = document.getElementById(paddle);
-  }
+  data() {
+    return {
+      imSpectator: false,
+      message: null,
+      ballDoc: null,
+      paddle1: null,
+      paddle2: null,
+      board: null,
+      player1: null,
+      player2: null,
+      player1Score: null,
+      player2Score: null,
+      ball: null,
+    }
+  },
 
-  move(top: number) {
-    this.paddleDoc.style.top = top + "%";
-  }
+  // setup() {
+  //   const notyf: Notyf = new Notyf({
+  //     duration: 2500,
+  //     position: {
+  //       x: 'right',
+  //       y: 'top'
+  //     }
+  //   });
+  //
+  //   const showNotification = (message: string, type: 'success' | 'error'): void => {
+  //     if (type === 'success') {
+  //       notyf.success(message);
+  //     } else {
+  //       notyf.error(message);
+  //     }
+  //   };
+  //
+  //   return {
+  //     showNotification
+  //   }
+  // },
 
-  resetPlace(top: number) {
-    this.paddleDoc.style.top = top + "%";
-  }
-}
+  created() {
+    document.addEventListener('keydown', this.keyDownEvent);
+    document.addEventListener('keyup', this.keyUpEvent);
+  },
 
-class Ball {
-  ballDoc: HTMLElement;
-  constructor() {
+  beforeRouteLeave(to, from, next) {
+    // console.log('beforeRouteLeave');
+    // document.removeEventListener('keydown', this.keyDownEvent);
+    // document.removeEventListener('keyup', this.keyUpEvent);
+    // console.log('beforeRouteLeave2');
+    // this.getPongSocket.disconnect();
+    next();
+  },
+
+  computed: {
+    getPongSocket() {
+      return this.$store.getters.getPongSocket;
+    },
+  },
+
+  mounted() {
+    // console.log('created token ' + localStorage.getItem('token'));
+    this.$store.commit('setPongSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/game', {
+      extraHeaders: {
+        Authorization: 'Bearer ' + localStorage.getItem('token')
+      }
+    }));
+
+    this.getPongSocket.emit('joinGame', {game: 'pong'});
+    console.log('dasdasd token ' + localStorage.getItem('token'));
+
+    if (this.$store)
+      console.log('store not null');
+    else
+      console.log('store null');
+
+    this.message = document.getElementById('message');
     this.ballDoc = document.getElementById('ball');
-  }
+    this.paddle1 = document.getElementById('paddle1');
+    this.paddle2 = document.getElementById('paddle2');
+    this.board = document.getElementById('board');
+    this.player1Score = document.getElementById('player_1_score');
+    this.player2Score = document.getElementById('player_2_score');
+    this.player1 = new Player(document, "player_1_score", "paddle1");
+    this.player2 = new Player(document, "player_2_score", "paddle2");
+    this.ball = new Ball(document);
 
-  move(top: number, left: number) {
-    this.ballDoc.style.top = top + "%";
-    this.ballDoc.style.left = left + "%";
-  }
 
-  resetPlace(top: number, left: number) {
-    this.ballDoc.style.top = top + "%";
-    this.ballDoc.style.left = left + "%";
-  }
-}
+    // this.getPongSocket.on('gameError', (data) => {
+    //   console.log('gameError');
+    //   this.showNotification(data, 'error');
+    // });
+    //
+    // this.getPongSocket.on('gameSuccess', (data) => {
+    //   this.showNotification(data, 'success');
+    // });
 
-let player1 = new Player("player_1_score", "paddle1");
-let player2 = new Player("player_2_score", "paddle2");
-let ball = new Ball();
+    this.getPongSocket.on('nbrPlayer', (data) => {
+      const nbrPlayer: number = data.nbrPlayer;
 
-document.addEventListener('keydown', keyDownEvent);
-document.addEventListener('keyup', keyUpEvent);
+      if (nbrPlayer === 1) {
+        console.log('You are player 1');
+        this.getPongSocket.emit('playerJoin', {
+          ballPosition: this.ballDoc.getBoundingClientRect(),
+          position: this.paddle1.getBoundingClientRect(),
+          id: 1,
+          board: this.board.getBoundingClientRect()
+        });
+      } else if (nbrPlayer === 2) {
+        console.log('You are player 2');
+        this.getPongSocket.emit('playerJoin', {
+          ballPosition: this.ballDoc.getBoundingClientRect(),
+          position: this.paddle2.getBoundingClientRect(),
+          id: 2,
+          board: this.board.getBoundingClientRect()
+        });
+      } else {
+        this.imSpectator = true;
+        console.log('Spectator');
+        this.getPongSocket.emit('player_join', {id: nbrPlayer});
+      }
+    });
 
-function keyDownEvent(event) {
-  if (imSpectator) {
-    return;
-  }
-  SOCKET_SERVER.emit('keyDown', event.key);
-}
+    this.getPongSocket.on('startGame', () => {
+      this.message.innerHTML = 'Game Start';
+      this.player1Score.innerHTML = '0';
+      this.player2Score.innerHTML = '0';
+    });
 
-function keyUpEvent(event) {
-  if (imSpectator) {
-    return;
-  }
-  SOCKET_SERVER.emit('keyUp', event.key);
-}
+    this.getPongSocket.on('resetBall', (data) => {
+      this.ball.resetPlace(data.top, data.left);
+    });
+
+    this.getPongSocket.on('resetPaddle', (data) => {
+      this.player1.resetPlace(data);
+      this.player2.resetPlace(data);
+    });
+
+    this.getPongSocket.on('moveBall', (data) => {
+      this.ball.move(data.top, data.left);
+    });
+
+
+    this.getPongSocket.on('movePaddle', (data) => {
+      if (data.id === 1) {
+        this.player1.move(data.top);
+      } else if (data.id === 2) {
+        this.player2.move(data.top);
+      }
+    });
+
+    // this.getPongSocket.on('updateScore', (data) => {
+    //   if (data.id === 1) {
+    //     this.player1Score.innerHTML = '' + data.score;
+    //   } else if (data.id === 2) {
+    //     this.player2Score.innerHTML = '' + data.score;
+    //   }
+    // });
+    this.getPongSocket.on('someoneWin', (data) => {
+      if (data.id === 1)
+        this.message.innerHTML = 'Player 1 Win';
+      else if (data.id === 2)
+        this.message.innerHTML = 'Player 2 Win';
+    });
+
+    // this.getPongSocket.on('newMessage', (data) => {
+    //   this.message.innerHTML = data;
+    // });
+  },
+
+  methods: {
+    keyDownEvent(event: any) {
+      console.log('keyDownEvent');
+      if (this.imSpectator) {
+        return;
+      }
+      this.getPongSocket.emit('onKeyInput', {
+        key: event.key,
+        pressed: true,
+      });
+    },
+
+    keyUpEvent(event: any) {
+      if (this.imSpectator) {
+        return;
+      }
+      this.getPongSocket.emit('onKeyInput', {
+        key: event.key,
+        pressed: false,
+      });
+    }
+  },
+};
 
 </script>
 
@@ -94,8 +237,21 @@ body {
   align-items: center;
 }
 
+/*.board {*/
+/*  position: relative;*/
+/*  height: 85vh;*/
+/*  width: 80vw;*/
+/*  background: #000000;*/
+/*  border: solid 5px #ffffff;*/
+/*  border-radius: 2px;*/
+/*}*/
+
+/*//cente*/
 .board {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   height: 85vh;
   width: 80vw;
   background: #000000;
@@ -178,4 +334,13 @@ body {
     align-items: center;
   }
 }
+
+/*@media (min-width: 1024px) {*/
+/*  .about {*/
+/*    min-height: 100vh;*/
+/*    display: flex;*/
+/*    justify-content: center;*/
+/*    align-items: center;*/
+/*  }*/
+/*}*/
 </style>

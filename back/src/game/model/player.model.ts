@@ -3,16 +3,29 @@ import {Coord} from "./coord.model";
 import {Socket} from "socket.io";
 
 export class Player {
-    keyPress: {[key:string]: boolean};
+    keyPress: { [key: string]: boolean };
     id: string;
     name: string;
     client: Socket;
     speed: number;
     score: number;
-    size: {width: number; height: number};
+    size: { width: number; height: number };
     coord: Coord;
 
-    constructor(position: {top: number; left: number; width: number; height: number}, id: string, client: Socket, board: {top: number; left: number; width: number; height: number}) {
+    constructor(position: {
+                    top: number,
+                    left: number,
+                    width: number,
+                    height: number
+                },
+                id: string,
+                client: Socket,
+                board: {
+                    top: number,
+                    left: number,
+                    width: number,
+                    height: number
+                }) {
         this.keyPress = {};
         this.id = id;
         this.name = 'player' + this.id;
