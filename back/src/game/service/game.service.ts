@@ -22,7 +22,6 @@ export class GameService {
     }
 
     //List of acvtives games
-    private activeMatches: MatchHistory[] = [];
     private activeGames: Game[] = [];
     private queueIds: Socket[] = [];
     private duels: Duel[] = [];
@@ -108,19 +107,6 @@ export class GameService {
         return history;
     }
 
-    /**
-     * return if a user is in an active match or not
-     * @param {User} user
-     */
-    isUserInActiveMatch(user: User): boolean {
-        for (const match of this.activeMatches) {
-            if (match.firstPlayerId === user.id || match.secondPlayerId === user.id) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     /********************************************/
     /*                                          */
@@ -241,6 +227,47 @@ export class GameService {
         return true;
     }
 
+    removeSpectator(socket: Socket) {
+        for (const game of this.activeGames) {
+            if (game.spectators.includes(socket)) {
+                game.spectators.splice(game.spectators.indexOf(socket), 1);
+            }
+        }
+    }
+
+    getGameByIndex(index: number): Game {
+        const game = this.activeGames[index];
+
+        if (!game)
+            throw new HttpException(
+                'Game not found',
+                HttpStatus.NOT_FOUND
+            );
+
+        return game;
+    }
+
+    getGames(): Game[] {
+        return this.activeGames;
+    }
+
+    isSpectator(socket: Socket): boolean {
+        for (const game of this.activeGames) {
+            if (game.spectators.includes(socket)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    spectate(socket: Socket, game: Game) {
+        if (this.isSpectator(socket))
+            this.removeSpectator(socket);
+
+        game.spectators.push(socket);
+        socket.emit('spectateGame');
+    }
+
     /********************************************/
     /*                                          */
     /*                  QUEUE                   */
@@ -279,10 +306,6 @@ export class GameService {
 
     clearQueue(): void {
         this.queueIds = [];
-    }
-
-    getActiveMatches(): MatchHistory[] {
-        return this.activeMatches;
     }
 
 }
