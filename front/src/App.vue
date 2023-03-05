@@ -1,7 +1,23 @@
-<script setup lang="ts">
+<script lang="ts">
 /*  Theme picker  */
 
 import Login from "@/components/Login.vue";
+import {store} from "@/stores/store";
+
+export default {
+  name: "App",
+  store,
+  created() {
+    const socket = this.$store.getters.getPongSocket();
+  },
+  components: {
+  },
+
+  data() {
+  },
+  methods: {
+  }
+}
 
 const themeClass: string[] = ['t-dark', 't-light', 't-bonus'];
 
@@ -31,18 +47,19 @@ function switchTheme(themeId :number) : void
 	pFavicon.href = ((themeId < 2) ? '/42logo.png' : '/42logotrans.png');
 }
 
+
 </script>
 
 <template>
 	<div class="c-page">
 		<header>
 			<nav class="c-nav">
-				<RouterLink to="/home">Home</RouterLink>
+<!--				<RouterLink to="/home">Home</RouterLink>-->
 				<RouterLink to="/chat">Chat</RouterLink>
 				<RouterLink to="/login">Login</RouterLink>
-				<RouterLink to="/playerprofile">Profile</RouterLink>
+<!--				<RouterLink to="/playerprofile">Profile</RouterLink>-->
 				<RouterLink to="/game">Game</RouterLink>
-				<RouterLink to="/gameresult">Game result</RouterLink>
+<!--				<RouterLink to="/gameresult">Game result</RouterLink>-->
 				<RouterLink to="/pong">Pong</RouterLink>
 			</nav>
 			<div class="c-theme-picker">

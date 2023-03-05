@@ -82,6 +82,10 @@ export default defineComponent({
       });
     },
   },
-  mounted() {},
+  mounted() {
+    const socket = this.$store.getters.getPongSocket();
+    socket.emit('getDuels');
+    socket.emit('getGames');
+  },
 });
 </script>

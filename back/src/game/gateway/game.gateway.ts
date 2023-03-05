@@ -223,6 +223,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const firstSocket: Socket = await getSocketsByUser(user, this.usersMap);
             const secondSocket: Socket = await getSocketsByUser(targetUser, this.usersMap);
 
+            console.log('starting game');
+            this.gameService.clearQueue();
+
+            const firstPlayer: Player = this.initSinglePlayer(firstSocket, user,true);
+            const secondPlayer: Player = this.initSinglePlayer(secondSocket, targetUser,false);
+            const ball: Ball = this.initBall(firstPlayer, secondPlayer);
+
+            const game: Game = new Game(firstPlayer, secondPlayer, ball);
+
+            this.gameService.startGame(game);
+
             if (firstSocket && firstSocket.connected) {
                 firstSocket.emit('sendOnPong');
             }

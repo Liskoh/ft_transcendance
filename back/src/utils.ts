@@ -52,13 +52,13 @@ export async function getUserBySocket(socket: Socket, userService: UserService, 
 }
 
 export async function getSocketsByUser(user: User, map: Map<Socket, string>): Promise<Socket> {
-    map.forEach((value, key) => {
+    for (const [key, value] of map.entries()) {
         if (value === user.login)
             return key;
-    });
+    }
 
     throw new HttpException(
-        'User not found',
+        'Socket not found',
         HttpStatus.NOT_FOUND,
     );
 }
