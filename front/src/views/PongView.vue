@@ -126,24 +126,24 @@ export default {
 
       if (nbrPlayer === 1) {
         console.log('You are player 1');
-        this.getPongSocket.emit('playerJoin', {
-          ballPosition: this.ballDoc.getBoundingClientRect(),
-          position: this.paddle1.getBoundingClientRect(),
-          id: 1,
-          board: this.board.getBoundingClientRect()
-        });
+        // this.getPongSocket.emit('playerJoin', {
+        //   ballPosition: this.ballDoc.getBoundingClientRect(),
+        //   position: this.paddle1.getBoundingClientRect(),
+        //   id: 1,
+        //   board: this.board.getBoundingClientRect()
+        // });
       } else if (nbrPlayer === 2) {
         console.log('You are player 2');
-        this.getPongSocket.emit('playerJoin', {
-          ballPosition: this.ballDoc.getBoundingClientRect(),
-          position: this.paddle2.getBoundingClientRect(),
-          id: 2,
-          board: this.board.getBoundingClientRect()
-        });
+        // this.getPongSocket.emit('playerJoin', {
+        //   ballPosition: this.ballDoc.getBoundingClientRect(),
+        //   position: this.paddle2.getBoundingClientRect(),
+        //   id: 2,
+        //   board: this.board.getBoundingClientRect()
+        // });
       } else {
         this.imSpectator = true;
         console.log('Spectator');
-        this.getPongSocket.emit('player_join', {id: nbrPlayer});
+        // this.getPongSocket.emit('player_join', {id: nbrPlayer});
       }
     });
 
@@ -167,17 +167,20 @@ export default {
     });
 
     this.getPongSocket.on('movePaddle', (data) => {
-      if (data.id === 1) {
+      console.log('movePaddle ' + data.id + ' ' + data.top);
+      if (data.id == 1) {
+        console.log('movePaddle1')
         this.player1.move(data.top);
-      } else if (data.id === 2) {
+      } else if (data.id == 2) {
+        console.log('movePaddle2')
         this.player2.move(data.top);
       }
     });
 
     this.getPongSocket.on('updateScore', (data) => {
-      if (data.id === 1) {
+      if (data.id == 1) {
         this.player1Score.innerHTML = data.score;
-      } else if (data.id === 2) {
+      } else if (data.id == 2) {
         this.player2Score.innerHTML = data.score;
       }
     });
@@ -229,27 +232,27 @@ body {
   align-items: center;
 }
 
-/*.board {*/
-/*  position: relative;*/
-/*  height: 85vh;*/
-/*  width: 80vw;*/
-/*  background: #000000;*/
-/*  border: solid 5px #ffffff;*/
-/*  border-radius: 2px;*/
-/*}*/
-
-/*//cente*/
 .board {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   height: 85vh;
   width: 80vw;
   background: #000000;
   border: solid 5px #ffffff;
   border-radius: 2px;
 }
+
+/*//cente*/
+/*.board {*/
+/*  position: absolute;*/
+/*  top: 50%;*/
+/*  left: 50%;*/
+/*  transform: translate(-50%, -50%);*/
+/*  height: 85vh;*/
+/*  width: 80vw;*/
+/*  background: #000000;*/
+/*  border: solid 5px #ffffff;*/
+/*  border-radius: 2px;*/
+/*}*/
 
 .ball {
   position: absolute;

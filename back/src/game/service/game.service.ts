@@ -24,7 +24,7 @@ export class GameService {
     //List of acvtives games
     private activeMatches: MatchHistory[] = [];
     private activeGames: Game[] = [];
-    private queueIds: string[] = [];
+    private queueIds: Socket[] = [];
     private duels: Duel[] = [];
 
     /**
@@ -215,18 +215,18 @@ export class GameService {
 
     getCurrentGame(socket: Socket): Game {
         for (const game of this.activeGames) {
-            if (game.firstPlayer && game.firstPlayer.id === socket.id) {
+            if (game.firstPlayer && game.firstPlayer.client === socket) {
                 return game;
             }
 
-            if (game.secondPlayer && game.secondPlayer.id === socket.id) {
+            if (game.secondPlayer && game.secondPlayer.client === socket) {
                 return game;
             }
         }
         return null;
     }
 
-    canJoinGame(socket: Socket, game: Game): boolean {
+    canJoinGame(socket: Socket): boolean {
 
         if (this.getCurrentGame(socket)) {
             return false;
@@ -240,12 +240,12 @@ export class GameService {
     /*                  QUEUE                   */
     /*                                          */
     /********************************************/
-    getQueue(): string[] {
+    getQueue(): Socket[] {
         return this.queueIds;
     }
 
     isOnQueue(socket: Socket): boolean {
-        return this.queueIds.includes(socket.id);
+        return this.queueIds.includes(socket);
     }
 
     joinQueue(socket: Socket): void {
@@ -256,7 +256,7 @@ export class GameService {
             );
         }
 
-        this.queueIds.push(socket.id);
+        this.queueIds.push(socket);
     }
 
     leaveQueue(socket: Socket): boolean {
@@ -267,7 +267,7 @@ export class GameService {
             );
         }
 
-        this.queueIds = this.queueIds.filter(id => id !== socket.id);
+        this.queueIds = this.queueIds.filter(s => s.id !== socket.id);
         return true;
     }
 
