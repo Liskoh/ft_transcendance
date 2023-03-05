@@ -63,9 +63,5 @@ export class Player {
         this.getNewPosition();
 
         this.client.emit('resetPaddle', this.coord.coord.top);
-        //TODO: SOCKET GATEWAY
-        // for (let id in spectators) {
-        //     spectators[id].emit('resetPaddle', this.coord.coord.top);
-        // }
     }
 }

@@ -1,5 +1,6 @@
 import {Coord} from "./coord.model";
 import {Game} from "./game.model";
+import {Player} from "./player.model";
 
 export class Ball {
     speed: number;
@@ -7,8 +8,23 @@ export class Ball {
     directionY: number;
     size: { width: number, height: number };
     coord: Coord;
+    firstPlayer: Player;
+    secondPlayer: Player;
 
-    constructor(position: { top: number, left: number, height: number, width: number }, board: { top: number, left: number, height: number, width: number }) {
+    constructor(position: {
+                    top: number,
+                    left: number,
+                    height: number,
+                    width: number
+                },
+                board: {
+                    top: number,
+                    left: number,
+                    height: number,
+                    width: number
+                },
+                firstPlayer: Player,
+                secondPlayer: Player) {
         this.speed = 0.5;
         this.directionX = Math.floor(Math.random() * 2) === 0 ? -1 * this.speed : this.speed;
         this.directionY = 0;
@@ -17,6 +33,8 @@ export class Ball {
             height: (position.height / board.height) * 100
         };
         this.coord = new Coord(position, this.size, board);
+        this.firstPlayer = firstPlayer;
+        this.secondPlayer = secondPlayer;
     }
 
     // Calcul coord of the new position of the paddle
@@ -28,16 +46,16 @@ export class Ball {
     }
 
     // Function to move the paddle on the board, and sending to everyone the new position
-    move(game: Game) {
+    move() {
         this.coord.coordCenter.x += this.directionX * this.speed;
         this.coord.coordCenter.y += this.directionY * this.speed;
         this.getNewPosition();
 
-        game.emitToEveryone('moveBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+        this.emitToEveryone('moveBall', { top: this.coord.coord.top, left: this.coord.coord.left });
     }
 
     // Function to reset the place of the paddle in the board
-    resetPlace(game: Game) {
+    resetPlace() {
         this.coord.coordCenter.x = 50;
         this.coord.coordCenter.y = 50;
         this.getNewPosition();
@@ -45,6 +63,11 @@ export class Ball {
         this.directionX = Math.floor(Math.random() * 2) === 0 ? -1 * this.speed : this.speed;
         this.directionY = 0;
 
-        game.emitToEveryone('resetBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+        this.emitToEveryone('resetBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+    }
+
+    emitToEveryone(event: string, data: any) {
+        this.firstPlayer.client.emit(event, data);
+        this.secondPlayer.client.emit(event, data);
     }
 }

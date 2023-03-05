@@ -9,8 +9,8 @@ import PageLoad from '@/components/PageLoad.vue';
     </div>
     <div id="paddle1" class="paddle_1 paddle"></div>
     <div id="paddle2" class="paddle_2 paddle"></div>
-    <h1 id="'player_1_score'" class="player_1_score">0</h1>
-    <h1 id="'player_2_score'" class="player_2_score">0</h1>
+    <h1 id="player1Score" class="player_1_score">0</h1>
+    <h1 id="player2Score" class="player_2_score">0</h1>
     <h1 id="message" class="message">"Press Enter to Play Pong"</h1>
   </div>
 </template>
@@ -105,10 +105,10 @@ export default {
     this.paddle1 = document.getElementById('paddle1');
     this.paddle2 = document.getElementById('paddle2');
     this.board = document.getElementById('board');
-    this.player1Score = document.getElementById('player_1_score');
-    this.player2Score = document.getElementById('player_2_score');
-    this.player1 = new Player(document, "player_1_score", "paddle1");
-    this.player2 = new Player(document, "player_2_score", "paddle2");
+    this.player1Score = document.getElementById('player1Score');
+    this.player2Score = document.getElementById('player2Score');
+    this.player1 = new Player(document, "player1Score", "paddle1");
+    this.player2 = new Player(document, "player2Score", "paddle2");
     this.ball = new Ball(document);
 
 
@@ -166,7 +166,6 @@ export default {
       this.ball.move(data.top, data.left);
     });
 
-
     this.getPongSocket.on('movePaddle', (data) => {
       if (data.id === 1) {
         this.player1.move(data.top);
@@ -175,28 +174,21 @@ export default {
       }
     });
 
-    // this.getPongSocket.on('updateScore', (data) => {
-    //   if (data.id === 1) {
-    //     this.player1Score.innerHTML = '' + data.score;
-    //   } else if (data.id === 2) {
-    //     this.player2Score.innerHTML = '' + data.score;
-    //   }
-    // });
-    this.getPongSocket.on('someoneWin', (data) => {
-      if (data.id === 1)
-        this.message.innerHTML = 'Player 1 Win';
-      else if (data.id === 2)
-        this.message.innerHTML = 'Player 2 Win';
+    this.getPongSocket.on('updateScore', (data) => {
+      if (data.id === 1) {
+        this.player1Score.innerHTML = data.score;
+      } else if (data.id === 2) {
+        this.player2Score.innerHTML = data.score;
+      }
     });
 
-    // this.getPongSocket.on('newMessage', (data) => {
-    //   this.message.innerHTML = data;
-    // });
+    this.getPongSocket.on('newMessage', (data) => {
+      this.message.innerHTML = data;
+    });
   },
 
   methods: {
     keyDownEvent(event: any) {
-      console.log('keyDownEvent');
       if (this.imSpectator) {
         return;
       }

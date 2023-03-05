@@ -184,12 +184,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer)
-            this.game.ball = new Ball(data.ballPosition, data.board);
+            this.game.ball = new Ball(data.ballPosition, data.board, this.game.firstPlayer, this.game.secondPlayer);
     }
 
     @SubscribeMessage('onKeyInput')
     async onKeyInput(client: Socket, data: any): Promise<any> {
-        console.log('onKeyInput');
         try {
             // await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
 
@@ -221,9 +220,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 // await this.sendErrorToClient(client, 'gameError', 'You need to press a valid key');
                 return;
             }
-            // if (key === 'Enter' && this.game.gameState === GameState.NOT_STARTED && this.game.firstPlayer && this.game.secondPlayer) {
-            if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
-                this.game.startGame();
+            if (key === 'Enter' && this.game.gameState !== GameState.STARTED && this.game.firstPlayer && this.game.secondPlayer) {
+                if (this.game.gameState === GameState.PAUSED) {
+                    this.game.gameState = GameState.STARTED;
+                    this.game.emitToEveryone('newMessage', 'Game on !');
+                    this.game.resetAllPlace();
+                    this.game.moveAll();
+                } else {
+                    this.game.startGame();
+                }
             } else if (this.game.firstPlayer && this.game.secondPlayer) {
                 player.keyPress[key] = pressed;
             }
