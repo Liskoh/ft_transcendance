@@ -30,6 +30,12 @@ export default defineComponent({
       console.log('duels', data);
       this.currentDuels = data;
     });
+
+    socket.on('startGame', (data: any) => {
+      console.log('startGame', data);
+      window.location.href = 'http://127.0.0.1:5173/pong';
+    });
+
     socket.emit('getDuels');
 
     this.$forceUpdate;

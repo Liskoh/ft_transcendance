@@ -69,19 +69,19 @@ export default {
     document.addEventListener('keyup', this.keyUpEvent);
   },
 
-  beforeRouteLeave(to, from, next) {
-    // console.log('beforeRouteLeave');
-    // document.removeEventListener('keydown', this.keyDownEvent);
-    // document.removeEventListener('keyup', this.keyUpEvent);
-    // console.log('beforeRouteLeave2');
-    // this.getPongSocket.disconnect();
-    next();
-  },
+  // beforeRouteLeave(to, from, next) {
+  //   // console.log('beforeRouteLeave');
+  //   // document.removeEventListener('keydown', this.keyDownEvent);
+  //   // document.removeEventListener('keyup', this.keyUpEvent);
+  //   // console.log('beforeRouteLeave2');
+  //   // this.getPongSocket.disconnect();
+  //   next();
+  // },
 
   computed: {
-    getPongSocket() {
-      return this.$store.getters.getPongSocket;
-    },
+    // getPongSocket() {
+    //   return this.$store.getters.getPongSocket;
+    // },
   },
 
   mounted() {
@@ -92,13 +92,11 @@ export default {
       }
     }));
 
-    this.getPongSocket.emit('joinGame', {game: 'pong'});
+    const socket: Socket = this.$store.getters.getPongSocket();
+
+    socket.emit('joinGame', {game: 'pong'});
     console.log('dasdasd token ' + localStorage.getItem('token'));
 
-    if (this.$store)
-      console.log('store not null');
-    else
-      console.log('store null');
 
     this.message = document.getElementById('message');
     this.ballDoc = document.getElementById('ball');
@@ -112,21 +110,21 @@ export default {
     this.ball = new Ball(document);
 
 
-    // this.getPongSocket.on('gameError', (data) => {
+    // socket.on('gameError', (data) => {
     //   console.log('gameError');
     //   this.showNotification(data, 'error');
     // });
     //
-    // this.getPongSocket.on('gameSuccess', (data) => {
+    // socket.on('gameSuccess', (data) => {
     //   this.showNotification(data, 'success');
     // });
 
-    this.getPongSocket.on('nbrPlayer', (data) => {
+    socket.on('nbrPlayer', (data) => {
       const nbrPlayer: number = data.nbrPlayer;
 
       if (nbrPlayer === 1) {
         console.log('You are player 1');
-        // this.getPongSocket.emit('playerJoin', {
+        // socket.emit('playerJoin', {
         //   ballPosition: this.ballDoc.getBoundingClientRect(),
         //   position: this.paddle1.getBoundingClientRect(),
         //   id: 1,
@@ -134,7 +132,7 @@ export default {
         // });
       } else if (nbrPlayer === 2) {
         console.log('You are player 2');
-        // this.getPongSocket.emit('playerJoin', {
+        // socket.emit('playerJoin', {
         //   ballPosition: this.ballDoc.getBoundingClientRect(),
         //   position: this.paddle2.getBoundingClientRect(),
         //   id: 2,
@@ -143,30 +141,30 @@ export default {
       } else {
         this.imSpectator = true;
         console.log('Spectator');
-        // this.getPongSocket.emit('player_join', {id: nbrPlayer});
+        // socket.emit('player_join', {id: nbrPlayer});
       }
     });
 
-    this.getPongSocket.on('startGame', () => {
+    socket.on('startGame', () => {
       this.message.innerHTML = 'Game Start';
       this.player1Score.innerHTML = '0';
       this.player2Score.innerHTML = '0';
     });
 
-    this.getPongSocket.on('resetBall', (data) => {
+    socket.on('resetBall', (data) => {
       this.ball.resetPlace(data.top, data.left);
     });
 
-    this.getPongSocket.on('resetPaddle', (data) => {
+    socket.on('resetPaddle', (data) => {
       this.player1.resetPlace(data);
       this.player2.resetPlace(data);
     });
 
-    this.getPongSocket.on('moveBall', (data) => {
+    socket.on('moveBall', (data) => {
       this.ball.move(data.top, data.left);
     });
 
-    this.getPongSocket.on('movePaddle', (data) => {
+    socket.on('movePaddle', (data) => {
       console.log('movePaddle ' + data.id + ' ' + data.top);
       if (data.id == 1) {
         console.log('movePaddle1')
@@ -177,7 +175,7 @@ export default {
       }
     });
 
-    this.getPongSocket.on('updateScore', (data) => {
+    socket.on('updateScore', (data) => {
       if (data.id == 1) {
         this.player1Score.innerHTML = data.score;
       } else if (data.id == 2) {
@@ -185,8 +183,9 @@ export default {
       }
     });
 
-    this.getPongSocket.on('newMessage', (data) => {
+    socket.on('newMessage', (data) => {
       this.message.innerHTML = data;
+      console.log('newMessage ' + data);
     });
   },
 
@@ -195,7 +194,8 @@ export default {
       if (this.imSpectator) {
         return;
       }
-      this.getPongSocket.emit('onKeyInput', {
+      const socket: Socket = this.$store.getters.getPongSocket();
+      socket.emit('onKeyInput', {
         key: event.key,
         pressed: true,
       });
@@ -205,7 +205,8 @@ export default {
       if (this.imSpectator) {
         return;
       }
-      this.getPongSocket.emit('onKeyInput', {
+      const socket: Socket = this.$store.getters.getPongSocket();
+      socket.emit('onKeyInput', {
         key: event.key,
         pressed: false,
       });

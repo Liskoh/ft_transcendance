@@ -4,6 +4,7 @@ import {DirectionState} from "../enum/direction-state.enum";
 import {MAX_POINTS} from "../../consts";
 import {GameState} from "../enum/game-state.enum";
 import {GameLevel} from "../enum/game-level.enum";
+import {getUserBySocket} from "../../utils";
 
 export class Game {
 
@@ -21,7 +22,7 @@ export class Game {
     document: Document;
 
 
-    emitToEveryone(event: string, data: any) {
+    emitToEveryone(event: string, data?: any) {
         try {
             this.firstPlayer.client.emit(event, data);
         } catch (error) {
@@ -145,7 +146,7 @@ export class Game {
     }
 
     movePaddle(): void {
-        console.log('move paddle');
+        // console.log('move paddle');
         if (this.firstPlayer.keyPress['ArrowUp']) {
             this.firstPlayer.move(DirectionState.UP);
             this.emitToEveryone('movePaddle', {
@@ -176,10 +177,22 @@ export class Game {
         }
     }
 
+    private i: number = 0;
+
     moveAll(): void {
-        if (this.gameState === GameState.NOT_STARTED) {
-            return;
+        this.i++;
+
+        if (this.i % 20 === 0) {
+            console.log('move all ' + this.i);
+
+            console.log('first player ' + this.firstPlayer.client.id);
+            console.log('second player ' + this.secondPlayer.client.id);
+
+            this.emitToEveryone('newMessage', 'hfydstfusdgfasfdas ' + this.i);
         }
+        // if (this.gameState === GameState.NOT_STARTED) {
+        //     return;
+        // }
         if (this.firstPlayer === null || this.secondPlayer === null) {
             return;
         }
