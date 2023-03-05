@@ -4,12 +4,14 @@ import {User} from "@/models/user.model";
 import io, {Socket} from "socket.io-client";
 import * as process from "process";
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
+import {Duel} from "@/models/duel.model";
 
 export const store = createStore({
     state: {
         joinedChannels: <Channel[]>[],
         availableChannels: <Channel[]>[],
         directChannels: <Channel[]>[],
+        waitingDuels: <Duel[]>[],
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
         userSocket: <Socket | unknown>null,
@@ -34,6 +36,8 @@ export const store = createStore({
             }
             return state.pongSocket;
         },
+
+        getWaitingDuels: state => state.waitingDuels,
 
         //getters:
         getChannelById: state => (id: number) => {
@@ -64,5 +68,9 @@ export const store = createStore({
         setPongSocket(state, pongSocket) {
             state.pongSocket = pongSocket;
         },
+
+        setWaitingDuels(state, waitingDuels) {
+            state.waitingDuels = waitingDuels;
+        }
     }
 });
