@@ -86,11 +86,11 @@ export default {
 
   mounted() {
     // console.log('created token ' + localStorage.getItem('token'));
-    this.$store.commit('setPongSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/game', {
-      extraHeaders: {
-        Authorization: 'Bearer ' + localStorage.getItem('token')
-      }
-    }));
+    // this.$store.commit('setPongSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/game', {
+    //   extraHeaders: {
+    //     Authorization: 'Bearer ' + localStorage.getItem('token')
+    //   }
+    // }));
 
     const socket: Socket = this.$store.getters.getPongSocket();
 

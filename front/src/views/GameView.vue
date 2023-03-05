@@ -33,7 +33,9 @@ export default defineComponent({
 
     socket.on('startGame', (data: any) => {
       console.log('startGame', data);
-      window.location.href = 'http://127.0.0.1:5173/pong';
+      // window.location.href = 'http://127.0.0.1:5173/pong';
+      // window.history.pushState(null, null, '/pong');
+      this.$router.push('/pong');
     });
 
     socket.emit('getDuels');

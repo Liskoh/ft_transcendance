@@ -5,6 +5,7 @@ import {MAX_POINTS} from "../../consts";
 import {GameState} from "../enum/game-state.enum";
 import {GameLevel} from "../enum/game-level.enum";
 import {getUserBySocket} from "../../utils";
+import {Socket} from "socket.io";
 
 export class Game {
 
@@ -12,6 +13,7 @@ export class Game {
         this.ball = ball;
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
+        this.spectators = [];
     }
 
     ball: Ball;
@@ -20,6 +22,7 @@ export class Game {
     gameState: GameState = GameState.NOT_STARTED;
     gameLevel: GameLevel;
     document: Document;
+    spectators: Socket[];
 
 
     emitToEveryone(event: string, data?: any) {
@@ -32,6 +35,12 @@ export class Game {
         } catch (error) {
             console.log('try to emit to a player but he is not connected');
         }
+
+        this.spectators.forEach(spectator => {
+           if (spectator && spectator.connected) {
+               spectator.emit(event, data);
+           }
+        });
     }
 
     getPlayer(id: string): Player {
@@ -182,7 +191,7 @@ export class Game {
     moveAll(): void {
         this.i++;
 
-        if (this.i % 20 === 0) {
+        if (this.i % 100 === 0) {
             console.log('move all ' + this.i);
 
             console.log('first player ' + this.firstPlayer.client.id);

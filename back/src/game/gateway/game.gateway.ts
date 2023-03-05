@@ -24,6 +24,7 @@ import {
 import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
 import {User} from "../../user/entity/user.entity";
 import {Duel} from "../interface/duel.interface";
+import {IdDto} from "../../channel/dto/id.dto";
 
 @WebSocketGateway(
     {
@@ -53,79 +54,44 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
 
-    async handleDisconnect(socket: any): Promise<any> {
+    async handleDisconnect(socket: Socket): Promise<any> {
         await tryHandleDisconnect(socket, this.usersMap, 'game');
+
+        this.gameService.removeSpectator(socket);
     }
 
-    // private game: Game = new Game(null, null, null);
+    @SubscribeMessage('spectate')
+    async handleSpectate(socket: Socket, data: any): Promise<any> {
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+            const dto: IdDto = new IdDto(data);
+            await validateOrReject(dto);
 
-    // async initPlayer(client: Socket): Promise<any> {
-    //     // const game = this.gameService.getCurrentGame(client);
-    //     //
-    //     // if (game === null) {
-    //     //     game = new Game(null, null, null);
-    //     // }
-    //
-    //     const boardPosition = {
-    //         top: 2,
-    //         left: 2,
-    //         width: 1920,
-    //         height: 1080
-    //     }
-    //
-    //     const player1Position = {
-    //         top: boardPosition.height / 2 - boardPosition.height / 10,
-    //         left: boardPosition.width / 50,
-    //         width: boardPosition.width * 1.5 / 100,
-    //         height: boardPosition.height / 5
-    //     }
-    //
-    //     const player2Position = {
-    //         top: boardPosition.height / 2 - boardPosition.height / 10,
-    //         left: boardPosition.width - boardPosition.width / 50 - boardPosition.width * 1.5 / 100,
-    //         width: boardPosition.width * 1.5 / 100,
-    //         height: boardPosition.height / 5
-    //     }
-    //
-    //     const ballPosition = {
-    //         top: boardPosition.height / 2 - 15,
-    //         left: boardPosition.width / 2 - 15,
-    //         width: 30,
-    //         height: 30
-    //     }
-    //
-    //     if (!this.game.firstPlayer) {
-    //         console.log('first player');
-    //         client.emit('nbrPlayer', {
-    //             nbrPlayer: 1,
-    //         })
-    //         this.game.firstPlayer = new Player(player1Position, '1', client, boardPosition);
-    //     } else if (!this.game.secondPlayer) {
-    //         console.log('second player');
-    //         client.emit('nbrPlayer', {
-    //             nbrPlayer: 2,
-    //         })
-    //         this.game.secondPlayer = new Player(player2Position, '2', client, boardPosition);
-    //     }
-    //
-    //     if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer) {
-    //         console.log('ball');
-    //         this.game.ball = new Ball(ballPosition, boardPosition, this.game.firstPlayer, this.game.secondPlayer);
-    //
-    //         // print chaque elements de ballPosition, player1Position, player2Position, boardPosition:
-    //         console.log('ballPosition: ', ballPosition);
-    //         console.log('player1Position: ', player1Position);
-    //         console.log('player2Position: ', player2Position);
-    //         console.log('boardPosition: ', boardPosition);
-    //         console.log('player1 size: ', this.game.firstPlayer.size);
-    //         console.log('player1per: ', this.game.firstPlayer.coord.coord);
-    //         console.log('player1per center: ', this.game.firstPlayer.coord.coordCenter);
-    //         console.log('player2 size: ', this.game.secondPlayer.size);
-    //         console.log('player2per: ', this.game.secondPlayer.coord.coord);
-    //         console.log('player2per center: ', this.game.secondPlayer.coord.coordCenter);
-    //     }
-    //
-    // }
+            const game: Game = await this.gameService.getGameByIndex(dto.id);
+
+            this.gameService.spectate(socket, game);
+        } catch (error) {
+            await sendErrorToClient(socket, 'gameError', error);
+        }
+    }
+
+    @SubscribeMessage('getGames')
+    async getGames(socket: Socket, data: any): Promise<any> {
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+            const games: Game[] = this.gameService.getGames();
+
+            const mappedGames = games.map((game: Game) => {
+                return {
+                    id: games.indexOf(game),
+                }
+            });
+
+            socket.emit('getGames', mappedGames);
+        } catch (error) {
+            await sendErrorToClient(socket, 'gameError', error);
+        }
+    }
 
      initSinglePlayer(client: Socket, firstPlayer: boolean): Player {
         const boardPosition = {
@@ -311,7 +277,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             // await validateOrReject(new OnKeyInputDto(data.key, data.pressed));
 
-            const game = this.gameService.getCurrentGame(client);
+            const game: Game = this.gameService.getCurrentGame(client);
 
             if (!game) {
                 return;
