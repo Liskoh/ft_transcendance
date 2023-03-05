@@ -141,11 +141,12 @@ export class GameService {
     acceptDuel(user: User, target: User): Duel {
         this.removeExpiredDuels();
 
-        this.getWaitingDuelsForUser(user).forEach(duel => {
+        for (const duel of this.duels) {
             if (duel.firstUserId === target.id) {
+                this.duels.splice(this.duels.indexOf(duel), 1);
                 return duel;
             }
-        });
+        }
 
         throw new HttpException(
             'Duel not found or expired',
@@ -159,11 +160,11 @@ export class GameService {
      * @param {User} target
      */
     isDuelExist(user: User, target: User): boolean {
-        this.duels.forEach(duel => {
+        for (const duel of this.duels) {
             if (duel.firstUserId === user.id && duel.secondUserId === target.id) {
                 return true;
             }
-        });
+        }
         return false;
     }
 
@@ -175,6 +176,13 @@ export class GameService {
      */
     createDuel(user: User, target: User): Duel {
         this.removeExpiredDuels();
+        console.log(this.duels);
+
+        if (user.id === target.id)
+            throw new HttpException(
+                'You can\'t duel yourself',
+                HttpStatus.BAD_REQUEST
+            );
 
         if (this.isDuelExist(user, target)) {
             throw new HttpException(
@@ -186,6 +194,8 @@ export class GameService {
         const duel: Duel = {
             firstUserId: user.id,
             secondUserId: target.id,
+            firstUserNickname: user.nickname,
+            secondUserNickname: target.nickname,
             expirationDate: new Date(new Date().getTime() + 30 * 1000), //30 seconds
             accepted: false
         };

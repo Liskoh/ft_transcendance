@@ -1,19 +1,32 @@
-<script setup lang="ts">
-import PageLoad from '@/components/PageLoad.vue';
-</script>
-
 <template>
-  <main>
-   <PageLoad pageName="game" />
-  </main>
+  <div>
+    <input v-model="nickname" type="text" />
+    <button @click="createDuel">DUEL</button>
+  </div>
 </template>
 
-<style>
-@media (min-width: 1024px) {
-  .about {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-  }
-}
-</style>
+<script lang="ts">
+import { defineComponent } from 'vue';
+
+export default defineComponent({
+  data() {
+    return {
+      nickname: ''
+    };
+  },
+  methods: {
+    createDuel() {
+      const socket = this.$store.getters.getPongSocket();
+      socket.emit('createDuel', {
+        login: this.nickname,
+      });
+      this.nickname = '';
+    },
+  },
+  beforeRouteLeave(to, from, next) {
+    const socket = this.$store.getters.getPongSocket();
+    socket.disconnect();
+    next();
+  },
+});
+</script>
