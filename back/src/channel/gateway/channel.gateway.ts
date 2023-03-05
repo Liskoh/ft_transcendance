@@ -82,9 +82,9 @@ export class ChannelGateway implements OnGatewayConnection {
         }
     }
 
-    async tryHandleConnection(socket: Socket, usersMap:Map<Socket, any> ...args: any[]): Promise<any> {
-
-    }
+    // async tryHandleConnection(socket: Socket, usersMap:Map<Socket, any> ...args: any[]): Promise<any> {
+    //
+    // }
 
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         let payload: any;
