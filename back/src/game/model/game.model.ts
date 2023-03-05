@@ -6,16 +6,20 @@ import {GameState} from "../enum/game-state.enum";
 import {GameLevel} from "../enum/game-level.enum";
 import {getUserBySocket} from "../../utils";
 import {Socket} from "socket.io";
+import { v4 as uuidv4 } from 'uuid';
+
 
 export class Game {
 
     constructor(firstPlayer: Player, secondPlayer: Player, ball: Ball) {
+        this.uuid = uuidv4();
         this.ball = ball;
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
         this.spectators = [];
     }
 
+    uuid: string;
     ball: Ball;
     firstPlayer: Player;
     secondPlayer: Player;
@@ -26,6 +30,7 @@ export class Game {
 
 
     emitToEveryone(event: string, data?: any) {
+        console.log('emit to everyone');
         try {
             this.firstPlayer.client.emit(event, data);
         } catch (error) {
@@ -39,6 +44,7 @@ export class Game {
         this.spectators.forEach(spectator => {
            if (spectator && spectator.connected) {
                spectator.emit(event, data);
+               console.log('emit to spectator');
            }
         });
     }
@@ -56,7 +62,7 @@ export class Game {
     resetAllPlace() {
         this.firstPlayer.resetPlace();
         this.secondPlayer.resetPlace();
-        this.ball.resetPlace();
+        this.ball.resetPlace(this.spectators);
     }
 
     resetGame() {
@@ -74,7 +80,7 @@ export class Game {
         this.resetAllPlace();
     }
 
-    getPoint(playerWhoScore) {
+    getPoint(playerWhoScore: any, spectators: Socket[]) {
         playerWhoScore.score++;
         this.emitToEveryone('updateScore', {
             id: playerWhoScore.id,
@@ -88,7 +94,7 @@ export class Game {
         }
 
         this.gameState = GameState.PAUSED;
-        this.ball.resetPlace();
+        this.ball.resetPlace(spectators);
     }
 
     changeBallDirection(playerWhoHitTheBall: Player): void {
@@ -103,14 +109,14 @@ export class Game {
 
     private num = 0;
 
-    moveBall(): boolean {
+    moveBall(spectators: Socket[]): boolean {
         // if the ball touch the left or right of the boar
         if (this.ball.coord.coord.left <= 0) {
-            this.getPoint(this.secondPlayer)
+            this.getPoint(this.secondPlayer, spectators)
             return false;
         }
         if (this.ball.coord.coord.right >= 100) {
-            this.getPoint(this.firstPlayer)
+            this.getPoint(this.firstPlayer, spectators)
             return false;
         }
 
@@ -150,7 +156,7 @@ export class Game {
             this.ball.directionY = -this.ball.directionY;
         }
 
-        this.ball.move();
+        this.ball.move(this.spectators);
         return true;
     }
 
@@ -191,21 +197,21 @@ export class Game {
     moveAll(): void {
         this.i++;
 
-        if (this.i % 100 === 0) {
-            console.log('move all ' + this.i);
-
-            console.log('first player ' + this.firstPlayer.client.id);
-            console.log('second player ' + this.secondPlayer.client.id);
-
-            this.emitToEveryone('newMessage', 'hfydstfusdgfasfdas ' + this.i);
-        }
+        // if (this.i % 100 === 0) {
+        //     console.log('move all ' + this.i);
+        //
+        //     console.log('first player ' + this.firstPlayer.client.id);
+        //     console.log('second player ' + this.secondPlayer.client.id);
+        //
+        //     this.emitToEveryone('newMessage', 'hfydstfusdgfasfdas ' + this.i);
+        // }
         // if (this.gameState === GameState.NOT_STARTED) {
         //     return;
         // }
         if (this.firstPlayer === null || this.secondPlayer === null) {
             return;
         }
-        if (!this.moveBall())
+        if (!this.moveBall(this.spectators))
             return;
         this.movePaddle();
         setTimeout(this.moveAll.bind(this), 10);
