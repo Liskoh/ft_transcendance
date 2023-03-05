@@ -128,8 +128,6 @@ export class GameService {
     /*                                          */
     /********************************************/
 
-
-
     getWaitingDuelsForUser(user: User): Duel[] {
         return this.duels.filter(duel => duel.secondUserId === user.id);
     }
@@ -205,14 +203,6 @@ export class GameService {
         this.duels = this.duels.filter(duel => duel.expirationDate > now);
     }
 
-    getQueue(): string[] {
-        return this.queueIds;
-    }
-
-    isOnQueue(socket: Socket): boolean {
-        return this.queueIds.includes(socket.id);
-    }
-
     getCurrentGame(socket: Socket): Game {
         for (const game of this.activeGames) {
             if (game.firstPlayer && game.firstPlayer.id === socket.id) {
@@ -235,6 +225,19 @@ export class GameService {
         return true;
     }
 
+    /********************************************/
+    /*                                          */
+    /*                  QUEUE                   */
+    /*                                          */
+    /********************************************/
+    getQueue(): string[] {
+        return this.queueIds;
+    }
+
+    isOnQueue(socket: Socket): boolean {
+        return this.queueIds.includes(socket.id);
+    }
+
     joinQueue(socket: Socket): void {
         if (this.isOnQueue(socket)) {
             throw new HttpException(
@@ -244,6 +247,18 @@ export class GameService {
         }
 
         this.queueIds.push(socket.id);
+    }
+
+    leaveQueue(socket: Socket): boolean {
+        if (!this.isOnQueue(socket)) {
+            throw new HttpException(
+                'user not in queue',
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
+        this.queueIds = this.queueIds.filter(id => id !== socket.id);
+        return true;
     }
 
     clearQueue(): void {

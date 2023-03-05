@@ -16,6 +16,7 @@ import {HttpException} from "@nestjs/common";
 import {Player} from "../model/player.model";
 import {Ball} from "../model/ball.model";
 import {GameState} from "../enum/game-state.enum";
+import {sendErrorToClient} from "../../utils";
 
 @WebSocketGateway(
     {
@@ -58,7 +59,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             try {
                 await this.usersService.getUserByLogin(payload.username);
             } catch (error) {
-                await this.sendErrorToClient(socket, 'channelError', 'User not found');
+                await sendErrorToClient(socket, 'channelError', 'User not found');
                 return;
             }
 
@@ -103,7 +104,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
             await this.gameService.joinQueue(client);
         } catch (error) {
-            client.emit('joinQueueError', error)
+            await sendErrorToClient(client, 'joinQueueError', error.message);
             return;
         }
 
@@ -132,12 +133,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-    // private game: Game;
-    //
-    // initGame() : void {
-    //     this.game = new Game();
-    //
-    // }
 
     @SubscribeMessage('playerJoin')
     async onPlayerJoin(client: Socket, data: any): Promise<any> {
@@ -212,20 +207,5 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async onJoin(client: Socket, data: any): Promise<any> {
 
     }
-
-
-    async sendErrorToClient(socket: Socket, name: string, error: any): Promise<void> {
-        // if (error instanceof HttpException) {
-        //     socket.emit(name, error);
-        //     return;
-        // }
-        //
-        // if (error instanceof Object) {
-        //     socket.emit(name, {message: "Invalid request, please check your data (/help)"});
-        //     return;
-        // }
-
-    }
-
 
 }
