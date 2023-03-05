@@ -2,12 +2,13 @@
 import { mapGetters, mapMutations, mapState } from "vuex";
 import { Message } from "@/models/message.model";
 import { Channel } from "@/models/channel.model";
-import { COMMANDS, getCommandByName } from "@/consts";
+import { COMMANDS, getCommandByName, VUE_APP_BACK_PORT, VUE_APP_WEB_HOST } from "@/consts";
 import { AbstractCommand } from "@/commands/abstract.command";
 import { store } from "@/stores/store";
 import { Notyf } from "notyf";
 import 'notyf/notyf.min.css';
 import io, { Socket } from "socket.io-client";
+import process from "process";
 
 export default {
 	name: "Chat",
@@ -38,7 +39,7 @@ export default {
 	created() {
 		console.log('created token ' + localStorage.getItem('token'));
 
-		this.$store.commit('setChannelSocket', io('http://10.13.8.3:8000/channels', {
+		this.$store.commit('setChannelSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
 			extraHeaders: {
 				Authorization: 'Bearer ' + localStorage.getItem('token')
 			}

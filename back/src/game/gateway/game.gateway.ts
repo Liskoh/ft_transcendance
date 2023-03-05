@@ -42,6 +42,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         let payload: any;
+        console.log('handle conncection from game gateway');
         console.log('New pong connection: ', socket.id);
         try {
             payload = await this.authService.verifyJWTFromSocket(socket);
@@ -69,6 +70,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             await this.checkClient(socket);
         }
     }
+
 
     async handleDisconnect(socket: any): Promise<any> {
         try {

@@ -26,3 +26,7 @@ export const COMMANDS: AbstractCommand[] = [] = [
 export function getCommandByName(prefix: string): AbstractCommand {
     return COMMANDS.find(c => c.prefix.toLowerCase() === prefix.toLowerCase());
 }
+
+export const VUE_APP_WEB_HOST: string = '10.13.9.5';
+export const VUE_APP_BACK_PORT: number = 8000;
+export const VUE_APP_FRONT_PORT: number = 5173;
