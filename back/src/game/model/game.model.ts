@@ -145,6 +145,7 @@ export class Game {
     }
 
     movePaddle(): void {
+        console.log('move paddle');
         if (this.firstPlayer.keyPress['ArrowUp']) {
             this.firstPlayer.move(DirectionState.UP);
             this.emitToEveryone('movePaddle', {

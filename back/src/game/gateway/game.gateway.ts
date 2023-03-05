@@ -67,7 +67,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.usersMap.set(socket, payload.username);
             console.log('New connection: ', socket.id + ' - ' + payload.username);
             console.log("usersMap: ", this.usersMap.size);
-            await this.checkClient(socket);
+            await this.initPlayer(socket);
         }
     }
 
@@ -84,21 +84,72 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     private game: Game = new Game(null, null, null);
 
-    async checkClient(client: Socket): Promise<any> {
+    async initPlayer(client: Socket): Promise<any> {
         // const game = this.gameService.getCurrentGame(client);
         //
         // if (game === null) {
         //     game = new Game(null, null, null);
         // }
+
+        const boardPosition = {
+            top: 2,
+            left: 2,
+            width: 1920,
+            height: 1080
+        }
+
+        const player1Position = {
+            top: boardPosition.height / 2 - boardPosition.height / 10,
+            left: boardPosition.width / 50,
+            width: boardPosition.width * 1.5 / 100,
+            height: boardPosition.height / 5
+        }
+
+        const player2Position = {
+            top: boardPosition.height / 2 - boardPosition.height / 10,
+            left: boardPosition.width - boardPosition.width / 50 - boardPosition.width * 1.5 / 100,
+            width: boardPosition.width * 1.5 / 100,
+            height: boardPosition.height / 5
+        }
+
+        const ballPosition = {
+            top: boardPosition.height / 2 - 15,
+            left: boardPosition.width / 2 - 15,
+            width: 30,
+            height: 30
+        }
+
         if (!this.game.firstPlayer) {
+            console.log('first player');
             client.emit('nbrPlayer', {
                 nbrPlayer: 1,
             })
+            this.game.firstPlayer = new Player(player1Position, '1', client, boardPosition);
         } else if (!this.game.secondPlayer) {
+            console.log('second player');
             client.emit('nbrPlayer', {
                 nbrPlayer: 2,
             })
+            this.game.secondPlayer = new Player(player2Position, '2', client, boardPosition);
         }
+
+        if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer) {
+            console.log('ball');
+            this.game.ball = new Ball(ballPosition, boardPosition, this.game.firstPlayer, this.game.secondPlayer);
+
+            // print chaque elements de ballPosition, player1Position, player2Position, boardPosition:
+            console.log('ballPosition: ', ballPosition);
+            console.log('player1Position: ', player1Position);
+            console.log('player2Position: ', player2Position);
+            console.log('boardPosition: ', boardPosition);
+            console.log('player1 size: ', this.game.firstPlayer.size);
+            console.log('player1per: ', this.game.firstPlayer.coord.coord);
+            console.log('player1per center: ', this.game.firstPlayer.coord.coordCenter);
+            console.log('player2 size: ', this.game.secondPlayer.size);
+            console.log('player2per: ', this.game.secondPlayer.coord.coord);
+            console.log('player2per center: ', this.game.secondPlayer.coord.coordCenter);
+        }
+
     }
 
     @SubscribeMessage('joinQueue')
@@ -136,22 +187,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
 
-    @SubscribeMessage('playerJoin')
-    async onPlayerJoin(client: Socket, data: any): Promise<any> {
-
-        // const game = this.gameService.getCurrentGame(client);
-
-        if (data.id === 1) {
-            console.log('Player ' + data.id + 'join');
-            this.game.firstPlayer = new Player(data.position, data.id, client, data.board);
-        } else if (data.id === 2) {
-            console.log('Player ' + data.id + 'join');
-            this.game.secondPlayer = new Player(data.position, data.id, client, data.board);
-        }
-
-        if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer)
-            this.game.ball = new Ball(data.ballPosition, data.board, this.game.firstPlayer, this.game.secondPlayer);
-    }
+    // @SubscribeMessage('playerJoin')
+    // async onPlayerJoin(client: Socket, data: any): Promise<any> {
+    //
+    //     // const game = this.gameService.getCurrentGame(client);
+    //
+    //     if (data.id === 1) {
+    //         console.log('Player ' + data.id + 'join');
+    //         this.game.firstPlayer = new Player(data.position, data.id, client, data.board);
+    //     } else if (data.id === 2) {
+    //         console.log('Player ' + data.id + 'join');
+    //         this.game.secondPlayer = new Player(data.position, data.id, client, data.board);
+    //     }
+    //
+    //     if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer)
+    //         this.game.ball = new Ball(data.ballPosition, data.board, this.game.firstPlayer, this.game.secondPlayer);
+    // }
 
     @SubscribeMessage('onKeyInput')
     async onKeyInput(client: Socket, data: any): Promise<any> {
