@@ -61,6 +61,16 @@ export class AuthService {
         return decoded;
     }
 
+	async intra(user: User) {
+		if (user) {
+            const payload = {username: user.login, sub: user.id};
+            return {
+                status: HttpStatus.OK,
+                access_token: this.jwtService.sign(payload),
+            }
+        }
+	}
+
     async register(login: string): Promise<any> {
         let user: User;
         console.log(login);
