@@ -226,6 +226,12 @@ export class GameService {
         return null;
     }
 
+    startGame(game: Game): void {
+        this.activeGames.push(game);
+
+        game.startGame();
+    }
+
     canJoinGame(socket: Socket): boolean {
 
         if (this.getCurrentGame(socket)) {
