@@ -51,7 +51,6 @@ export class AuthService {
                 'No token provided',
                 HttpStatus.UNAUTHORIZED
             );
-
         const decoded = await this.verifyJwt(token);
 
         if (!decoded)
@@ -59,7 +58,6 @@ export class AuthService {
                 'Invalid token',
                 HttpStatus.UNAUTHORIZED
             );
-
         return decoded;
     }
 

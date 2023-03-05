@@ -16,7 +16,16 @@ import {HttpException} from "@nestjs/common";
 import {Player} from "../model/player.model";
 import {Ball} from "../model/ball.model";
 import {GameState} from "../enum/game-state.enum";
-import {sendErrorToClient} from "../../utils";
+import {
+    getSocketsByUser,
+    getUserBySocket,
+    sendErrorToClient,
+    tryHandleConnection,
+    tryHandleDisconnect
+} from "../../utils";
+import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
+import {User} from "../../user/entity/user.entity";
+import {Duel} from "../interface/duel.interface";
 
 @WebSocketGateway(
     {
@@ -41,45 +50,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private usersMap: Map<Socket, string> = new Map();
 
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
-        let payload: any;
-        console.log('handle conncection from game gateway');
-        console.log('New pong connection: ', socket.id);
-        try {
-            payload = await this.authService.verifyJWTFromSocket(socket);
-        } catch (error) {
-            socket.disconnect();
-            return;
-        }
-
-        if (payload) {
-            if (Array.from(this.usersMap.values()).includes(payload.username)) {
-                socket.disconnect();
-                return;
-            }
-
-            try {
-                await this.usersService.getUserByLogin(payload.username);
-            } catch (error) {
-                await sendErrorToClient(socket, 'channelError', 'User not found');
-                return;
-            }
-
-            this.usersMap.set(socket, payload.username);
-            console.log('New connection: ', socket.id + ' - ' + payload.username);
-            console.log("usersMap: ", this.usersMap.size);
-            await this.checkClient(socket);
-        }
+        await tryHandleConnection(socket, this.usersMap, this.usersService, this.authService, 'game', ...args);
+        await this.checkClient(socket);
     }
 
 
     async handleDisconnect(socket: any): Promise<any> {
-        try {
-            const username = this.usersMap.get(socket);
-            console.log('Disconnected: ', socket.id + ' - ' + username);
-            this.usersMap.delete(socket);
-        } catch (ex) {
-            console.log(ex);
-        }
+        await tryHandleDisconnect(socket, this.usersMap, 'game');
     }
 
     private game: Game = new Game(null, null, null);
@@ -98,6 +75,63 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             client.emit('nbrPlayer', {
                 nbrPlayer: 2,
             })
+        }
+    }
+
+    @SubscribeMessage('createDuel')
+    async onCreateDuel(client: Socket, payload: any): Promise<any> {
+        // console.log('createDuel', payload);
+        try {
+            const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+            await validateOrReject(dto);
+
+            const user: User = await getUserBySocket(client, this.usersService, this.usersMap);
+            const targetUser: User = await this.usersService.getUserByNickname(dto.login);
+
+            const duel: Duel = this.gameService.createDuel(user, targetUser);
+
+            const targetSocket: Socket = await getSocketsByUser(targetUser, this.usersMap);
+
+            if (targetSocket) {
+                targetSocket.emit('updateDuels');
+            }
+        } catch (error) {
+            console.log(error);
+            await sendErrorToClient(client, 'duelError', error.message);
+        }
+    }
+
+    @SubscribeMessage('getDuels')
+    async onGetDuels(client: Socket, payload: any): Promise<any> {
+        try {
+            const user: User = await getUserBySocket(client, this.usersService, this.usersMap);
+            const duels: Duel[] = this.gameService.getWaitingDuelsForUser(user);
+
+            client.emit('duels', duels.map(duel => {
+                return {
+                    from: duel.firstUserNickname,
+                    expirationDate: duel.expirationDate,
+                }
+            }));
+        } catch (error) {
+            console.log(error);
+            await sendErrorToClient(client, 'duelError', error.message);
+        }
+    }
+
+    @SubscribeMessage('acceptDuel')
+    async onAcceptDuel(client: Socket, payload: any): Promise<any> {
+        try {
+            const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+            await validateOrReject(dto);
+
+            const user: User = await getUserBySocket(client, this.usersService, this.usersMap);
+            const targetUser: User = await this.usersService.getUserByNickname(dto.login);
+
+            const duel: Duel = this.gameService.acceptDuel(user, targetUser);
+        } catch (error) {
+            console.log(error);
+            await sendErrorToClient(client, 'duelError', error.message);
         }
     }
 
@@ -188,8 +222,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 return;
             }
             // if (key === 'Enter' && this.game.gameState === GameState.NOT_STARTED && this.game.firstPlayer && this.game.secondPlayer) {
-                if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
-                    this.game.startGame();
+            if (key === 'Enter' && this.game.firstPlayer && this.game.secondPlayer) {
+                this.game.startGame();
             } else if (this.game.firstPlayer && this.game.secondPlayer) {
                 player.keyPress[key] = pressed;
             }
