@@ -53,7 +53,7 @@ export async function getUserBySocket(socket: Socket, userService: UserService, 
 
 export async function getSocketsByUser(user: User, map: Map<Socket, string>): Promise<Socket> {
     let socket: Socket;
-    this.usersMap.forEach((value, key) => {
+    map.forEach((value, key) => {
         if (value === user.login)
             socket = key;
     });

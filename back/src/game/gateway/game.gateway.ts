@@ -131,7 +131,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('createDuel')
     async onCreateDuel(client: Socket, payload: any): Promise<any> {
-        // console.log('createDuel', payload);
+        console.log('createDuel', payload);
+        client.emit('duels');
         try {
             const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
             await validateOrReject(dto);
@@ -140,7 +141,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const targetUser: User = await this.usersService.getUserByNickname(dto.login);
 
             const duel: Duel = this.gameService.createDuel(user, targetUser);
-
+            console.log('duel sentttttttttttttttttt');
             const targetSocket: Socket = await getSocketsByUser(targetUser, this.usersMap);
 
             if (targetSocket) {
@@ -158,12 +159,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const user: User = await getUserBySocket(client, this.usersService, this.usersMap);
             const duels: Duel[] = this.gameService.getWaitingDuelsForUser(user);
 
-            client.emit('duels', duels.map(duel => {
+            const mappedDuels = duels.map(duel => {
                 return {
                     from: duel.firstUserNickname,
                     expirationDate: duel.expirationDate,
                 }
-            }));
+            });
+            console.log('mappedDuels', mappedDuels);
+            client.emit('duels', mappedDuels);
         } catch (error) {
             console.log(error);
             await sendErrorToClient(client, 'duelError', error.message);
@@ -178,8 +181,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             const user: User = await getUserBySocket(client, this.usersService, this.usersMap);
             const targetUser: User = await this.usersService.getUserByNickname(dto.login);
-
             const duel: Duel = this.gameService.acceptDuel(user, targetUser);
+
+            console.log('duel has been accepted');
         } catch (error) {
             console.log(error);
             await sendErrorToClient(client, 'duelError', error.message);
@@ -188,6 +192,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('joinQueue')
     async onJoinQueue(client: Socket, data: any): Promise<any> {
+        let user: User = await getUserBySocket(client, this.usersService, this.usersMap);
+
         try {
             await this.gameService.joinQueue(client);
         } catch (error) {
@@ -195,28 +201,36 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return;
         }
 
+        console.log('client ' + user.nickname + ' joined the queue');
         if (this.gameService.getQueue().length >= 2) {
-            const firstSocketId = this.gameService.getQueue()[0];
-            const secondSocketId = this.gameService.getQueue()[1];
+            const firstSocket: Socket = this.gameService.getQueue()[0];
+            const secondSocket: Socket = this.gameService.getQueue()[1];
 
+            console.log('the queue is full with ' + firstSocket.id + ' and ' + secondSocket.id);
+            console.log('starting game');
             this.gameService.clearQueue();
 
-            const game = null;
-
-            if (!this.gameService.canJoinGame(client, game)) {
+            if (!this.gameService.canJoinGame(client)) {
                 client.emit('joinQueueError', 'You can\'t join this game');
                 return;
             }
 
+            // const firstPlayer: Player = new Player(data.position, '1', firstSocket, data.board);
+            // const secondPlayer: Player = new Player(data.position, '2', secondSocket, data.board);
+            // const ball: Ball = null;
+            //
+            // this.game = new Game(firstPlayer, secondPlayer, ball);
+
+
             //game.start avec socket etc
 
-            for (const socketId in this.server.sockets.sockets) {
-                if (socketId === firstSocketId) {
-                    this.server.to(socketId).emit('gameFound', game);
-                } else if (socketId === secondSocketId) {
-                    this.server.to(socketId).emit('gameFound', game);
-                }
-            }
+            // for (const socketId in this.server.sockets.sockets) {
+            //     if (socketId === firstSocketId) {
+            //         this.server.to(socketId).emit('gameFound', game);
+            //     } else if (socketId === secondSocketId) {
+            //         this.server.to(socketId).emit('gameFound', game);
+            //     }
+            // }
         }
     }
 
