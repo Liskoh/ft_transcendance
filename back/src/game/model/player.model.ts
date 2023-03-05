@@ -5,6 +5,7 @@ import {Socket} from "socket.io";
 export class Player {
     keyPress: { [key: string]: boolean };
     id: string;
+    userId: number;
     name: string;
     client: Socket;
     speed: number;
@@ -19,6 +20,7 @@ export class Player {
                     height: number
                 },
                 id: string,
+                userId: number,
                 client: Socket,
                 board: {
                     top: number,
@@ -28,6 +30,7 @@ export class Player {
                 }) {
         this.keyPress = {};
         this.id = id;
+        this.userId = userId;
         this.name = 'player' + this.id;
         this.client = client;
         this.speed = 1;

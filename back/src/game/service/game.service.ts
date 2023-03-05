@@ -7,6 +7,7 @@ import {UserService} from "../../user/service/user.service";
 import {Game} from "../model/game.model";
 import {Socket} from "socket.io";
 import {Duel} from "../interface/duel.interface";
+import {Player} from "../model/player.model";
 
 // import { CronJob } from 'cron';
 
@@ -212,6 +213,34 @@ export class GameService {
         return null;
     }
 
+    getCurrentGameByUserId(userId: number): Game {
+        for (const game of this.activeGames) {
+            if (game.firstPlayer && game.firstPlayer.userId === userId) {
+                return game;
+            }
+
+            if (game.secondPlayer && game.secondPlayer.userId === userId) {
+                return game;
+            }
+        }
+        return null;
+    }
+
+    getPlayerByUserId(userId: number): Player {
+        for (const game of this.activeGames) {
+            console.log(game.firstPlayer.userId + ' ' + userId);
+            console.log(game.secondPlayer.userId + ' ' + userId);
+            if (game.firstPlayer && game.firstPlayer.userId === userId) {
+                return game.firstPlayer;
+            }
+
+            if (game.secondPlayer && game.secondPlayer.userId === userId) {
+                return game.secondPlayer;
+            }
+        }
+        return null;
+    }
+
     startGame(game: Game): void {
         this.activeGames.push(game);
 
@@ -235,16 +264,17 @@ export class GameService {
         }
     }
 
-    getGameByIndex(index: number): Game {
-        const game = this.activeGames[index];
+    getGameByUuid(uuid: string): Game {
+        for (const game of this.activeGames) {
+            if (game.uuid === uuid) {
+                return game;
+            }
+        }
 
-        if (!game)
-            throw new HttpException(
-                'Game not found',
-                HttpStatus.NOT_FOUND
-            );
-
-        return game;
+        throw new HttpException(
+            'Game not found',
+            HttpStatus.NOT_FOUND
+        );
     }
 
     getGames(): Game[] {
@@ -265,7 +295,7 @@ export class GameService {
             this.removeSpectator(socket);
 
         game.spectators.push(socket);
-        socket.emit('spectateGame');
+        socket.emit('sendOnPong');
     }
 
     /********************************************/

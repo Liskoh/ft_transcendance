@@ -1,6 +1,7 @@
 import {Coord} from "./coord.model";
 import {Game} from "./game.model";
 import {Player} from "./player.model";
+import {Socket} from "socket.io";
 
 export class Ball {
     speed: number;
@@ -46,16 +47,16 @@ export class Ball {
     }
 
     // Function to move the paddle on the board, and sending to everyone the new position
-    move() {
+    move(spectators: Socket[]) {
         this.coord.coordCenter.x += this.directionX * this.speed;
         this.coord.coordCenter.y += this.directionY * this.speed;
         this.getNewPosition();
 
-        this.emitToEveryone('moveBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+        this.emitToEveryone('moveBall', spectators, { top: this.coord.coord.top, left: this.coord.coord.left });
     }
 
     // Function to reset the place of the paddle in the board
-    resetPlace() {
+    resetPlace(spectators: Socket[]) {
         this.coord.coordCenter.x = 50;
         this.coord.coordCenter.y = 50;
         this.getNewPosition();
@@ -63,11 +64,26 @@ export class Ball {
         this.directionX = Math.floor(Math.random() * 2) === 0 ? -1 * this.speed : this.speed;
         this.directionY = 0;
 
-        this.emitToEveryone('resetBall', { top: this.coord.coord.top, left: this.coord.coord.left });
+        this.emitToEveryone('resetBall', spectators,{ top: this.coord.coord.top, left: this.coord.coord.left });
     }
 
-    emitToEveryone(event: string, data: any) {
-        this.firstPlayer.client.emit(event, data);
-        this.secondPlayer.client.emit(event, data);
+    emitToEveryone(event: string, spectators: Socket[], data: any) {
+        console.log('emit to everyone');
+        try {
+            this.firstPlayer.client.emit(event, data);
+        } catch (error) {
+            console.log('try to emit to a player but he is not connected');
+        }try {
+            this.secondPlayer.client.emit(event, data);
+        } catch (error) {
+            console.log('try to emit to a player but he is not connected');
+        }
+
+        spectators.forEach(spectator => {
+            if (spectator && spectator.connected) {
+                spectator.emit(event, data);
+                console.log('emit to spectator');
+            }
+        });
     }
 }
