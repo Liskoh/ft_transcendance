@@ -3,6 +3,7 @@ import {Game} from "./game.model";
 import {Player} from "./player.model";
 import {Socket} from "socket.io";
 
+
 export class Ball {
     speed: number;
     directionX: number;
