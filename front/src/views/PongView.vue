@@ -20,7 +20,7 @@ import {Player} from "@/views/models/player.model";
 import {Ball} from "@/views/models/ball.model";
 import io, {Socket} from "socket.io-client";
 import {store} from "@/stores/store";
-import {Notyf} from "notyf";
+import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 
 export default {
   name: 'PongView',
@@ -65,19 +65,18 @@ export default {
   // },
 
   created() {
-    console.log('created token ' + localStorage.getItem('token'));
-    this.$store.commit('setPongSocket', io('http://10.13.8.3:8000/game', {
-      extraHeaders: {
-        Authorization: 'Bearer ' + localStorage.getItem('token')
-      }
-    }));
+    document.addEventListener('keydown', this.keyDownEvent);
+    document.addEventListener('keyup', this.keyUpEvent);
   },
 
-  // beforeRouteLeave(to, from, next) {
-  //   console.log('beforeRouteLeave');
-  //   this.$store.getPongSocket().disconnect();
-  //   next();
-  // },
+  beforeRouteLeave(to, from, next) {
+    // console.log('beforeRouteLeave');
+    // document.removeEventListener('keydown', this.keyDownEvent);
+    // document.removeEventListener('keyup', this.keyUpEvent);
+    // console.log('beforeRouteLeave2');
+    // this.getPongSocket.disconnect();
+    next();
+  },
 
   computed: {
     getPongSocket() {
@@ -86,6 +85,21 @@ export default {
   },
 
   mounted() {
+    // console.log('created token ' + localStorage.getItem('token'));
+    this.$store.commit('setPongSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/game', {
+      extraHeaders: {
+        Authorization: 'Bearer ' + localStorage.getItem('token')
+      }
+    }));
+
+    this.getPongSocket.emit('joinGame', {game: 'pong'});
+    console.log('dasdasd token ' + localStorage.getItem('token'));
+
+    if (this.$store)
+      console.log('store not null');
+    else
+      console.log('store null');
+
     this.message = document.getElementById('message');
     this.ballDoc = document.getElementById('ball');
     this.paddle1 = document.getElementById('paddle1');
@@ -97,8 +111,6 @@ export default {
     this.player2 = new Player(document, "player_2_score", "paddle2");
     this.ball = new Ball(document);
 
-    document.addEventListener('keydown', this.keyDownEvent);
-    document.addEventListener('keyup', this.keyUpEvent);
 
     // this.getPongSocket.on('gameError', (data) => {
     //   console.log('gameError');
@@ -225,27 +237,27 @@ body {
   align-items: center;
 }
 
-.board {
-  position: relative;
-  height: 85vh;
-  width: 80vw;
-  background: #000000;
-  border: solid 5px #ffffff;
-  border-radius: 2px;
-}
-
-/*//cente*/
 /*.board {*/
-/*  position: absolute;*/
-/*  top: 50%;*/
-/*  left: 50%;*/
-/*  transform: translate(-50%, -50%);*/
+/*  position: relative;*/
 /*  height: 85vh;*/
 /*  width: 80vw;*/
 /*  background: #000000;*/
 /*  border: solid 5px #ffffff;*/
 /*  border-radius: 2px;*/
 /*}*/
+
+/*//cente*/
+.board {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 85vh;
+  width: 80vw;
+  background: #000000;
+  border: solid 5px #ffffff;
+  border-radius: 2px;
+}
 
 .ball {
   position: absolute;

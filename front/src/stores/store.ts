@@ -2,6 +2,7 @@ import {createStore} from "vuex";
 import {Channel} from "@/models/channel.model";
 import {User} from "@/models/user.model";
 import io, {Socket} from "socket.io-client";
+import * as process from "process";
 
 export const store = createStore({
     state: {
@@ -21,17 +22,7 @@ export const store = createStore({
         getCurrentChannel: state => state.currentChannel,
 
         getChannelSocket: state => state.channelSocket,
-
-        getUserSocket: state => {
-            if (!state.userSocket) {
-                state.userSocket = io('http://10.13.8.3:8000/users', {
-                    extraHeaders: {
-                        Authorization: 'Bearer ' + localStorage.getItem('token')
-                    }
-                })
-            }
-            return state.userSocket
-        },
+        getUserSocket: state => state.userSocket,
         getPongSocket: state => state.pongSocket,
     },
     mutations: {
