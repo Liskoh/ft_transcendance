@@ -1,59 +1,59 @@
 <script lang="ts">
-import { mapGetters, mapMutations, mapState } from "vuex";
-import { Message } from "@/models/message.model";
-import { Channel } from "@/models/channel.model";
-import { COMMANDS, getCommandByName, VUE_APP_BACK_PORT, VUE_APP_WEB_HOST } from "@/consts";
-import { AbstractCommand } from "@/commands/abstract.command";
-import { store } from "@/stores/store";
-import { Notyf } from "notyf";
+import {mapGetters, mapMutations, mapState} from "vuex";
+import {Message} from "@/models/message.model";
+import {Channel} from "@/models/channel.model";
+import {COMMANDS, getCommandByName, VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
+import {AbstractCommand} from "@/commands/abstract.command";
+import {store} from "@/stores/store";
+import {Notyf} from "notyf";
 import 'notyf/notyf.min.css';
-import io, { Socket } from "socket.io-client";
+import io, {Socket} from "socket.io-client";
 import process from "process";
 
 export default {
-	name: "Chat",
-	store,
+  name: "Chat",
+  store,
 
-	setup() {
-		const notyf: Notyf = new Notyf({
-			duration: 2500,
-			position: {
-				x: 'right',
-				y: 'top'
-			}
-		});
+  setup() {
+    const notyf: Notyf = new Notyf({
+      duration: 2500,
+      position: {
+        x: 'right',
+        y: 'top'
+      }
+    });
 
-		const showNotification = (message: string, type: 'success' | 'error'): void => {
-			if (type === 'success') {
-				notyf.success(message);
-			} else {
-				notyf.error(message);
-			}
-		};
+    const showNotification = (message: string, type: 'success' | 'error'): void => {
+      if (type === 'success') {
+        notyf.success(message);
+      } else {
+        notyf.error(message);
+      }
+    };
 
-		return {
-			showNotification
-		}
-	},
+    return {
+      showNotification
+    }
+  },
 
-	created() {
-		console.log('created token ' + localStorage.getItem('token'));
+  created() {
+    console.log('created token ' + localStorage.getItem('token'));
 
-		this.$store.commit('setChannelSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
-			extraHeaders: {
-				Authorization: 'Bearer ' + localStorage.getItem('token')
-			}
-		})
+    this.$store.commit('setChannelSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
+          extraHeaders: {
+            Authorization: 'Bearer ' + localStorage.getItem('token')
+          }
+        })
     );
 
-		this.getChannelSocket.emit('getChannels');
-		console.log('get channels with success');
-		console.log('created');
-	},
-	beforeRouteLeave(to, from, next) {
-		this.getChannelSocket.disconnect();
-		next();
-	},
+    this.getChannelSocket.emit('getChannels');
+    console.log('get channels with success');
+    console.log('created');
+  },
+  beforeRouteLeave(to, from, next) {
+    this.getChannelSocket.disconnect();
+    next();
+  },
   computed: {
     getChannelSocket() {
       return this.$store.getters.getChannelSocket;
@@ -88,14 +88,14 @@ export default {
       console.log('create channel with success');
     },
   },
-	data() {
-		return {
-			newMessage: "",
-			currentChannelMessages() {
-				return [];
-			},
-		};
-	},
+  data() {
+    return {
+      newMessage: "",
+      currentChannelMessages() {
+        return [];
+      },
+    };
+  },
 
   mounted() {
     this.getChannelSocket.on('getChannelSuccess', (data) => {
@@ -104,8 +104,10 @@ export default {
 
       const channelFromStore = this.$store.getters.getCurrentChannel;
       console.log('channel from store ' + channelFromStore.name);
-      if (channelFromStore)
+      if (channelFromStore) {
         this.currentChannelMessages = channelFromStore.messages;
+          this.showNotification('You joined channel ' + channelFromStore.name, 'success');
+      }
 
       this.$forceUpdate();
     });
@@ -141,230 +143,240 @@ export default {
     this.getChannelSocket.on('message', (data) => {
       const message = new Message(
           data.id,
+          data.channelId,
           data.content,
           data.userId,
           data.nickname,
           data.date
       );
+
+      const currentChannel: Channel = this.$store.getters.getCurrentChannel;
+
+      if (currentChannel.id !== message.channelId) {
+        return;
+      }
+
       this.currentChannelMessages.push(message);
-      console.log(message);
       this.$forceUpdate();
     });
   },
 
-	methods: {
-		joinChannel(id: number, password?: string) {
-			this.getChannelSocket.emit('joinChannel', {
-				id: id,
-				password: password
-			});
-			this.getChannelSocket.emit('getChannels');
-			console.log('join channel with success');
-		},
+  methods: {
+    joinChannel(id: number, password?: string) {
+      this.getChannelSocket.emit('joinChannel', {
+        id: id,
+        password: password
+      });
+      this.getChannelSocket.emit('getChannels');
+      console.log('join channel with success');
+    },
 
-		selectChannel(channelId: number) {
-			console.log('select channel ' + channelId);
-			this.getChannelSocket.emit('getChannel', {
-				id: channelId,
-			});
-			this.joinChannel(channelId);
-		},
-		sendMessage() {
-			if (!this.newMessage)
-				return;
-			
-			const msgContent :string = this.newMessage;
-			this.$refs.msgBoxForm.reset();
+    selectChannel(channelId: number) {
+      this.getChannelSocket.emit('getChannel', {
+        id: channelId,
+      });
 
-			const currentChannel = this.$store.getters.getCurrentChannel;
-			if (!currentChannel) {
-				this.showNotification('You are not in any channel', 'error');
-				return;
-			}
+      const array: number[] = this.$store.getters.getJoinedChannels.map((channel: Channel) => channel.id);
+      // array.concat(this.$store.getters.getDirectChannels.map((channel: Channel) => channel.id));
 
-			const commandArray = msgContent.split(' ');
-			const commandName = commandArray[0];
+      console.log('array ' + array);
 
-			if (commandName[0] === '/') {
-				const commandArgs = commandArray.slice(1);
-				const command = getCommandByName(commandName);
-				// msgContent = "";
-				if (command) {
-					command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), this.getChannelSocket);
-					return;
-				}
+      if (!array.includes(channelId))
+        this.joinChannel(channelId);
 
-				this.sendHelp();
-				return;
-			}
+    },
+    sendMessage() {
+      if (!this.newMessage)
+        return;
 
-			this.getChannelSocket.emit('sendMessage', {
-				channelId: currentChannel.id,
-				text: msgContent,
-			});
+      const msgContent: string = this.newMessage;
+      this.$refs.msgBoxForm.reset();
 
+      const currentChannel = this.$store.getters.getCurrentChannel;
+      if (!currentChannel) {
+        this.showNotification('You are not in any channel', 'error');
+        return;
+      }
 
+      const commandArray = msgContent.split(' ');
+      const commandName = commandArray[0];
 
-		},
+      if (commandName[0] === '/') {
+        const commandArgs = commandArray.slice(1);
+        const command = getCommandByName(commandName);
+        // msgContent = "";
+        if (command) {
+          command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), this.getChannelSocket);
+          return;
+        }
 
-		sendHelp() {
-			COMMANDS.forEach(command => {
-				this.currentChannelMessages.push(
-					new Message(
-						-1,
-						command.getCommandHelp(),
-						-1,
-						new Date()
-					)
-				);
-			});
-		}
-	},
+        this.sendHelp();
+        return;
+      }
+
+      this.getChannelSocket.emit('sendMessage', {
+        channelId: currentChannel.id,
+        text: msgContent,
+      });
+    },
+
+    sendHelp() {
+      COMMANDS.forEach(command => {
+        this.currentChannelMessages.push(
+            new Message(
+                -1,
+                command.getCommandHelp(),
+                -1,
+                new Date()
+            )
+        );
+      });
+    }
+  },
 };
 </script>
 
 <template>
-	<div class="c-chat">
+  <div class="c-chat">
 
-		<div class="c-channel-bar">
-			<button @click="createChannel">Create Channel</button>
+    <div class="c-channel-bar">
+      <button @click="createChannel">Create Channel</button>
 
-			<div class="c-channels">
-				<div>Joined channels</div>
-				<div v-for="channel in joinedChannels" :key="channel.id" class="channel-item">
-					{{ channel.name }}
-					<button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
-				</div>
-			</div>
+      <div class="c-channels">
+        <div>Joined channels</div>
+        <div v-for="channel in joinedChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
+        </div>
+      </div>
 
-			<div class="c-channels">
-				<div>Direct channels</div>
-				<div v-for="channel in directChannels" :key="channel.id" class="channel-item">
-					{{ channel.name }}
-					<button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
-				</div>
-			</div>
+      <div class="c-channels">
+        <div>Direct channels</div>
+        <div v-for="channel in directChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
+        </div>
+      </div>
 
-			<div class="c-channels">
-				<div>Available channels</div>
-				<div v-for="channel in availableChannels" :key="channel.id" class="channel-item">
-					{{ channel.name }}
-					<button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
-				</div>
-			</div>
+      <div class="c-channels">
+        <div>Available channels</div>
+        <div v-for="channel in availableChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="leave-button">SELECT</button>
+        </div>
+      </div>
 
-		</div>
+    </div>
 
-		<div class="c-message-area">
-			<div class="c-messages">
-				<div class="c-msg" v-for="message in currentChannelMessages" :key="message.id">
-					<div class="c-msg-sender">
-						{{ message.userId }}
-					</div>
-					<div class="c-msg-content">
-						{{ message.content }}
-					</div>
-				</div>
-			</div>
+    <div class="c-message-area">
+      <div class="c-messages">
+        <div class="c-msg" v-for="message in currentChannelMessages" :key="message.id">
+          <div class="c-msg-sender">
+            {{ message.userId }}
+          </div>
+          <div class="c-msg-content">
+            {{ message.content }}
+          </div>
+        </div>
+      </div>
 
-			<div class="c-input-box">
-				<form class="c-form" ref="msgBoxForm" @submit.prevent="sendMessage">
-					<input class="c-form-input" type="text" v-model="newMessage">
-					<button class="c-form-submit" type="submit">Send</button>
-				</form>
-			</div>
-		</div>
+      <div class="c-input-box">
+        <form class="c-form" ref="msgBoxForm" @submit.prevent="sendMessage">
+          <input class="c-form-input" type="text" v-model="newMessage">
+          <button class="c-form-submit" type="submit">Send</button>
+        </form>
+      </div>
+    </div>
 
-	</div>
+  </div>
 </template>
 
 <style>
 
 .c-chat {
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
-	height: 100%;
-	width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
 }
 
 .c-channel-bar {
-	flex: 4;
-	overflow-x: hidden;
-    overflow-y: scroll;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	margin-right: 16px;
+  flex: 4;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 16px;
 }
 
 .c-message-area {
-	flex: 11;
-	display: flex;
-	flex-direction: column;
+  flex: 11;
+  display: flex;
+  flex-direction: column;
 
 }
-
 
 
 .c-channels {
-	margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .channel-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .c-messages {
-	background-color: #400000;
-	height: 100%;
-	overflow-x: hidden;
-	overflow-y: scroll;
+  background-color: #400000;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 .c-input-box {
-	display: flex;
-	background-color: #004000;
-	width: 100%;
-	align-items: center;
-	justify-content: center;
-	padding-top: 24px;
-	padding-bottom: 24px;
+  display: flex;
+  background-color: #004000;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 .c-form {
-	display: flex;
-	width: 80%;
-	height: 80%;
-	flex-direction: row;
+  display: flex;
+  width: 80%;
+  height: 80%;
+  flex-direction: row;
 }
 
 .c-form-input {
-	flex: 8;
-	word-wrap: normal;
-	font-size: 150%;
+  flex: 8;
+  word-wrap: normal;
+  font-size: 150%;
 }
 
 .c-form-submit {
-	flex: 1;
+  flex: 1;
 }
 
 /* To be put in a component */
 .c-msg {
-	display: flex;
-	flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 
 .c-msg-sender {
-	flex: 1;
-	background-color: #600000;
+  flex: 1;
+  background-color: #600000;
 }
 
 .c-msg-content {
-	flex: 8;
-	background-color: #006000;
+  flex: 8;
+  background-color: #006000;
 }
 
 
