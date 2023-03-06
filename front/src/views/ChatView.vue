@@ -54,34 +54,40 @@ export default {
 		this.getChannelSocket.disconnect();
 		next();
 	},
-	computed: {
-		getChannelSocket() {
-			return this.$store.getters.getChannelSocket;
-		},
-		setChannelSocket(socket) {
-			this.$store.commit('setChannelSocket', socket);
-		},
-		joinedChannels(): Channel[] {
-			return this.$store.getters.getJoinedChannels;
-		},
-		availableChannels(): Channel[] {
-			return this.$store.getters.getAvailableChannels;
-		},
-		directChannels(): Channel[] {
-			return this.$store.getters.getDirectChannels;
-		},
-		channelMessages(): Message[] {
-			return this.$store.getters.getCurrentChannel.messages;
-		},
-		createChannel() {
-			const randomName = Math.random().toString(36).substring(7);
-			this.getChannelSocket.emit('createChannel', {
-				name: randomName,
-			});
-			this.getChannelSocket.emit('getChannels');
-			console.log('create channel with success');
-		},
-	},
+  computed: {
+    getChannelSocket() {
+      return this.$store.getters.getChannelSocket;
+    },
+
+    setChannelSocket(socket) {
+      this.$store.commit('setChannelSocket', socket);
+    },
+
+    joinedChannels(): Channel[] {
+      return this.$store.getters.getJoinedChannels;
+    },
+
+    availableChannels(): Channel[] {
+      return this.$store.getters.getAvailableChannels;
+    },
+
+    directChannels(): Channel[] {
+      return this.$store.getters.getDirectChannels;
+    },
+
+    channelMessages(): Message[] {
+      return this.$store.getters.getCurrentChannel.messages;
+    },
+
+    createChannel() {
+      const randomName = Math.random().toString(36).substring(7);
+      this.getChannelSocket.emit('createChannel', {
+        name: randomName,
+      });
+      this.getChannelSocket.emit('getChannels');
+      console.log('create channel with success');
+    },
+  },
 	data() {
 		return {
 			newMessage: "",
@@ -91,67 +97,60 @@ export default {
 		};
 	},
 
-	mounted() {
-		// mapState(['joinedChannels', 'availableChannels', 'directChannels']);
+  mounted() {
+    this.getChannelSocket.on('getChannelSuccess', (data) => {
+      const channel = data;
+      this.$store.commit('setCurrentChannel', channel);
 
-		this.getChannelSocket.on('getChannelSuccess', (data) => {
-			const channel = data;
-			this.$store.commit('setCurrentChannel', channel);
+      const channelFromStore = this.$store.getters.getCurrentChannel;
+      console.log('channel from store ' + channelFromStore.name);
+      if (channelFromStore)
+        this.currentChannelMessages = channelFromStore.messages;
 
-			const channelFromStore = this.$store.getters.getCurrentChannel;
-			console.log('channel from store ' + channelFromStore.name);
-			if (channelFromStore)
-				this.currentChannelMessages = channelFromStore.messages;
+      this.$forceUpdate();
+    });
 
+    this.getChannelSocket.on('channelError', (data) => {
+      this.showNotification(data, 'error');
+    });
 
-			this.$forceUpdate();
-		}
-		);
+    this.getChannelSocket.on('channelSuccess', (data) => {
+      this.showNotification(data, 'success');
+    });
 
-		this.getChannelSocket.on('channelError', (data) => {
-			this.showNotification(data, 'error');
-		});
+    this.getChannelSocket.on('channelInfo', (data) => {
+      this.showNotification(data, 'info');
+    });
 
-		this.getChannelSocket.on('channelSuccess', (data) => {
-			this.showNotification(data, 'success');
-		});
+    //channels data:
+    this.getChannelSocket.on('joinableChannels', (data) => {
+      this.$store.commit('setAvailableChannels', data);
+      this.$forceUpdate();
+    });
 
-		this.getChannelSocket.on('channelInfo', (data) => {
-			this.showNotification(data, 'info');
-		});
+    this.getChannelSocket.on('joinedChannels', (data) => {
+      this.$store.commit('setJoinedChannels', data);
+      this.$forceUpdate();
+    });
 
-		//channels data:
-		this.getChannelSocket.on('joinableChannels', (data) => {
-			this.$store.commit('setAvailableChannels', data);
-			this.$forceUpdate();
-		});
+    this.getChannelSocket.on('directChannels', (data) => {
+      this.$store.commit('setDirectChannels', data);
+      this.$forceUpdate();
+    });
 
-		this.getChannelSocket.on('joinedChannels', (data) => {
-			this.$store.commit('setJoinedChannels', data);
-			this.$forceUpdate();
-		});
-
-		this.getChannelSocket.on('directChannels', (data) => {
-			this.$store.commit('setDirectChannels', data);
-			this.$forceUpdate();
-		});
-
-
-		this.getChannelSocket.on('message', (data) => {
-			const message = new Message(
-				data.id,
-				data.content,
-				data.userId,
-				data.nickname,
-				data.date
-			);
-			// message.content = data.nickname + ': ' + message.content;
-			this.currentChannelMessages.push(message);
-			console.log(message);
-			this.$forceUpdate();
-		});
-
-	},
+    this.getChannelSocket.on('message', (data) => {
+      const message = new Message(
+          data.id,
+          data.content,
+          data.userId,
+          data.nickname,
+          data.date
+      );
+      this.currentChannelMessages.push(message);
+      console.log(message);
+      this.$forceUpdate();
+    });
+  },
 
 	methods: {
 		joinChannel(id: number, password?: string) {

@@ -61,10 +61,15 @@ export class Player {
         this.getNewPosition();
     }
 
-    resetPlace(): void {
+    resetPlace(spectators: Socket[]): void {
         this.coord.coordCenter.y = 50;
         this.getNewPosition();
 
         this.client.emit('resetPaddle', this.coord.coord.top);
+        spectators.forEach(spectator => {
+            if (spectator && spectator.connected) {
+                spectator.emit('resetPaddle', this.id, this.coord.coord.top);
+            }
+        });
     }
 }

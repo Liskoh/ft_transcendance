@@ -8,7 +8,7 @@ export default {
   name: "App",
   store,
   created() {
-    const socket = this.$store.getters.getPongSocket();
+    // const socket = this.$store.getters.getPongSocket();
   },
   components: {
   },

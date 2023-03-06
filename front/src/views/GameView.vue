@@ -73,6 +73,7 @@ export default defineComponent({
     joinQueue() {
       const socket = this.$store.getters.getPongSocket();
       socket.emit('joinQueue');
+      console.log('joinQueue');
     },
     spectate(uuid: string) {
       const socket = this.$store.getters.getPongSocket();
@@ -82,10 +83,10 @@ export default defineComponent({
       });
     },
   },
-  mounted() {
-    const socket = this.$store.getters.getPongSocket();
-    socket.emit('getDuels');
-    socket.emit('getGames');
-  },
+  // mounted() {
+  //   const socket = this.$store.getters.getPongSocket();
+  //   socket.emit('getDuels');
+  //   socket.emit('getGames');
+  // },
 });
 </script>
