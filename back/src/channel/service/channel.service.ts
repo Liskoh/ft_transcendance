@@ -85,6 +85,9 @@ export class ChannelService {
         channel.name = user1.login + " & " + user2.login;
         channel.owner = user1;
         channel.users = [user1, user2];
+        channel.messages = [];
+        channel.punishments = [];
+        channel.channelType = ChannelType.DM;
 
         return await this.channelsRepository.save(channel);
     }

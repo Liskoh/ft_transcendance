@@ -401,6 +401,7 @@ export class ChannelGateway implements OnGatewayConnection {
             }
 
         } catch (error) {
+            console.log(error);
             await sendErrorToClient(socket, 'channelError', error);
         }
     }
