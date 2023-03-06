@@ -193,7 +193,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
         } catch (error) {
             console.log(error);
-            await sendErrorToClient(client, 'duelError', error.message);
+            await sendErrorToClient(client, 'gameError', error.message);
         }
     }
 
@@ -212,7 +212,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             client.emit('duels', mappedDuels);
         } catch (error) {
             console.log(error);
-            await sendErrorToClient(client, 'duelError', error.message);
+            await sendErrorToClient(client, 'gameError', error.message);
         }
     }
 
@@ -268,7 +268,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         if (!this.gameService.canJoinGame(client)) {
-            client.emit('joinQueueError', 'You can\'t join this game');
+            client.emit('gameError', "You are already in game go on /pong");
             return;
         }
 
