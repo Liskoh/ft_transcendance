@@ -26,6 +26,8 @@ import {User} from "../../user/entity/user.entity";
 import {Duel} from "../interface/duel.interface";
 import {IdDto} from "../../channel/dto/id.dto";
 import {UuidDto} from "../dto/uuid.dto";
+import {ContextCreator} from "@nestjs/core/helpers/context-creator";
+
 
 @WebSocketGateway(
     {
@@ -47,19 +49,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;
 
-    private usersMap: Map<Socket, string> = new Map();
+    private usersMap: Map<Socket, string> = new Map<Socket, string>();
+
 
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         const ret: boolean = await tryHandleConnection(socket, this.usersMap, this.usersService, this.authService, 'game', ...args);
-
         if (ret) {
-            console.log(1);
             try {
                 const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
                 const player: Player = await this.gameService.getPlayerByUserId(user.id);
-                console.log(2);
                 if (player) {
-                    console.log(3);
                     player.userId = user.id;
                     player.client = socket;
                 }
@@ -73,7 +72,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     async handleDisconnect(socket: Socket): Promise<any> {
         await tryHandleDisconnect(socket, this.usersMap, 'game');
-        this.gameService.removeSpectator(socket);
+        try {
+            this.gameService.removeSpectator(socket);
+
+            if (this.gameService.leaveQueue(socket))
+                console.log(socket.id + " ===>  leaved the queue");
+        } catch (error) {
+            console.log('handleDisconnect error: ' + error);
+        }
     }
 
     @SubscribeMessage('spectate')
@@ -94,6 +100,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('getGames')
     async getGames(socket: Socket, data: any): Promise<any> {
+        console.log('getGames');
         try {
             const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
             const games: Game[] = this.gameService.getGames();
@@ -110,7 +117,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-     initSinglePlayer(client: Socket, user: User, firstPlayer: boolean): Player {
+    initSinglePlayer(client: Socket, user: User, firstPlayer: boolean): Player {
         const boardPosition = {
             top: 2,
             left: 2,
@@ -137,7 +144,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (firstPlayer) {
             player = new Player(player1Position, '1', user.id, client, boardPosition);
         } else {
-            player = new Player(player2Position, '2', user.id ,client, boardPosition);
+            player = new Player(player2Position, '2', user.id, client, boardPosition);
         }
 
         return player;
@@ -166,10 +173,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return new Ball(ballPosition, boardPosition, firstPlayer, secondPlayer);
     }
 
+    // static async createDuel(client: Socket, usersService: UserService, gameService: GameService, payload: any): Promise<any> {
+    //     try {
+    //         const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+    //         await validateOrReject(dto);
+    //
+    //         const user: User = await getUserBySocket(client, usersService, this.usersMap);
+    //         const targetUser: User = await usersService.getUserByNickname(dto.login);
+    //
+    //         const duel: Duel = gameService.createDuel(user, targetUser);
+    //         const targetSocket: Socket = await getSocketsByUser(targetUser, this.usersMap);
+    //
+    //         if (targetSocket) {
+    //             targetSocket.emit('updateDuels');
+    //         }
+    //     } catch (error) {
+    //         console.log(error);
+    //         await sendErrorToClient(client, 'duelError', error.message);
+    //     }
+    // }
 
     @SubscribeMessage('createDuel')
     async onCreateDuel(client: Socket, payload: any): Promise<any> {
-        console.log('createDuel', payload);
         try {
             const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
             await validateOrReject(dto);
@@ -187,6 +212,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log(error);
             await sendErrorToClient(client, 'duelError', error.message);
         }
+        // await GameGateway.createDuel(client, this.usersService, this.gameService, payload);
     }
 
     @SubscribeMessage('getDuels')
@@ -226,8 +252,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log('starting game');
             this.gameService.clearQueue();
 
-            const firstPlayer: Player = this.initSinglePlayer(firstSocket, user,true);
-            const secondPlayer: Player = this.initSinglePlayer(secondSocket, targetUser,false);
+            const firstPlayer: Player = this.initSinglePlayer(firstSocket, user, true);
+            const secondPlayer: Player = this.initSinglePlayer(secondSocket, targetUser, false);
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
 
             const game: Game = new Game(firstPlayer, secondPlayer, ball);
@@ -250,8 +276,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('joinQueue')
     async onJoinQueue(client: Socket, data: any): Promise<any> {
+        console.log('joinQueue');
         let user: User = await getUserBySocket(client, this.usersService, this.usersMap);
-
         try {
             await this.gameService.joinQueue(client);
         } catch (error) {
@@ -275,8 +301,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log('starting game');
             this.gameService.clearQueue();
 
-            const firstPlayer: Player = this.initSinglePlayer(firstSocket, firstUser,true);
-            const secondPlayer: Player = this.initSinglePlayer(secondSocket, secondUser,false);
+            const firstPlayer: Player = this.initSinglePlayer(firstSocket, firstUser, true);
+            const secondPlayer: Player = this.initSinglePlayer(secondSocket, secondUser, false);
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
 
             const game: Game = new Game(firstPlayer, secondPlayer, ball);
@@ -292,6 +318,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
         }
     }
+
     @SubscribeMessage('onKeyInput')
     async onKeyInput(client: Socket, data: any): Promise<any> {
         try {

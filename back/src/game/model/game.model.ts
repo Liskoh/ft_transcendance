@@ -30,7 +30,7 @@ export class Game {
 
 
     emitToEveryone(event: string, data?: any) {
-        console.log('emit to everyone');
+        // console.log('emit to everyone');
         try {
             this.firstPlayer.client.emit(event, data);
         } catch (error) {
@@ -60,8 +60,8 @@ export class Game {
     }
 
     resetAllPlace() {
-        this.firstPlayer.resetPlace();
-        this.secondPlayer.resetPlace();
+        this.firstPlayer.resetPlace(this.spectators);
+        this.secondPlayer.resetPlace(this.spectators);
         this.ball.resetPlace(this.spectators);
     }
 

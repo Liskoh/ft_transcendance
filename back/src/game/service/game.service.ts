@@ -294,6 +294,12 @@ export class GameService {
         if (this.isSpectator(socket))
             this.removeSpectator(socket);
 
+        if (this.getCurrentGame(socket))
+            throw new HttpException(
+                'You are already in a game',
+                HttpStatus.BAD_REQUEST
+            );
+
         game.spectators.push(socket);
         socket.emit('sendOnPong');
     }

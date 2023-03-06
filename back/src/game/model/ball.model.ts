@@ -20,6 +20,25 @@ export class Ball {
                     width: number
                 },
                 board: {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     top: number,
                     left: number,
                     height: number,
@@ -69,7 +88,6 @@ export class Ball {
     }
 
     emitToEveryone(event: string, spectators: Socket[], data: any) {
-        console.log('emit to everyone');
         try {
             this.firstPlayer.client.emit(event, data);
         } catch (error) {
@@ -83,7 +101,6 @@ export class Ball {
         spectators.forEach(spectator => {
             if (spectator && spectator.connected) {
                 spectator.emit(event, data);
-                console.log('emit to spectator');
             }
         });
     }
