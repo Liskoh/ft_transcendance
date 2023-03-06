@@ -27,6 +27,8 @@ import {
     tryHandleConnection,
     tryHandleDisconnect
 } from "../../utils";
+import {Message} from "../entity/message.entity";
+import {SendDirectMessageDto} from "../dto/send-direct-message.dto";
 
 @WebSocketGateway(
     {
@@ -184,6 +186,20 @@ export class ChannelGateway implements OnGatewayConnection {
 
             const channel = await this.channelsService.createChannel(user, channelType, name, password);
             await sendSuccessToClient(socket, 'channelSuccess', 'Channel ' + channel.name + ' created');
+
+            const channels: Channel[] = await this.channelsService.getChannels();
+
+            // this.usersMap.forEach(async (value, key) => {
+            //     await this.sendJoinedChannels(socket, channels);
+            //     await this.sendJoinAbleChannels(socket, channels);
+            //     await this.sendDirectChannels(socket, channels);
+            // });
+
+            this.usersMap.forEach(async (value, key) => {
+                await this.sendJoinAbleChannels(key, channels);
+                console.log('login: ' + value + ' sent joinable channels');
+            });
+
         } catch (error) {
             console.log(error);
             await sendErrorToClient(socket, 'channelError', error);
@@ -305,18 +321,19 @@ export class ChannelGateway implements OnGatewayConnection {
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
             const channel = await this.channelsService.getChannelById(dto.channelId);
 
-            //return all users who can see the message
             const users = await this.channelsService.sendMessage(channel, user, dto.text);
+            const message: Message = await this.channelsService.saveMessage(dto.text, user, channel);
 
             this.emitOnChannel(
                 channel,
                 'message',
                 {
-                    id: 0,
-                    content: dto.text,
-                    userId: 1,
+                    channelId: channel.id,
+                    id: message.id,
+                    content: message.text,
+                    userId: user.id,
                     nickname: user.nickname,
-                    date: new Date(),
+                    date: message.date,
                 },
                 users
             );
@@ -336,28 +353,51 @@ export class ChannelGateway implements OnGatewayConnection {
     @SubscribeMessage('sendDirectMessage')
     async sendDirectMessage(socket: Socket, payload: any): Promise<any> {
         try {
-            const dto = new SendMessageDto(payload);
+            const dto: SendDirectMessageDto = new SendDirectMessageDto(payload);
             await validateOrReject(dto);
 
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
-            const targetUser = await this.usersService.getUserById(dto.channelId);
-            const channel = await this.channelsService.sendDirectMessage(user, targetUser, dto.text);
+            const targetUser = await this.usersService.getUserByNickname(dto.nickname);
+            const channels = await this.channelsService.getChannels();
+
+            let channel: Channel = await this.channelsService.getDirectChannel(user, targetUser, channels);
+            let created: boolean = false;
+
+            if (!channel) {
+                channel = await this.channelsService.createDirectMessageChannel(user, targetUser, channels);
+                created = true;
+            }
+
+            if (!channel.name.toLowerCase().includes(user.nickname.toLowerCase()) || channel.name.toLowerCase().includes(targetUser.nickname.toLowerCase())) {
+                channel.name = user.nickname + ' & ' + targetUser.nickname;
+                await this.channelsService.saveChannel(channel);
+                created = true;
+            }
+
+            const users = await this.channelsService.sendMessage(channel, user, dto.text);
+            const message: Message = await this.channelsService.saveMessage(dto.text, user, channel);
 
             this.emitOnChannel(
                 channel,
                 'message',
                 {
-                    id: 0,
-                    content: dto.text,
-                    userId: 1,
+                    channelId: channel.id,
+                    id: message.id,
+                    content: message.text,
+                    userId: user.id,
                     nickname: user.nickname,
-                    date: new Date(),
+                    date: message.date,
                 },
             );
 
+            if (!created)
+                return;
+
+            await this.sendDirectChannels(socket, channels);
+
             const targetSocket = await getSocketsByUser(targetUser, this.usersMap);
             if (targetSocket) {
-                await sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a message!');
+                await sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a private message!');
             }
 
         } catch (error) {
@@ -384,8 +424,6 @@ export class ChannelGateway implements OnGatewayConnection {
             await this.channelsService.joinChannel(channel, user, password);
 
             socket.emit('joinChannelSuccess');
-            await sendSuccessToClient(socket, 'channelSuccess', 'You have joined the channel '
-                + channel.name + 'with success');
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
         }

@@ -57,10 +57,11 @@ export async function getSocketsByUser(user: User, map: Map<Socket, string>): Pr
             return key;
     }
 
-    throw new HttpException(
-        'Socket not found',
-        HttpStatus.NOT_FOUND,
-    );
+    // throw new HttpException(
+    //     'Socket not found',
+    //     HttpStatus.NOT_FOUND,
+    // );
+    return null;
 }
 
 export async function tryHandleConnection(socket: Socket, map: Map<Socket, string>,

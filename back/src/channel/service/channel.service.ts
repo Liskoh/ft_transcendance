@@ -72,11 +72,6 @@ export class ChannelService {
      */
     async createDirectMessageChannel(user1: User, user2: User, channels: Channel[]): Promise<Channel> {
 
-        // if (this.isDirectChannelExist(user1, user2, await this.getChannels()))
-        //     throw new HttpException(
-        //         'This DM already exist',
-        //         HttpStatus.FORBIDDEN
-        //     );
         let channel = this.getDirectChannel(user1, user2, channels);
 
         if (channel)
@@ -103,7 +98,7 @@ export class ChannelService {
     }
 
     async getJoinedChannelsByUser(user: User, channels: Channel[]): Promise<Channel[]> {
-        channels = channels.filter(c => this.isMember(c, user) &&
+        channels = channels.filter(c => this.isMember(c, user) && c.channelType !== ChannelType.DM &&
             !this.isPunished(c, user, PunishmentType.BAN));
 
         return channels;
@@ -453,10 +448,11 @@ export class ChannelService {
     async joinChannel(channel: Channel, user: User, password?: string): Promise<Channel> {
 
         if (channel.channelType === ChannelType.DM)
-            throw new HttpException(
-                'You can not join DM',
-                HttpStatus.BAD_REQUEST
-            );
+            return;
+            // throw new HttpException(
+            //     'You can not join DM',
+            //     HttpStatus.BAD_REQUEST
+            // );
 
         if (this.isMember(channel, user))
             throw new HttpException(
@@ -518,16 +514,7 @@ export class ChannelService {
         return await this.channelsRepository.save(channel);
     }
 
-    /**
-     * send direct message to user
-     * @param {User} sender
-     * @param {User} receiver
-     * @param {string} text
-     * @returns {Promise<User[]>}
-     */
-    async sendDirectMessage(sender: User, receiver: User, text: string): Promise<Channel> {
-        const channels = await this.getChannels();
-        let channel = this.getDirectChannel(sender, receiver, channels);
+    async sendDirectMessage(sender: User, receiver: User, channel: Channel, channels: Channel[], text: string): Promise<User[]> {
 
         if (!channel) {
             channel = await this.createDirectMessageChannel(sender, receiver, channels);
@@ -539,8 +526,7 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        await this.sendMessage(channel, sender, text);
-        return channel;
+        return await this.sendMessage(channel, sender, text);
     }
 
     /**
@@ -575,14 +561,18 @@ export class ChannelService {
             );
         }
 
-        const message = new Message(user, text);
-        channel.messages.push(message);
+        //return filtered user if blocked etc...
+        return channel.users.filter(u => !u.blockedList.includes(user.id));
+    }
 
+    async saveMessage(text: string, user: User, channel: Channel): Promise<Message> {
+        const message: Message = new Message(user, text);
+
+        channel.messages.push(message);
         await this.messagesRepository.save(message);
         await this.channelsRepository.save(channel);
 
-        //return filtered user if blocked etc...
-        return channel.users.filter(u => !u.blockedList.includes(user.id));
+        return message;
     }
 
     getMessagesForUser(channel: Channel, user: User): Message[] {
@@ -689,13 +679,15 @@ export class ChannelService {
      * @returns {boolean}
      */
     getDirectChannel(user1: User, user2: User, channels: Channel[]): Channel {
-        return channels.find(channel => {
+        for (const channel of channels) {
             if (channel.channelType === ChannelType.DM) {
-                if (channel.users.includes(user1) && channel.users.includes(user2)) {
+                if (this.isMember(channel, user1) && this.isMember(channel, user2)) {
                     return channel;
                 }
             }
-        });
+        }
+
+        return null;
     }
 
     /**

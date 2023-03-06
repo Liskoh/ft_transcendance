@@ -7,6 +7,7 @@ import {UnPunishCommand} from "@/commands/impl/un-punish.command";
 import {SetUnsetAdminCommand} from "@/commands/impl/set-unset-admin.command";
 import {BlockUnblockCommand} from "@/commands/impl/block-unblock.command";
 import {FollowCommand} from "@/commands/impl/follow.command";
+import {MessagePrivateCommand} from "@/commands/impl/message-private.command";
 
 // export const SOCKET_SERVER = io('http://localhost:8000/');
 
@@ -20,6 +21,7 @@ export const COMMANDS: AbstractCommand[] = [] = [
     new BlockUnblockCommand('/block', 'blockUser'),
     new BlockUnblockCommand('/unblock', 'unblockUser'),
     new FollowCommand('/follow', 'followAsFriend'),
+    new MessagePrivateCommand('/mp', 'sendDirectMessage'),
 ];
 
 //get a command by its name:

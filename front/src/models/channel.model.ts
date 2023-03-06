@@ -6,7 +6,7 @@ export class Channel {
     constructor(
         id: number,
         name: string,
-        channelType: String,
+        channelType: string,
         users: User[],
         password: boolean,
         messages: Message[]) {
@@ -20,7 +20,7 @@ export class Channel {
 
     id: number;
     name: string;
-    channelType: String;
+    channelType: string;
     users: User[];
     password: boolean;
     messages: Message[];
