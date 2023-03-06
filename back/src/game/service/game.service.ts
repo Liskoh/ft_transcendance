@@ -8,6 +8,9 @@ import {Game} from "../model/game.model";
 import {Socket} from "socket.io";
 import {Duel} from "../interface/duel.interface";
 import {Player} from "../model/player.model";
+import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
+import {validateOrReject} from "class-validator";
+import {getUserBySocket, sendErrorToClient} from "../../utils";
 
 // import { CronJob } from 'cron';
 
@@ -21,6 +24,8 @@ export class GameService {
         private readonly userService: UserService
     ) {
     }
+
+    public usersMap: Map<Socket, string> = new Map<Socket, string>();
 
     //List of acvtives games
     private activeGames: Game[] = [];
@@ -153,6 +158,22 @@ export class GameService {
             }
         }
         return false;
+    }
+
+    async onCreateDuel(client: Socket, usersMap: Map<Socket, string>, payload: any): Promise<any> {
+        try {
+            const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+            await validateOrReject(dto);
+
+            const user: User = await getUserBySocket(client, this.userService, usersMap);
+            const targetUser: User = await this.userService.getUserByNickname(dto.login);
+
+            const duel: Duel = this.createDuel(user, targetUser);
+        } catch (error) {
+            console.log(error);
+            await sendErrorToClient(client, 'duelError', error.message);
+        }
+        // await GameGateway.createDuel(client, this.usersService, this.gameService, payload);
     }
 
     /**

@@ -136,11 +136,11 @@ export class ChannelService {
             .where("owner.id = :userId", {userId: owner.id})
             .getMany();
 
-        if (channels.length >= MAX_CHANNELS_PER_USER)
-            throw new HttpException(
-                'You have reached the maximum number of channels',
-                HttpStatus.FORBIDDEN
-            );
+        // if (channels.length >= MAX_CHANNELS_PER_USER)
+        //     throw new HttpException(
+        //         'You have reached the maximum number of channels',
+        //         HttpStatus.FORBIDDEN
+        //     );
 
         if (!name)
             name = owner.login + "'s channel";
