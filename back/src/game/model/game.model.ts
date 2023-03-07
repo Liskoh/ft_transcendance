@@ -1,6 +1,7 @@
 import {Ball} from "./ball.model";
 import {Player} from "./player.model";
 import {DirectionState} from "../enum/direction-state.enum";
+import {AppearanceState} from "../enum/appearance-state.enum";
 import {MAX_POINTS} from "../../consts";
 import {GameState} from "../enum/game-state.enum";
 import {GameLevel} from "../enum/game-level.enum";
@@ -25,6 +26,7 @@ export class Game {
     secondPlayer: Player;
     gameState: GameState = GameState.NOT_STARTED;
     gameLevel: GameLevel;
+    appearanceState: AppearanceState = AppearanceState.APPEAR;
     document: Document;
     spectators: Socket[];
 
@@ -156,7 +158,7 @@ export class Game {
             this.ball.directionY = -this.ball.directionY;
         }
 
-        this.ball.move(this.spectators);
+        this.ball.move(this.spectators, this.appearanceState);
         return true;
     }
 
@@ -195,33 +197,36 @@ export class Game {
     private i: number = 0;
 
     moveAll(): void {
-        this.i++;
+        let date = new Date();
 
-        // if (this.i % 100 === 0) {
-        //     console.log('move all ' + this.i);
-        //
-        //     console.log('first player ' + this.firstPlayer.client.id);
-        //     console.log('second player ' + this.secondPlayer.client.id);
-        //
-        //     this.emitToEveryone('newMessage', 'hfydstfusdgfasfdas ' + this.i);
-        // }
-        // if (this.gameState === GameState.NOT_STARTED) {
-        //     return;
-        // }
+        if (this.gameState === GameState.NOT_STARTED) {
+            return;
+        }
         if (this.firstPlayer === null || this.secondPlayer === null) {
             return;
         }
         if (!this.moveBall(this.spectators))
             return;
         this.movePaddle();
+
+        if (date.getSeconds() % 2 === 0 && this.appearanceState === AppearanceState.APPEAR && this.gameLevel === GameLevel.HARD) {
+            this.appearanceState = AppearanceState.DISAPPEAR;
+            this.emitToEveryone('ballAppearance', {
+                color: '#000000'
+            });
+        } else if (date.getSeconds() % 2 === 1 && this.appearanceState === AppearanceState.DISAPPEAR && this.gameLevel === GameLevel.HARD) {
+            this.appearanceState = AppearanceState.APPEAR;
+            this.emitToEveryone('ballAppearance', {
+                color: '#ffffff'
+            });
+        }
+
         setTimeout(this.moveAll.bind(this), 10);
     }
 
     // checkGameLevel() : void {
     //     if (this.gameLevel === GameLevel.EASY) {
     //         this.ball.speed -= 0.3;
-    //     } else if (this.gameLevel === GameLevel.HARD) {
-    //         // find the way to access to the html page
     //     }
     // }
 
@@ -229,6 +234,7 @@ export class Game {
         this.gameState = GameState.STARTED;
         this.emitToEveryone('newMessage', 'Game Started');
         // this.checkGameLevel();
+        // this.gameLevel = GameLevel.HARD;
         this.resetGame();
         this.moveAll();
     }

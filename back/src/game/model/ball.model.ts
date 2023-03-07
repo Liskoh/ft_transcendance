@@ -2,6 +2,7 @@ import {Coord} from "./coord.model";
 import {Game} from "./game.model";
 import {Player} from "./player.model";
 import {Socket} from "socket.io";
+import {AppearanceState} from "../enum/appearance-state.enum";
 
 
 export class Ball {
@@ -48,13 +49,14 @@ export class Ball {
     }
 
     // Function to move the paddle on the board, and sending to everyone the new position
-    move(spectators: Socket[]) {
+    move(spectators: Socket[], appearanceState: AppearanceState) {
         this.coord.coordCenter.x += this.directionX * this.speed;
         this.coord.coordCenter.y += this.directionY * this.speed;
         this.getNewPosition();
 
-        console.log('move ball', this.coord.coord.top, this.coord.coord.left);
-        this.emitToEveryone('moveBall', spectators, { top: this.coord.coord.top, left: this.coord.coord.left });
+        if (appearanceState === AppearanceState.APPEAR) {
+            this.emitToEveryone('moveBall', spectators, {top: this.coord.coord.top, left: this.coord.coord.left});
+        }
     }
 
     // Function to reset the place of the paddle in the board

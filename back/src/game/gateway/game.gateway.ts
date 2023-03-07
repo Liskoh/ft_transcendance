@@ -161,8 +161,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         const ballPosition = {
-            top: boardPosition.height / 2 - 15,
-            left: boardPosition.width / 2 - 15,
+            top: boardPosition.height / 2 - boardPosition.height * 0.75 / 100,
+            left: boardPosition.width / 2 - boardPosition.width * 0.75 / 100,
             width: 30,
             height: 30
         }

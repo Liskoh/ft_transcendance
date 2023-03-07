@@ -148,10 +148,6 @@ export default defineComponent({
 
     socket.on('moveBall', (data) => {
       this.ball.move(data.top, data.left);
-      const ballPosition = this.ballDoc.getBoundingClientRect();
-      const boardPosition = this.board.getBoundingClientRect();
-      console.log('top : ' + (((ballPosition.top - boardPosition.top) / boardPosition.height) * 100));
-      console.log('left : ' + (((ballPosition.left - boardPosition.left) / boardPosition.width) * 100));
     });
 
     socket.on('movePaddle', (data) => {
@@ -172,6 +168,10 @@ export default defineComponent({
 
     socket.on('newMessage', (data) => {
       this.message.innerHTML = data;
+    });
+
+    socket.on('ballAppearance', (data) => {
+      this.ballDoc.style.backgroundColor = data.color;
     });
   },
 
@@ -243,18 +243,19 @@ body {
 
 .ball {
   position: absolute;
-  height: calc(1.5vh + (2 * 5px));
-  width: calc(1.5vh + (2 * 5px));
+  width: 1.5vh;
+  height: 1.5vh;
   border-radius: 50%;
   top: calc(50% - 0.75vh);
   left: calc(50% - 0.75vh);
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
 .ball_effect {
   height: 100%;
   width: 100%;
   border-radius: 100px;
-  background: #ffffff;
   /*animation: spinBall 0.1s linear infinite;*/
 }
 
