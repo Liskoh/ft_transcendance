@@ -32,11 +32,12 @@ export default {
         return;
       }
 
-	  console.log(code);
       try {
         const response = await axios.get(`http://127.0.0.1:8000/auth/intra?code=${code}`);
-        console.log(response.data.access_token);
-      } catch (error) {
+		localStorage.setItem("token", response.data.access_token);
+
+      } 
+	  catch (error) {
         console.error(error);
       }
     }
