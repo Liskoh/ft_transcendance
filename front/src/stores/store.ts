@@ -5,6 +5,7 @@ import io, {Socket} from "socket.io-client";
 import * as process from "process";
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 import {Duel} from "@/models/duel.model";
+import {SocketType} from "@/utils/socket-type.enum";
 
 export const store = createStore({
     state: {
@@ -25,7 +26,17 @@ export const store = createStore({
         getCurrentChannel: state => state.currentChannel,
 
         getChannelSocket: state => state.channelSocket,
-        getUserSocket: state => state.userSocket,
+        getUserSocket: state => () => {
+            if (state.userSocket === null || !state.userSocket.connected) {
+                console.log('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users')
+                state.userSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users', {
+                    extraHeaders: {
+                        Authorization: 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+            }
+            return state.userSocket;
+        },
         getPongSocket: state => () => {
             if (state.pongSocket === null || !state.pongSocket.connected) {
                 state.pongSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/game', {
@@ -42,6 +53,14 @@ export const store = createStore({
         //getters:
         getChannelById: state => (id: number) => {
             return state.joinedChannels.find(channel => channel.id === id);
+        },
+    },
+    actions: {
+        connectUserSocket() {
+            this.getters.getUserSocket();
+        },
+        hasToken(): boolean {
+            return localStorage.getItem('token') !== null;
         },
     },
     mutations: {

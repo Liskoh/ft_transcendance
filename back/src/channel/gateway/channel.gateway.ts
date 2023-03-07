@@ -92,7 +92,6 @@ export class ChannelGateway implements OnGatewayConnection {
     }
 
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
-        console.log('connected to channels namespace');
         await tryHandleConnection(socket, this.usersMap,
             this.usersService, this.authService,
             'channels', ...args);

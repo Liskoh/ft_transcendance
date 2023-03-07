@@ -84,7 +84,8 @@ export async function tryHandleConnection(socket: Socket, map: Map<Socket, strin
 
     map.set(socket, payload.username);
     console.log('------------------------');
-    console.log(`\x1b[36mNew connection:\x1b[0m id => \x1b[33m${socket.id}\x1b[0m \x1b[32mlogin => \x1b[0m${payload.username} \x1b[35mnamespace => \x1b[0m${namespace}`);
+    // console.log(`\x1b[32mlogin => \x1b[0m${payload.username} \x1b[35mnamespace => \x1b[0m${namespace}`);
+    console.log(`\x1b[33m+\x1b[0m \x1b[32mlogin\x1b[0m => ${payload.username} \x1b[35mnamespace => \x1b[0m${namespace}`);
     console.log(`\x1b[36mConnected users:\x1b[0m ${map.size}`);
     console.log('------------------------');
     return true;
@@ -96,7 +97,7 @@ export async function tryHandleDisconnect(socket: Socket, map: Map<Socket, strin
         if (username) {
             map.delete(socket);
             console.log('------------------------');
-            console.log(`\x1b[36mDisconnected:\x1b[0m id => \x1b[33m${socket.id}\x1b[0m \x1b[32mlogin => \x1b[0m${username} \x1b[35mnamespace => \x1b[0m${namespace}`);
+            console.log(`\x1b[31m-\x1b[0m logout => ${username} \x1b[35mnamespace => \x1b[0m${namespace}`);
             console.log(`\x1b[36mConnected users:\x1b[0m ${map.size}`);
             console.log('------------------------');
         }
