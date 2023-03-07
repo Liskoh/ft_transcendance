@@ -121,8 +121,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     initSinglePlayer(client: Socket, user: User, firstPlayer: boolean): Player {
         const boardPosition = {
-            top: 2,
-            left: 2,
+            top: 5,
+            left: 5,
             width: 1920,
             height: 1080
         }
@@ -152,15 +152,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return player;
     }
 
-    /*
-      if (!this.game.ball && this.game.firstPlayer && this.game.secondPlayer) {
-            console.log('ball');
-            this.game.ball = new Ball(ballPosition, boardPosition, this.game.firstPlayer, this.game.secondPlayer);
-     */
     initBall(firstPlayer: Player, secondPlayer: Player): Ball {
         const boardPosition = {
-            top: 2,
-            left: 2,
+            top: 5,
+            left: 5,
             width: 1920,
             height: 1080
         }
@@ -174,7 +169,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         return new Ball(ballPosition, boardPosition, firstPlayer, secondPlayer);
     }
-
 
     @SubscribeMessage('createDuel')
     async onCreateDuel(client: Socket, payload: any): Promise<any> {
@@ -286,6 +280,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const firstPlayer: Player = this.initSinglePlayer(firstSocket, firstUser, true);
             const secondPlayer: Player = this.initSinglePlayer(secondSocket, secondUser, false);
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
+
+            console.log('player1Coord: ' + firstPlayer.coord.coord.top);
+            console.log('player1Size : ' + JSON.stringify(firstPlayer.size));
+            console.log('player2Coord: ' + JSON.stringify(secondPlayer.coord));
+            console.log('player2Size : ' + JSON.stringify(secondPlayer.size));
+            console.log('ballCoord: ' + JSON.stringify(ball.coord));
+            console.log('ballSize : ' + JSON.stringify(ball.size));
+
 
             const game: Game = new Game(firstPlayer, secondPlayer, ball);
 

@@ -122,20 +122,8 @@ export default defineComponent({
 
       if (nbrPlayer === 1) {
         console.log('You are player 1');
-        // socket.emit('playerJoin', {
-        //   ballPosition: this.ballDoc.getBoundingClientRect(),
-        //   position: this.paddle1.getBoundingClientRect(),
-        //   id: 1,
-        //   board: this.board.getBoundingClientRect()
-        // });
       } else if (nbrPlayer === 2) {
         console.log('You are player 2');
-        // socket.emit('playerJoin', {
-        //   ballPosition: this.ballDoc.getBoundingClientRect(),
-        //   position: this.paddle2.getBoundingClientRect(),
-        //   id: 2,
-        //   board: this.board.getBoundingClientRect()
-        // });
       } else {
         this.imSpectator = true;
         console.log('Spectator');
@@ -160,15 +148,16 @@ export default defineComponent({
 
     socket.on('moveBall', (data) => {
       this.ball.move(data.top, data.left);
+      const ballPosition = this.ballDoc.getBoundingClientRect();
+      const boardPosition = this.board.getBoundingClientRect();
+      console.log('top : ' + (((ballPosition.top - boardPosition.top) / boardPosition.height) * 100));
+      console.log('left : ' + (((ballPosition.left - boardPosition.left) / boardPosition.width) * 100));
     });
 
     socket.on('movePaddle', (data) => {
-      console.log('movePaddle ' + data.id + ' ' + data.top);
       if (data.id == 1) {
-        console.log('movePaddle1')
         this.player1.move(data.top);
       } else if (data.id == 2) {
-        console.log('movePaddle2')
         this.player2.move(data.top);
       }
     });
@@ -183,7 +172,6 @@ export default defineComponent({
 
     socket.on('newMessage', (data) => {
       this.message.innerHTML = data;
-      console.log('newMessage ' + data);
     });
   },
 
@@ -255,11 +243,11 @@ body {
 
 .ball {
   position: absolute;
-  height: 30px;
-  width: 30px;
+  height: calc(1.5vh + (2 * 5px));
+  width: calc(1.5vh + (2 * 5px));
   border-radius: 50%;
-  top: calc(50% - 15px);
-  left: calc(50% - 15px);
+  top: calc(50% - 0.75vh);
+  left: calc(50% - 0.75vh);
 }
 
 .ball_effect {
@@ -279,8 +267,8 @@ body {
 
 .paddle {
   position: absolute;
-  height: 20vh;
-  width: 1.5vw;
+  height: calc(20vh + (2 * 5px));
+  width: calc(1.5vw + (2 * 5px));
   top: calc(50% - 10vh);
   border-radius: 2px;
   background: #ffffff;

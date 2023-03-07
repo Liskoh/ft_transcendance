@@ -20,25 +20,6 @@ export class Ball {
                     width: number
                 },
                 board: {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     top: number,
                     left: number,
                     height: number,
@@ -72,6 +53,7 @@ export class Ball {
         this.coord.coordCenter.y += this.directionY * this.speed;
         this.getNewPosition();
 
+        console.log('move ball', this.coord.coord.top, this.coord.coord.left);
         this.emitToEveryone('moveBall', spectators, { top: this.coord.coord.top, left: this.coord.coord.left });
     }
 
