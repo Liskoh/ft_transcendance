@@ -69,11 +69,9 @@ export default {
     getChannelSocket() {
       return this.$store.getters.getChannelSocket;
     },
-
     setChannelSocket(socket) {
       this.$store.commit('setChannelSocket', socket);
     },
-
     channelMessages(): Message[] {
       return this.$store.getters.getCurrentChannel.messages;
     },
@@ -101,7 +99,7 @@ export default {
       console.log('channel from store ' + channelFromStore.name);
       if (channelFromStore) {
         this.currentChannelMessages = channelFromStore.messages;
-        this.$refs.notyf.showNotification('You are now on channel ' + channelFromStore.name, + '!', 'success');
+        this.$refs.notyf.showNotification('You are now on channel ' + channelFromStore.name, +'!', 'success');
       }
 
       this.$forceUpdate();
@@ -203,10 +201,6 @@ export default {
       this.$refs.msgBoxForm.reset();
 
       const currentChannel = this.$store.getters.getCurrentChannel;
-      if (!currentChannel) {
-        this.$refs.notyf.showNotification('You are not in any channel', 'error');
-        return;
-      }
 
       const commandArray = msgContent.split(' ');
       const commandName = commandArray[0];
@@ -220,7 +214,11 @@ export default {
           return;
         }
 
-        this.sendHelp();
+        return;
+      }
+
+      if (!currentChannel) {
+        this.$refs.notyf.showNotification('You are not in any channel', 'error');
         return;
       }
 
@@ -230,18 +228,18 @@ export default {
       });
     },
 
-    sendHelp() {
-      COMMANDS.forEach(command => {
-        this.currentChannelMessages.push(
-            new Message(
-                -1,
-                command.getCommandHelp(),
-                -1,
-                new Date()
-            )
-        );
-      });
-    }
+    // sendHelp() {
+    //   COMMANDS.forEach(command => {
+    //     this.currentChannelMessages.push(
+    //         new Message(
+    //             -1,
+    //             command.getCommandHelp(),
+    //             -1,
+    //             new Date()
+    //         )
+    //     );
+    //   });
+    // }
   },
 };
 </script>
