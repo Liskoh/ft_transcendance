@@ -21,8 +21,9 @@ import {Ball} from "@/views/models/ball.model";
 import io, {Socket} from "socket.io-client";
 import {store} from "@/stores/store";
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
+import {defineComponent} from "vue";
 
-export default {
+export default defineComponent({
   name: 'PongView',
   store,
 
@@ -70,11 +71,8 @@ export default {
   },
 
   // beforeRouteLeave(to, from, next) {
-  //   // console.log('beforeRouteLeave');
-  //   // document.removeEventListener('keydown', this.keyDownEvent);
-  //   // document.removeEventListener('keyup', this.keyUpEvent);
-  //   // console.log('beforeRouteLeave2');
-  //   // this.getPongSocket.disconnect();
+  //   const socket = this.$store.getters.getPongSocket();
+  //   socket.disconnect();
   //   next();
   // },
 
@@ -212,7 +210,7 @@ export default {
       });
     }
   },
-};
+});
 
 </script>
 

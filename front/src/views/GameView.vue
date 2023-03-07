@@ -1,5 +1,9 @@
 <template>
   <div>
+    <notification ref="notyf" />
+  </div>
+
+  <div>
     <input v-model="nickname" type="text" />
     <button @click="createDuel">DUEL</button>
 
@@ -30,6 +34,11 @@ export default defineComponent({
       currentDuels: [] as Duel[],
       currentGames: [] as Game[],
     };
+  },
+  beforeRouteLeave(to, from, next) {
+    const socket = this.$store.getters.getPongSocket();
+    socket.disconnect();
+    next();
   },
   created() {
     const socket = this.$store.getters.getPongSocket();
@@ -71,6 +80,7 @@ export default defineComponent({
       socket.emit('acceptDuel', { login: from });
     },
     joinQueue() {
+      this.$refs.notyf.showNotification('Message de notification', 'success');
       const socket = this.$store.getters.getPongSocket();
       socket.emit('joinQueue');
       console.log('joinQueue');

@@ -364,5 +364,4 @@ export class GameService {
     clearQueue(): void {
         this.queueIds = [];
     }
-
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /*  Theme picker  */
 
+
 import Login from "@/components/Login.vue";
 
 const themeClass: string[] = ['t-dark', 't-light', 't-bonus'];

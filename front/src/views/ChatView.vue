@@ -25,9 +25,11 @@ export default {
 
     const showNotification = (message: string, type: 'success' | 'error'): void => {
       if (type === 'success') {
-        notyf.success(message);
+        // notyf.success(message);
+        this.$notyf.success(message);
       } else {
-        notyf.error(message);
+        // notyf.error(message);
+        this.$notyf.error(message);
       }
     };
 
@@ -49,6 +51,10 @@ export default {
     this.getChannelSocket.emit('getChannels');
     console.log('get channels with success');
     console.log('created');
+
+    if (this.$store.getters.getCurrentChannel) {
+      this.selectChannel(this.$store.getters.getCurrentChannel.id);
+    }
   },
   beforeRouteLeave(to, from, next) {
     this.getChannelSocket.disconnect();
@@ -106,7 +112,7 @@ export default {
       console.log('channel from store ' + channelFromStore.name);
       if (channelFromStore) {
         this.currentChannelMessages = channelFromStore.messages;
-          this.showNotification('You joined channel ' + channelFromStore.name, 'success');
+        this.showNotification('You joined channel ' + channelFromStore.name, 'success');
       }
 
       this.$forceUpdate();
