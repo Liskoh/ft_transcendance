@@ -1,4 +1,10 @@
-import {OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer} from "@nestjs/websockets";
+import {
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    SubscribeMessage,
+    WebSocketGateway,
+    WebSocketServer
+} from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
 import {IdDto} from "../dto/id.dto";
 import {ChannelService} from "../service/channel.service";
@@ -38,7 +44,7 @@ import {SendDirectMessageDto} from "../dto/send-direct-message.dto";
         namespace: 'channels'
     }
 )
-export class ChannelGateway implements OnGatewayConnection {
+export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
         private readonly channelsService: ChannelService,
@@ -174,6 +180,7 @@ export class ChannelGateway implements OnGatewayConnection {
      */
     @SubscribeMessage('createChannel')
     async createChannel(socket: Socket, payload: any): Promise<any> {
+        console.log('createChannel ' + JSON.stringify(payload));
         try {
             const dto = new CreateChannelDto(payload);
             await validateOrReject(payload);
@@ -188,17 +195,11 @@ export class ChannelGateway implements OnGatewayConnection {
 
             const channels: Channel[] = await this.channelsService.getChannels();
 
-            // this.usersMap.forEach(async (value, key) => {
-            //     await this.sendJoinedChannels(socket, channels);
-            //     await this.sendJoinAbleChannels(socket, channels);
-            //     await this.sendDirectChannels(socket, channels);
-            // });
+            await this.sendJoinedChannels(socket, channels);
 
-            this.usersMap.forEach(async (value, key) => {
+            for (const [key, value] of this.usersMap) {
                 await this.sendJoinAbleChannels(key, channels);
-                console.log('login: ' + value + ' sent joinable channels');
-            });
-
+            }
         } catch (error) {
             console.log(error);
             await sendErrorToClient(socket, 'channelError', error);
@@ -422,8 +423,8 @@ export class ChannelGateway implements OnGatewayConnection {
             const password = dto.password;
 
             await this.channelsService.joinChannel(channel, user, password);
-
-            socket.emit('joinChannelSuccess');
+            await this.sendJoinedChannels(socket, await this.channelsService.getChannels());
+            await this.sendJoinAbleChannels(socket, await this.channelsService.getChannels());
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
         }
@@ -445,8 +446,8 @@ export class ChannelGateway implements OnGatewayConnection {
             const channel = await this.channelsService.getChannelById(dto.id);
 
             await this.channelsService.leaveChannel(channel, user);
-            socket.emit('leaveChannelSuccess', dto.id);
-
+            await this.sendJoinedChannels(socket, await this.channelsService.getChannels());
+            await this.sendJoinAbleChannels(socket, await this.channelsService.getChannels());
             await sendSuccessToClient(socket, 'channelSuccess', 'You have left the channel '
                 + channel.name + 'with success');
         } catch (error) {
