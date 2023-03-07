@@ -1,4 +1,4 @@
-import {Controller, Get} from "@nestjs/common";
+import {Controller, Get, HttpStatus} from "@nestjs/common";
 import {ChannelService} from "../service/channel.service";
 import {UserService} from "../../user/service/user.service";
 
@@ -16,6 +16,8 @@ export class ChannelController {
     @Get()
     async getChannels(): Promise<any> {
         const channels = await this.channelsService.getChannels();
+
+        // await this.channelsService.clear();
 
         // return channels;
         return channels.map(channel => ({
@@ -46,6 +48,7 @@ export class ChannelController {
                                                        })),
             channelType: channel.channelType,
         }))
+        // return HttpStatus.OK;
     }
 
     // @Get('me')
