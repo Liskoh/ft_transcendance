@@ -1,3 +1,9 @@
+<script setup lang="ts">
+
+import ChatMsg from "@/components/ChatMessage.vue"
+
+</script>
+
 <script lang="ts">
 import { mapGetters, mapMutations, mapState } from "vuex";
 import { Message } from "@/models/message.model";
@@ -213,13 +219,33 @@ export default {
 						-1,
 						command.getCommandHelp(),
 						-1,
+						'System',
 						new Date()
 					)
 				);
 			});
+		},
+
+		testMsg() : Message {
+			return (new Message(1, 'aled', 1, 'Myresa', new Date()));
+		},
+
+		testMsg2() : Message {
+
+			let cmdStr : string = '';
+			COMMANDS.forEach(command => {cmdStr += command.getCommandHelp() + '\n';});
+
+			return (new Message(
+						-1,
+						cmdStr,
+						-1,
+						'System',
+						new Date()
+					));
 		}
 	},
 };
+
 </script>
 
 <template>
@@ -256,14 +282,17 @@ export default {
 
 		<div class="c-message-area">
 			<div class="c-messages">
-				<div class="c-msg" v-for="message in currentChannelMessages" :key="message.id">
-					<div class="c-msg-sender">
-						{{ message.userId }}
-					</div>
-					<div class="c-msg-content">
-						{{ message.content }}
-					</div>
-				</div>
+				<ChatMsg v-for="message in currentChannelMessages" :key="message.id" message="message"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg2()"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg()"/>
+				<ChatMsg :message="testMsg2()"/>
+				<ChatMsg :message="testMsg2()"/>
 			</div>
 
 			<div class="c-input-box">
@@ -288,23 +317,21 @@ export default {
 }
 
 .c-channel-bar {
-	flex: 4;
+	flex: 3;
 	overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	margin-right: 16px;
+	border-right: 8px solid var(--color-border-header);
+	max-height: 100%;
 }
 
 .c-message-area {
 	flex: 11;
 	display: flex;
 	flex-direction: column;
-
 }
-
-
 
 .c-channels {
 	margin-bottom: 10px;
@@ -317,10 +344,11 @@ export default {
 }
 
 .c-messages {
-	background-color: #400000;
-	height: 100%;
+	/* height: 100%; */
 	overflow-x: hidden;
-	overflow-y: scroll;
+	overflow-y: auto;
+	max-height: 90%;
+	height: 90%;
 }
 
 .c-input-box {
@@ -331,6 +359,7 @@ export default {
 	justify-content: center;
 	padding-top: 24px;
 	padding-bottom: 24px;
+	height: 10%;
 }
 
 .c-form {
@@ -349,23 +378,6 @@ export default {
 .c-form-submit {
 	flex: 1;
 }
-
-/* To be put in a component */
-.c-msg {
-	display: flex;
-	flex-direction: row;
-}
-
-.c-msg-sender {
-	flex: 1;
-	background-color: #600000;
-}
-
-.c-msg-content {
-	flex: 8;
-	background-color: #006000;
-}
-
 
 </style>
 

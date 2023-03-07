@@ -71,7 +71,8 @@ header {
 	display: flex;
 	place-items: center;
 	background: var(--color-background-header);
-	height: 7rem;
+	height: 6rem;
+	min-height: 6rem;
 	border-radius: 0px;
 	border-bottom: 8px solid var(--color-border-header);
 }
@@ -81,7 +82,8 @@ footer {
 	place-items: center;
 	justify-content: center;
 	background: var(--color-background-header);
-	height: 5rem;
+	height: 4rem;
+	min-height: 4rem;
 	border-top: 8px solid var(--color-border-header);
 	color: var(--color-text-soft);
 }
@@ -131,7 +133,7 @@ a {
 
 .c-subpage {
 	width: 100%;
-	height: 100%;
+	height: calc(100% - 6rem - 4rem);
 	display: flex;
 	flex-direction: row;
 }
