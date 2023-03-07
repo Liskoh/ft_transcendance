@@ -6,7 +6,7 @@
 /*   By: tnguyen- <tnguyen-@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/20 01:53:36 by tnguyen-          #+#    #+#             */
-/*   Updated: 2023/03/05 15:20:58 by tnguyen-         ###   ########.fr       */
+/*   Updated: 2023/03/07 23:16:17 by tnguyen-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,13 +79,10 @@ export default class AuthController {
 			user = await this.userService.saveNewUser(login);
 		}
 
-		const payload = {username: user.login, sub: user.id};
-		//if (dataRegister.status === HttpStatusCode.Ok) {
-        //    console.log("success");
-        //    localStorage.setItem("token", dataRegister.access_token);
-        //    return;
-        //  }
+		console.log(user);
+
 		return this.authService.intra(user);
+		//return (login);
 	}
 }
 
