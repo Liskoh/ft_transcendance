@@ -123,8 +123,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const boardPosition = {
             top: 5,
             left: 5,
-            width: 1920,
-            height: 1080
+            width: 200,
+            height: 200
         }
 
         const player1Position = {
@@ -144,9 +144,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         let player: Player = null;
 
         if (firstPlayer) {
-            player = new Player(player1Position, '1', user.id, client, boardPosition);
+            player = new Player(player1Position, '1', user.id, client);
         } else {
-            player = new Player(player2Position, '2', user.id, client, boardPosition);
+            player = new Player(player2Position, '2', user.id, client);
         }
 
         return player;
@@ -156,18 +156,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const boardPosition = {
             top: 5,
             left: 5,
-            width: 1920,
-            height: 1080
+            width: 200,
+            height: 200
         }
 
         const ballPosition = {
-            top: boardPosition.height / 2 - 15,
-            left: boardPosition.width / 2 - 15,
-            width: 30,
-            height: 30
+            top: boardPosition.height / 2 - boardPosition.height / 100,
+            left: boardPosition.width / 2 - boardPosition.width  / 100,
+            width: boardPosition.width * 2 / 100,
+            height: boardPosition.height * 2 / 100
         }
 
-        return new Ball(ballPosition, boardPosition, firstPlayer, secondPlayer);
+        return new Ball(ballPosition);
     }
 
     @SubscribeMessage('createDuel')
@@ -281,7 +281,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const secondPlayer: Player = this.initSinglePlayer(secondSocket, secondUser, false);
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
 
-            console.log('player1Coord: ' + firstPlayer.coord.coord.top);
+            console.log('player1Coord: ' + JSON.stringify(firstPlayer.coord));
             console.log('player1Size : ' + JSON.stringify(firstPlayer.size));
             console.log('player2Coord: ' + JSON.stringify(secondPlayer.coord));
             console.log('player2Size : ' + JSON.stringify(secondPlayer.size));
@@ -342,6 +342,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     game.resetAllPlace();
                     game.moveAll();
                 } else {
+                    console.log('game started');
                     game.startGame();
                 }
             } else if (game.firstPlayer && game.secondPlayer) {

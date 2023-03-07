@@ -138,27 +138,34 @@ export default defineComponent({
     });
 
     socket.on('resetBall', (data) => {
-      this.ball.resetPlace(data.top, data.left);
+      const top: number = this.calculPositionInPercent(data.top);
+      const left: number = this.calculPositionInPercent(data.left);
+
+      this.ball.resetPlace(top, left);
     });
 
     socket.on('resetPaddle', (data) => {
-      this.player1.resetPlace(data);
-      this.player2.resetPlace(data);
+      const top: number = this.calculPositionInPercent(data.top);
+
+      this.player1.resetPlace(top);
+      this.player2.resetPlace(top);
     });
 
     socket.on('moveBall', (data) => {
-      this.ball.move(data.top, data.left);
-      const ballPosition = this.ballDoc.getBoundingClientRect();
-      const boardPosition = this.board.getBoundingClientRect();
-      console.log('top : ' + (((ballPosition.top - boardPosition.top) / boardPosition.height) * 100));
-      console.log('left : ' + (((ballPosition.left - boardPosition.left) / boardPosition.width) * 100));
+      const top: number = this.calculPositionInPercent(data.top);
+      const left: number = this.calculPositionInPercent(data.left);
+
+      console.log('moveBall ' + top + ' ' + left);
+      this.ball.move(top, left);
     });
 
     socket.on('movePaddle', (data) => {
+      const top: number = this.calculPositionInPercent(data.top);
+
       if (data.id == 1) {
-        this.player1.move(data.top);
+        this.player1.move(top);
       } else if (data.id == 2) {
-        this.player2.move(data.top);
+        this.player2.move(top);
       }
     });
 
@@ -173,6 +180,10 @@ export default defineComponent({
     socket.on('newMessage', (data) => {
       this.message.innerHTML = data;
     });
+
+    socket.on('ballAppearance', (data) => {
+      this.ballDoc.style.backgroundColor = data.color;
+    });
   },
 
   methods: {
@@ -180,6 +191,7 @@ export default defineComponent({
       if (this.imSpectator) {
         return;
       }
+      console.log(event.key);
       const socket: Socket = this.$store.getters.getPongSocket();
       socket.emit('onKeyInput', {
         key: event.key,
@@ -196,7 +208,11 @@ export default defineComponent({
         key: event.key,
         pressed: false,
       });
-    }
+    },
+
+    calculPositionInPercent(position: number): number {
+      return (position * 100) / 200;
+    },
   },
 });
 
@@ -243,18 +259,19 @@ body {
 
 .ball {
   position: absolute;
-  height: calc(1.5vh + (2 * 5px));
-  width: calc(1.5vh + (2 * 5px));
+  width: 2vh;
+  height: 2vh;
   border-radius: 50%;
-  top: calc(50% - 0.75vh);
-  left: calc(50% - 0.75vh);
+  top: calc(50% - 1vh);
+  left: calc(50% - 1vh);
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
 .ball_effect {
   height: 100%;
   width: 100%;
   border-radius: 100px;
-  background: #ffffff;
   /*animation: spinBall 0.1s linear infinite;*/
 }
 
@@ -267,8 +284,8 @@ body {
 
 .paddle {
   position: absolute;
-  height: calc(20vh + (2 * 5px));
-  width: calc(1.5vw + (2 * 5px));
+  height: 20vh;
+  width: 1.5vw;
   top: calc(50% - 10vh);
   border-radius: 2px;
   background: #ffffff;
