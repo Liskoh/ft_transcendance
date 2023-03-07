@@ -62,15 +62,24 @@ export class Game {
     }
 
     resetAllPlace() {
-        this.firstPlayer.resetPlace(this.spectators);
-        this.secondPlayer.resetPlace(this.spectators);
-        this.ball.resetPlace(this.spectators);
+        this.firstPlayer.resetPlace();
+        this.secondPlayer.resetPlace();
+        this.ball.resetPlace();
+
+        this.emitToEveryone('resetBall', {
+            top: this.ball.coord.coord.top,
+            left: this.ball.coord.coord.left
+        })
+        this.emitToEveryone('resetPaddle', {
+            top: this.firstPlayer.coord.coord.top,
+        })
     }
 
     resetGame() {
         console.log('reset');
         this.firstPlayer.score = 0;
         this.secondPlayer.score = 0;
+
         this.emitToEveryone('updateScore', {
             id: this.firstPlayer.id,
             score: this.firstPlayer.score.toString()
@@ -79,6 +88,7 @@ export class Game {
             id: this.secondPlayer.id,
             score: this.secondPlayer.score.toString()
         });
+
         this.resetAllPlace();
     }
 
@@ -96,12 +106,12 @@ export class Game {
         }
 
         this.gameState = GameState.PAUSED;
-        this.ball.resetPlace(spectators);
+        this.ball.resetPlace();
     }
 
     changeBallDirection(playerWhoHitTheBall: Player): void {
-        this.ball.directionY = Math.tan((this.ball.coord.coordCenter.y - playerWhoHitTheBall.coord.coordCenter.y) /
-            (playerWhoHitTheBall.size.height / 2)) * 1.5;
+        this.ball.directionY = Math.tan((this.ball.coord.coord.top - (this.ball.size.height / 2) - playerWhoHitTheBall.coord.coord.top - (playerWhoHitTheBall.size.height / 2)) /
+            (playerWhoHitTheBall.size.height / 2));
 
         if (playerWhoHitTheBall.id === this.firstPlayer.id)
             this.ball.directionX = this.ball.speed + (Math.abs(this.ball.directionY) / 2);
@@ -109,15 +119,13 @@ export class Game {
             this.ball.directionX = -this.ball.speed - (Math.abs(this.ball.directionY) / 2);
     }
 
-    private num = 0;
-
     moveBall(spectators: Socket[]): boolean {
         // if the ball touch the left or right of the boar
         if (this.ball.coord.coord.left <= 0) {
             this.getPoint(this.secondPlayer, spectators)
             return false;
         }
-        if (this.ball.coord.coord.right >= 100) {
+        if (this.ball.coord.coord.right >= 200) {
             this.getPoint(this.firstPlayer, spectators)
             return false;
         }
@@ -140,7 +148,7 @@ export class Game {
         if (this.ball.coord.coord.top <= 0) {
             this.ball.directionY = -this.ball.directionY;
         }
-        if (this.ball.coord.coord.bottom >= 100) {
+        if (this.ball.coord.coord.bottom >= 200) {
             this.ball.directionY = -this.ball.directionY;
         }
 
@@ -158,7 +166,13 @@ export class Game {
             this.ball.directionY = -this.ball.directionY;
         }
 
-        this.ball.move(this.spectators, this.appearanceState);
+        this.ball.move();
+        if (this.appearanceState === AppearanceState.APPEAR) {
+            this.emitToEveryone('moveBall', {
+                top: this.ball.coord.coord.top,
+                left: this.ball.coord.coord.left
+            })
+        }
         return true;
     }
 
@@ -205,9 +219,6 @@ export class Game {
         if (this.firstPlayer === null || this.secondPlayer === null) {
             return;
         }
-        if (!this.moveBall(this.spectators))
-            return;
-        this.movePaddle();
 
         if (date.getSeconds() % 2 === 0 && this.appearanceState === AppearanceState.APPEAR && this.gameLevel === GameLevel.HARD) {
             this.appearanceState = AppearanceState.DISAPPEAR;
@@ -221,12 +232,16 @@ export class Game {
             });
         }
 
+        if (!this.moveBall(this.spectators))
+            return;
+        this.movePaddle();
+
         setTimeout(this.moveAll.bind(this), 10);
     }
 
     // checkGameLevel() : void {
     //     if (this.gameLevel === GameLevel.EASY) {
-    //         this.ball.speed -= 0.3;
+    //         this.ball.speed /= 2;
     //     }
     // }
 
