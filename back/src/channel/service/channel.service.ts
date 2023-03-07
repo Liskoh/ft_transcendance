@@ -42,6 +42,10 @@ export class ChannelService {
         return await this.channelsRepository.find();
     }
 
+    async clear() : Promise<void> {
+        await this.channelsRepository.clear();
+    }
+
     /**
      * Get channel by id
      * @param {number} id
