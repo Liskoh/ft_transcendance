@@ -1,9 +1,3 @@
-<script setup lang="ts">
-
-import ChatMsg from "@/components/ChatMessage.vue"
-
-</script>
-
 <script lang="ts">
 import {mapGetters, mapMutations, mapState} from "vuex";
 import {Message} from "@/models/message.model";
@@ -234,40 +228,20 @@ export default {
       });
     },
 
-		sendHelp() {
-			COMMANDS.forEach(command => {
-				this.currentChannelMessages.push(
-					new Message(
-						-1,
-						command.getCommandHelp(),
-						-1,
-						'System',
-						new Date()
-					)
-				);
-			});
-		},
-
-		testMsg() : Message {
-			return (new Message(1, 'aled', 1, 'Myresa', new Date()));
-		},
-
-		testMsg2() : Message {
-
-			let cmdStr : string = '';
-			COMMANDS.forEach(command => {cmdStr += command.getCommandHelp() + '\n';});
-
-			return (new Message(
-						-1,
-						cmdStr,
-						-1,
-						'System',
-						new Date()
-					));
-		}
-	},
+    // sendHelp() {
+    //   COMMANDS.forEach(command => {
+    //     this.currentChannelMessages.push(
+    //         new Message(
+    //             -1,
+    //             command.getCommandHelp(),
+    //             -1,
+    //             new Date()
+    //         )
+    //     );
+    //   });
+    // }
+  },
 };
-
 </script>
 
 <template>
@@ -309,20 +283,13 @@ export default {
       </div>
 
 
-		<div class="c-message-area">
-			<div class="c-messages">
-				<ChatMsg v-for="message in currentChannelMessages" :key="message.id" message="message"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg2()"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg()"/>
-				<ChatMsg :message="testMsg2()"/>
-				<ChatMsg :message="testMsg2()"/>
-			</div>
+      <div class="c-channels">
+        <div>Direct channels</div>
+        <div v-for="channel in directChannels" :key="channel.id" class="channel-item">
+          {{ channel.name }}
+          <button @click="selectChannel(channel.id)" class="channel-button">SELECT</button>
+        </div>
+      </div>
 
       <div class="c-channels">
         <div>Available channels</div>
@@ -379,21 +346,22 @@ export default {
 }
 
 .c-channel-bar {
-	flex: 3;
-	overflow-x: hidden;
-    overflow-y: auto;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	border-right: 8px solid var(--color-border-header);
-	max-height: 100%;
+  flex: 4;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 16px;
 }
 
 .c-message-area {
-	flex: 11;
-	display: flex;
-	flex-direction: column;
+  flex: 11;
+  display: flex;
+  flex-direction: column;
+
 }
+
 
 .c-channels {
   margin-bottom: 10px;
@@ -406,22 +374,20 @@ export default {
 }
 
 .c-messages {
-	/* height: 100%; */
-	overflow-x: hidden;
-	overflow-y: auto;
-	max-height: 90%;
-	height: 90%;
+  background-color: #400000;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 .c-input-box {
-	display: flex;
-	background-color: #004000;
-	width: 100%;
-	align-items: center;
-	justify-content: center;
-	padding-top: 24px;
-	padding-bottom: 24px;
-	height: 10%;
+  display: flex;
+  background-color: #004000;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 .c-form {
@@ -440,6 +406,23 @@ export default {
 .c-form-submit {
   flex: 1;
 }
+
+/* To be put in a component */
+.c-msg {
+  display: flex;
+  flex-direction: row;
+}
+
+.c-msg-sender {
+  flex: 1;
+  background-color: #600000;
+}
+
+.c-msg-content {
+  flex: 8;
+  background-color: #006000;
+}
+
 
 </style>
 

@@ -1,7 +1,6 @@
 :root .t-dark {
 	--color-text: #f8f8f8;
 	--color-text-soft: #b0b0b0;
-	--color-chat-separator: #383838;
 	--color-background: #282828;
 	--color-background-header: linear-gradient(45deg, #404040, #808080);
 	--color-border-header: #602060;
