@@ -10,11 +10,11 @@ import {UserService} from "../../user/service/user.service";
 import * as bcrypt from 'bcrypt';
 import {
     BCRYPT_SALT_ROUNDS,
-    CHAT_COOLDOWN_IN_MILLISECONDS, MAX_CHANNELS_PER_USER,
+    CHAT_COOLDOWN_IN_MILLISECONDS,
+    MAX_CHANNELS_PER_USER,
     MAX_PASSWORD_LENGTH,
     MIN_PASSWORD_LENGTH
 } from "../../consts";
-import {SetNameDto} from "../dto/set-name.dto";
 import {PunishmentType} from "../enum/punishment-type.enum";
 import {Punishment} from "../entity/punishment.entity";
 import {User} from "src/user/entity/user.entity";
@@ -138,11 +138,17 @@ export class ChannelService {
             .where("owner.id = :userId", {userId: owner.id})
             .getMany();
 
-        // if (channels.length >= MAX_CHANNELS_PER_USER)
-        //     throw new HttpException(
-        //         'You have reached the maximum number of channels',
-        //         HttpStatus.FORBIDDEN
-        //     );
+        if (channels.length >= MAX_CHANNELS_PER_USER)
+            throw new HttpException(
+                'You have reached the maximum number of channels',
+                HttpStatus.FORBIDDEN
+            );
+
+        if (type === ChannelType.PRIVATE && password)
+            throw new HttpException(
+                'Private channel cannot have a password',
+                HttpStatus.FORBIDDEN
+            );
 
         if (!name)
             name = owner.login + "'s channel";

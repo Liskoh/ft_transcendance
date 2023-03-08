@@ -10,7 +10,7 @@ export const MAX_LOGIN_LENGTH: number = 8;
 export const MAX_PASSWORD_LENGTH: number = 20;
 export const MIN_PASSWORD_LENGTH: number = 3;
 
-export const MAX_CHANNELS_PER_USER: number = 8;
+export const MAX_CHANNELS_PER_USER: number = 4;
 export const MAX_MESSAGE_LENGTH: number = 50;
 export const MIN_MESSAGE_LENGTH: number = 1;
 

@@ -35,6 +35,7 @@ import {
 } from "../../utils";
 import {Message} from "../entity/message.entity";
 import {SendDirectMessageDto} from "../dto/send-direct-message.dto";
+import {PunishmentType} from "../enum/punishment-type.enum";
 
 @WebSocketGateway(
     {
@@ -201,7 +202,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 await this.sendJoinAbleChannels(key, channels);
             }
         } catch (error) {
-            console.log(error);
             await sendErrorToClient(socket, 'channelError', error);
         }
     }
@@ -229,6 +229,9 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
             if (targetSocket) {
                 await sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname +
                     ' invited you to the channel ' + channel.name);
+                const channels: Channel[] = await this.channelsService.getChannels();
+                await this.sendJoinedChannels(targetSocket, channels);
+                await this.sendJoinAbleChannels(targetSocket, channels);
             }
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
@@ -446,10 +449,20 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
             const channel = await this.channelsService.getChannelById(dto.id);
 
             await this.channelsService.leaveChannel(channel, user);
-            await this.sendJoinedChannels(socket, await this.channelsService.getChannels());
-            await this.sendJoinAbleChannels(socket, await this.channelsService.getChannels());
+            const channels: Channel[] = await this.channelsService.getChannels();
+            await this.sendJoinedChannels(socket, channels);
+            await this.sendJoinAbleChannels(socket, channels);
             await sendSuccessToClient(socket, 'channelSuccess', 'You have left the channel '
                 + channel.name + 'with success');
+
+            this.emitOnChannel(channel, 'channelError', user.nickname + ' has left the channel ' + channel.name);
+
+            if (channel.users.length <= 1) {
+                for (const [key, value] of this.usersMap) {
+                    await this.sendJoinAbleChannels(key, channels);
+                    await this.sendJoinedChannels(key, channels);
+                }
+            }
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
         }
@@ -474,10 +487,22 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
             const userToPunish = await this.usersService.getUserByNickname(dto.nickname);
             const punishmentType = dto.punishmentType;
             const date = dto.date;
+            const targetSocket = await getSocketsByUser(userToPunish, this.usersMap);
 
             await this.channelsService.applyPunishment(channel, user, userToPunish, punishmentType, date);
             await sendSuccessToClient(socket, 'channelSuccess', 'You have applied a punishment to ' +
                 userToPunish.nickname + ' with success');
+
+            if (targetSocket) {
+                const channels: Channel[] = await this.channelsService.getChannels();
+
+                await sendSuccessToClient(targetSocket, 'channelError', 'You have been ' +
+                    dto.punishmentType + ' by ' + user.nickname + ' in the channel ' + channel.name);
+                await this.sendJoinedChannels(targetSocket, channels);
+                await this.sendJoinAbleChannels(targetSocket, channels);
+                if (punishmentType !== PunishmentType.MUTE)
+                    targetSocket.emit('resetCurrent');
+            }
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
         }

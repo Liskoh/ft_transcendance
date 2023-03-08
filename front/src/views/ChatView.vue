@@ -135,6 +135,11 @@ export default {
       this.$forceUpdate();
     });
 
+    this.getChannelSocket.on('resetCurrent', (data) => {
+      this.$store.commit('setCurrentChannel', null);
+      this.currentChannelMessages = [];
+    });
+
     this.getChannelSocket.on('message', (data) => {
       const message = new Message(
           data.id,

@@ -67,6 +67,11 @@ export default defineComponent({
       // window.history.pushState(null, null, '/pong');
       this.$router.push('/pong');
     });
+
+    socket.on('endGame', (data: any) => {
+      this.$router.push('/game');
+    });
+
   },
   methods: {
     createDuel() {

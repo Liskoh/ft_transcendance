@@ -13,6 +13,7 @@ export const store = createStore({
         availableChannels: <Channel[]>[],
         directChannels: <Channel[]>[],
         waitingDuels: <Duel[]>[],
+        playing: <boolean>false,
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
         userSocket: <Socket | unknown>null,
@@ -46,6 +47,10 @@ export const store = createStore({
                 });
             }
             return state.pongSocket;
+        },
+
+        isPlaying: state => {
+            return state.playing;
         },
 
         getWaitingDuels: state => state.waitingDuels,
