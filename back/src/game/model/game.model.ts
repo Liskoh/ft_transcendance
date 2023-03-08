@@ -8,16 +8,19 @@ import {GameLevel} from "../enum/game-level.enum";
 import {getUserBySocket} from "../../utils";
 import {Socket} from "socket.io";
 import { v4 as uuidv4 } from 'uuid';
+import {MatchHistory} from "../entity/match-history.entity";
+import {GameService} from "../service/game.service";
 
 
 export class Game {
 
-    constructor(firstPlayer: Player, secondPlayer: Player, ball: Ball) {
+    constructor(firstPlayer: Player, secondPlayer: Player, ball: Ball, gameService: GameService) {
         this.uuid = uuidv4();
         this.ball = ball;
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
         this.spectators = [];
+        this.gameService = gameService;
     }
 
     uuid: string;
@@ -29,6 +32,7 @@ export class Game {
     appearanceState: AppearanceState = AppearanceState.APPEAR;
     document: Document;
     spectators: Socket[];
+    private readonly gameService: GameService;
 
 
     emitToEveryone(event: string, data?: any) {
@@ -92,7 +96,7 @@ export class Game {
         this.resetAllPlace();
     }
 
-    getPoint(playerWhoScore: any, spectators: Socket[]) {
+    getPoint(playerWhoScore: any, spectators: Socket[]) : boolean {
         playerWhoScore.score++;
         this.emitToEveryone('updateScore', {
             id: playerWhoScore.id,
@@ -102,11 +106,13 @@ export class Game {
         if (playerWhoScore.score === MAX_POINTS) {
             this.emitToEveryone('newMessage', 'Player ' + playerWhoScore.id.toString() + ' win the game');
             this.gameState = GameState.NOT_STARTED;
-            return ;
+            return true;
         }
 
         this.gameState = GameState.PAUSED;
         this.ball.resetPlace();
+
+        return false;
     }
 
     changeBallDirection(playerWhoHitTheBall: Player): void {

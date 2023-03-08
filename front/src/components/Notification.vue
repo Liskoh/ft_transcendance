@@ -24,10 +24,6 @@ export default defineComponent({
         notyf.success(message);
       } else if (type === 'error') {
         notyf.error(message);
-      } else if (type === 'warning') {
-        notyf.warning(message);
-      } else {
-        notyf.info(message);
       }
     }
   }
