@@ -2,7 +2,7 @@ import {Ball} from "./ball.model";
 import {Player} from "./player.model";
 import {DirectionState} from "../enum/direction-state.enum";
 import {AppearanceState} from "../enum/appearance-state.enum";
-import {MAX_POINTS} from "../../consts";
+import {BOARD_HEIGHT, BOARD_WIDTH, MAX_POINTS} from "../../consts";
 import {GameState} from "../enum/game-state.enum";
 import {GameLevel} from "../enum/game-level.enum";
 import {getUserBySocket} from "../../utils";
@@ -32,7 +32,6 @@ export class Game {
 
 
     emitToEveryone(event: string, data?: any) {
-        // console.log('emit to everyone');
         try {
             this.firstPlayer.client.emit(event, data);
         } catch (error) {
@@ -66,13 +65,15 @@ export class Game {
         this.secondPlayer.resetPlace();
         this.ball.resetPlace();
 
-        this.emitToEveryone('resetBall', {
-            top: this.ball.coord.coord.top,
-            left: this.ball.coord.coord.left
-        })
-        this.emitToEveryone('resetPaddle', {
-            top: this.firstPlayer.coord.coord.top,
-        })
+        this.emitToEveryone('resetPlace', {
+            ball: {
+                top: this.ball.coord.coord.top,
+                left: this.ball.coord.coord.left
+            },
+            player: {
+                top: this.firstPlayer.coord.coord.top,
+            }
+        });
     }
 
     resetGame() {
@@ -92,7 +93,7 @@ export class Game {
         this.resetAllPlace();
     }
 
-    getPoint(playerWhoScore: any, spectators: Socket[]) {
+    getPoint(playerWhoScore: any) {
         playerWhoScore.score++;
         this.emitToEveryone('updateScore', {
             id: playerWhoScore.id,
@@ -110,23 +111,29 @@ export class Game {
     }
 
     changeBallDirection(playerWhoHitTheBall: Player): void {
-        this.ball.directionY = Math.tan((this.ball.coord.coord.top - (this.ball.size.height / 2) - playerWhoHitTheBall.coord.coord.top - (playerWhoHitTheBall.size.height / 2)) /
+        const centerOfThePaddle = playerWhoHitTheBall.coord.coord.top + (playerWhoHitTheBall.size.height / 2);
+        const centerOfTheBall = this.ball.coord.coord.top + (this.ball.size.height / 2);
+
+        this.ball.directionY = Math.tan((centerOfTheBall - centerOfThePaddle) /
             (playerWhoHitTheBall.size.height / 2));
 
-        if (playerWhoHitTheBall.id === this.firstPlayer.id)
+        if (playerWhoHitTheBall.id === this.firstPlayer.id) {
+            // this.ball.coord.coord.left = playerWhoHitTheBall.coord.coord.right;
             this.ball.directionX = this.ball.speed + (Math.abs(this.ball.directionY) / 2);
-        else if (playerWhoHitTheBall.id === this.secondPlayer.id)
+        } else if (playerWhoHitTheBall.id === this.secondPlayer.id) {
+            // this.ball.coord.coord.left = playerWhoHitTheBall.coord.coord.left - this.ball.size.width;
             this.ball.directionX = -this.ball.speed - (Math.abs(this.ball.directionY) / 2);
+        }
     }
 
     moveBall(spectators: Socket[]): boolean {
         // if the ball touch the left or right of the boar
         if (this.ball.coord.coord.left <= 0) {
-            this.getPoint(this.secondPlayer, spectators)
+            this.getPoint(this.secondPlayer)
             return false;
         }
-        if (this.ball.coord.coord.right >= 200) {
-            this.getPoint(this.firstPlayer, spectators)
+        if (this.ball.coord.coord.right >= BOARD_WIDTH) {
+            this.getPoint(this.firstPlayer)
             return false;
         }
 
@@ -148,7 +155,7 @@ export class Game {
         if (this.ball.coord.coord.top <= 0) {
             this.ball.directionY = -this.ball.directionY;
         }
-        if (this.ball.coord.coord.bottom >= 200) {
+        if (this.ball.coord.coord.bottom >= BOARD_HEIGHT) {
             this.ball.directionY = -this.ball.directionY;
         }
 
@@ -167,48 +174,24 @@ export class Game {
         }
 
         this.ball.move();
-        if (this.appearanceState === AppearanceState.APPEAR) {
-            this.emitToEveryone('moveBall', {
-                top: this.ball.coord.coord.top,
-                left: this.ball.coord.coord.left
-            })
-        }
+
         return true;
     }
 
     movePaddle(): void {
-        // console.log('move paddle');
         if (this.firstPlayer.keyPress['ArrowUp']) {
             this.firstPlayer.move(DirectionState.UP);
-            this.emitToEveryone('movePaddle', {
-                top: this.firstPlayer.coord.coord.top,
-                id: this.firstPlayer.id
-            });
         }
         if (this.firstPlayer.keyPress['ArrowDown']) {
             this.firstPlayer.move(DirectionState.DOWN);
-            this.emitToEveryone('movePaddle', {
-                top: this.firstPlayer.coord.coord.top,
-                id: this.firstPlayer.id
-            });
         }
         if (this.secondPlayer.keyPress['ArrowUp']) {
             this.secondPlayer.move(DirectionState.UP);
-            this.emitToEveryone('movePaddle', {
-                top: this.secondPlayer.coord.coord.top,
-                id: this.secondPlayer.id
-            });
         }
         if (this.secondPlayer.keyPress['ArrowDown']) {
             this.secondPlayer.move(DirectionState.DOWN);
-            this.emitToEveryone('movePaddle', {
-                top: this.secondPlayer.coord.coord.top,
-                id: this.secondPlayer.id
-            });
         }
     }
-
-    private i: number = 0;
 
     moveAll(): void {
         let date = new Date();
@@ -236,6 +219,19 @@ export class Game {
             return;
         this.movePaddle();
 
+        this.emitToEveryone('moveAll', {
+            ball: {
+                top: this.ball.coord.coord.top,
+                left: this.ball.coord.coord.left
+            },
+            player1: {
+                top: this.firstPlayer.coord.coord.top,
+            },
+            player2: {
+                top: this.secondPlayer.coord.coord.top,
+            }
+        })
+
         setTimeout(this.moveAll.bind(this), 10);
     }
 
@@ -252,5 +248,6 @@ export class Game {
         // this.gameLevel = GameLevel.HARD;
         this.resetGame();
         this.moveAll();
+
     }
 }

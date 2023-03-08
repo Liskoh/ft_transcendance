@@ -27,6 +27,7 @@ import {Duel} from "../interface/duel.interface";
 import {IdDto} from "../../channel/dto/id.dto";
 import {UuidDto} from "../dto/uuid.dto";
 import {ContextCreator} from "@nestjs/core/helpers/context-creator";
+import {BOARD_HEIGHT, BOARD_WIDTH} from "../../consts";
 
 const usersMap: Map<Socket, string> = new Map();
 
@@ -121,24 +122,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     initSinglePlayer(client: Socket, user: User, firstPlayer: boolean): Player {
         const boardPosition = {
-            top: 5,
-            left: 5,
-            width: 200,
-            height: 200
+            width: BOARD_WIDTH,
+            height: BOARD_HEIGHT
         }
 
         const player1Position = {
-            top: boardPosition.height / 2 - boardPosition.height / 10,
-            left: boardPosition.width / 50,
-            width: boardPosition.width * 1.5 / 100,
-            height: boardPosition.height / 5
+            top: boardPosition.height * 50 / 100 - boardPosition.height * 10 / 100,
+            left: boardPosition.width * 2/ 100,
+            width: boardPosition.width / 100,
+            height: boardPosition.height * 20 / 100
         }
 
         const player2Position = {
-            top: boardPosition.height / 2 - boardPosition.height / 10,
-            left: boardPosition.width - boardPosition.width / 50 - boardPosition.width * 1.5 / 100,
-            width: boardPosition.width * 1.5 / 100,
-            height: boardPosition.height / 5
+            top: boardPosition.height * 50 / 100 - boardPosition.height * 10 / 100,
+            left: boardPosition.width - boardPosition.width * 2 / 100 - boardPosition.width * 1.5 / 100,
+            width: boardPosition.width / 100,
+            height: boardPosition.height * 20 / 100
         }
 
         let player: Player = null;
@@ -154,10 +153,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     initBall(firstPlayer: Player, secondPlayer: Player): Ball {
         const boardPosition = {
-            top: 5,
-            left: 5,
-            width: 200,
-            height: 200
+            width: BOARD_WIDTH,
+            height: BOARD_HEIGHT
         }
 
         const ballPosition = {

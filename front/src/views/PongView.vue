@@ -137,36 +137,26 @@ export default defineComponent({
       this.player2Score.innerHTML = '0';
     });
 
-    socket.on('resetBall', (data) => {
-      const top: number = this.calculPositionInPercent(data.top);
-      const left: number = this.calculPositionInPercent(data.left);
+    socket.on('resetPlace', (data) => {
+      const ballTop: number = this.calculPositionInPercent(data.ball.top);
+      const ballLeft: number = this.calculPositionInPercent(data.ball.left);
+      const playerTop: number = this.calculPositionInPercent(data.player.top);
 
-      this.ball.resetPlace(top, left);
+      this.ball.resetPlace(ballTop, ballLeft);
+
+      this.player1.resetPlace(playerTop);
+      this.player2.resetPlace(playerTop);
     });
 
-    socket.on('resetPaddle', (data) => {
-      const top: number = this.calculPositionInPercent(data.top);
+    socket.on('moveAll', (data) => {
+      const ballTop: number = this.calculPositionInPercent(data.ball.top);
+      const ballLeft: number = this.calculPositionInPercent(data.ball.left);
+      const player1Top: number = this.calculPositionInPercent(data.player1.top);
+      const player2Top: number = this.calculPositionInPercent(data.player2.top);
 
-      this.player1.resetPlace(top);
-      this.player2.resetPlace(top);
-    });
-
-    socket.on('moveBall', (data) => {
-      const top: number = this.calculPositionInPercent(data.top);
-      const left: number = this.calculPositionInPercent(data.left);
-
-      console.log('moveBall ' + top + ' ' + left);
-      this.ball.move(top, left);
-    });
-
-    socket.on('movePaddle', (data) => {
-      const top: number = this.calculPositionInPercent(data.top);
-
-      if (data.id == 1) {
-        this.player1.move(top);
-      } else if (data.id == 2) {
-        this.player2.move(top);
-      }
+      this.ball.move(ballTop, ballLeft);
+      this.player1.move(player1Top);
+      this.player2.move(player2Top);
     });
 
     socket.on('updateScore', (data) => {
@@ -191,7 +181,6 @@ export default defineComponent({
       if (this.imSpectator) {
         return;
       }
-      console.log(event.key);
       const socket: Socket = this.$store.getters.getPongSocket();
       socket.emit('onKeyInput', {
         key: event.key,
@@ -211,7 +200,7 @@ export default defineComponent({
     },
 
     calculPositionInPercent(position: number): number {
-      return (position * 100) / 200;
+      return position * 100 / 200;
     },
   },
 });
@@ -235,21 +224,8 @@ body {
   align-items: center;
 }
 
-.board {
-  position: relative;
-  height: 85vh;
-  width: 80vw;
-  background: #000000;
-  border: solid 5px #ffffff;
-  border-radius: 2px;
-}
-
-/*//cente*/
 /*.board {*/
-/*  position: absolute;*/
-/*  top: 50%;*/
-/*  left: 50%;*/
-/*  transform: translate(-50%, -50%);*/
+/*  position: relative;*/
 /*  height: 85vh;*/
 /*  width: 80vw;*/
 /*  background: #000000;*/
@@ -257,13 +233,38 @@ body {
 /*  border-radius: 2px;*/
 /*}*/
 
+/*//cente*/
+.board {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 85vh;
+  width: 80vw;
+  background: #000000;
+  border: solid 5px #ffffff;
+  border-radius: 2px;
+}
+
+/*.ball {*/
+/*  position: absolute;*/
+/*  width: 2%;*/
+/*  height: 0;*/
+/*  padding-bottom: 2%;*/
+/*  border-radius: 50%;*/
+/*  top: 50%;*/
+/*  left: 50%;*/
+/*  transform: translate(-50%, -50%);*/
+/*  background: #ffffff;*/
+/*}*/
+
 .ball {
   position: absolute;
-  width: 2vh;
-  height: 2vh;
+  width: calc(1vh + 1vw);
+  height: calc(1vh + 1vw);
   border-radius: 50%;
-  top: calc(50% - 1vh);
-  left: calc(50% - 1vh);
+  top: calc(50% - 1%);
+  left: calc(50% - 1%);
   box-sizing: border-box;
   background: #ffffff;
 }
@@ -284,19 +285,19 @@ body {
 
 .paddle {
   position: absolute;
-  height: 20vh;
-  width: 1.5vw;
-  top: calc(50% - 10vh);
+  height: 20%;
+  width: 1%;
+  top: calc(50% - 10%);
   border-radius: 2px;
   background: #ffffff;
 }
 
 .paddle_1 {
-  left: 2vw;
+  left: 2%;
 }
 
 .paddle_2 {
-  right: 2vw;
+  right: 2%;
 }
 
 .player_1_score {
