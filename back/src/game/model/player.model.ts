@@ -21,55 +21,39 @@ export class Player {
                 },
                 id: string,
                 userId: number,
-                client: Socket,
-                board: {
-                    top: number,
-                    left: number,
-                    width: number,
-                    height: number
-                }) {
+                client: Socket,) {
         this.keyPress = {};
         this.id = id;
         this.userId = userId;
         this.name = 'player' + this.id;
         this.client = client;
-        this.speed = 1;
+        this.speed = 2;
         this.score = 0;
         this.size = {
-            width: (position.width / board.width) * 100,
-            height: (position.height / board.height) * 100
+            width: position.width,
+            height: position.height
         }
-        this.coord = new Coord(position, this.size, board);
+        this.coord = new Coord(position, this.size);
     }
 
     getNewPosition(): void {
-        this.coord.coord.top = this.coord.coordCenter.y - this.size.height / 2;
-        this.coord.coord.bottom = this.coord.coordCenter.y + this.size.height / 2;
-        this.coord.coord.left = this.coord.coordCenter.x - this.size.width / 2;
-        this.coord.coord.right = this.coord.coordCenter.x + this.size.width / 2;
+        this.coord.coord.bottom = this.coord.coord.top + this.size.height;
     }
 
-    move(way: number): void {
+    move(way: DirectionState): void {
         if (way === DirectionState.UP && this.coord.coord.top - this.speed < 0) {
-            this.coord.coordCenter.y = this.size.height / 2;
-        } else if (way === DirectionState.DOWN && this.coord.coord.bottom + this.speed > 100) {
-            this.coord.coordCenter.y = 100 - this.size.height / 2;
+            this.coord.coord.top = 0;
+        } else if (way === DirectionState.DOWN && this.coord.coord.bottom + this.speed > 200) {
+            this.coord.coord.top = 200 - this.size.height;
         } else {
-            this.coord.coordCenter.y += this.speed * way;
+            this.coord.coord.top += this.speed * way;
         }
 
         this.getNewPosition();
     }
 
-    resetPlace(spectators: Socket[]): void {
-        this.coord.coordCenter.y = 50;
+    resetPlace(): void {
+        this.coord.coord.top = 100 - this.size.height / 2
         this.getNewPosition();
-
-        this.client.emit('resetPaddle', this.coord.coord.top);
-        spectators.forEach(spectator => {
-            if (spectator && spectator.connected) {
-                spectator.emit('resetPaddle', this.id, this.coord.coord.top);
-            }
-        });
     }
 }

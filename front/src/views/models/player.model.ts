@@ -8,7 +8,6 @@ export class Player {
     }
 
     move(top: number) {
-        console.log(top);
         this.paddleDoc.style.top = top + "%";
     }
 
