@@ -149,7 +149,7 @@ export class UserService {
      */
     async changeNickname(user: User, nickname: string): Promise<User> {
         for (const u of await this.getUsers()) {
-            if (u.nickname === nickname || u.login === nickname) {
+            if (u.nickname === nickname) {
                 throw new HttpException(
                     "User with this nickname or login already exists",
                     HttpStatus.BAD_REQUEST
