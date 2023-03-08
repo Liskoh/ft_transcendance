@@ -227,13 +227,10 @@ export default {
           return;
         }
 
-        return;
-      }
-      if (!currentChannel) {
-        this.$refs.notyf.showNotification('You are not in any channel', 'error');
         this.sendHelp();
         return;
       }
+
       await this.getChannelSocket.emit('sendMessage', {
         channelId: currentChannel.id,
         text: msgContent,
@@ -302,11 +299,6 @@ export default {
           <button @click="selectChannel(channel.id)" class="channel-button">SELECT</button>
         </div>
       </div>
-		<div class="c-message-area">
-			<div class="c-messages">
-				<ChatMsg v-for="message in currentChannelMessages" :key="message.id" message="message"/>
-			</div>
-
 
       <div class="c-channels">
         <div>Available channels</div>

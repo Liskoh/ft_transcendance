@@ -98,7 +98,7 @@ export class Game {
     }
 
 
-    getPoint(playerWhoScore: any, spectators: Socket[]) : boolean {
+    getPoint(playerWhoScore: any) : boolean {
         playerWhoScore.score++;
         this.emitToEveryone('updateScore', {
             id: playerWhoScore.id,
