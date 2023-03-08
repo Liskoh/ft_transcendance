@@ -1,6 +1,7 @@
 import {DirectionState} from "../enum/direction-state.enum";
 import {Coord} from "./coord.model";
 import {Socket} from "socket.io";
+import {BOARD_HEIGHT} from "../../consts";
 
 export class Player {
     keyPress: { [key: string]: boolean };
@@ -27,7 +28,7 @@ export class Player {
         this.userId = userId;
         this.name = 'player' + this.id;
         this.client = client;
-        this.speed = 2;
+        this.speed = BOARD_HEIGHT / 100;
         this.score = 0;
         this.size = {
             width: position.width,
@@ -43,8 +44,8 @@ export class Player {
     move(way: DirectionState): void {
         if (way === DirectionState.UP && this.coord.coord.top - this.speed < 0) {
             this.coord.coord.top = 0;
-        } else if (way === DirectionState.DOWN && this.coord.coord.bottom + this.speed > 200) {
-            this.coord.coord.top = 200 - this.size.height;
+        } else if (way === DirectionState.DOWN && this.coord.coord.bottom + this.speed > BOARD_HEIGHT) {
+            this.coord.coord.top = BOARD_HEIGHT - this.size.height;
         } else {
             this.coord.coord.top += this.speed * way;
         }
@@ -53,7 +54,7 @@ export class Player {
     }
 
     resetPlace(): void {
-        this.coord.coord.top = 100 - this.size.height / 2
+        this.coord.coord.top = BOARD_HEIGHT / 2 - this.size.height / 2
         this.getNewPosition();
     }
 }
