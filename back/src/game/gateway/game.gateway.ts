@@ -229,7 +229,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const secondPlayer: Player = this.initSinglePlayer(secondSocket, targetUser, false);
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
 
-            const game: Game = new Game(firstPlayer, secondPlayer, ball);
+            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService);
 
             this.gameService.startGame(game);
 
@@ -286,7 +286,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log('ballSize : ' + JSON.stringify(ball.size));
 
 
-            const game: Game = new Game(firstPlayer, secondPlayer, ball);
+            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService);
 
             this.gameService.startGame(game);
 

@@ -4,17 +4,19 @@ import {User} from "../../user/entity/user.entity";
 @Entity({name: "match_histories"})
 export class MatchHistory {
 
+        constructor() {
+        }
+
         @PrimaryGeneratedColumn()
         id: number;
 
-        @Column({default: false})
-        started: boolean;
+        @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+        @JoinColumn()
+        firstUser: User;
 
-        @Column()
-        firstPlayerId: number;
-
-        @Column()
-        secondPlayerId: number;
+        @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+        @JoinColumn()
+        secondUser: User;
 
         @Column({default: 0})
         firstPlayerScore: number;

@@ -1,9 +1,3 @@
-<script setup lang="ts">
-
-import ChatMsg from "@/components/ChatMessage.vue"
-
-</script>
-
 <script lang="ts">
 import {mapGetters, mapMutations, mapState} from "vuex";
 import {Message} from "@/models/message.model";
@@ -75,9 +69,11 @@ export default {
     getChannelSocket() {
       return this.$store.getters.getChannelSocket;
     },
+
     setChannelSocket(socket) {
       this.$store.commit('setChannelSocket', socket);
     },
+
     channelMessages(): Message[] {
       return this.$store.getters.getCurrentChannel.messages;
     },
@@ -120,7 +116,7 @@ export default {
     });
 
     this.getChannelSocket.on('channelInfo', (data) => {
-      this.$refs.notyf.showNotification(data, 'info');
+      this.$refs.notyf.showNotification(data, 'success');
     });
 
     //channels data:
@@ -180,10 +176,7 @@ export default {
       await this.getChannelSocket.emit('getChannel', {
         id: channelId,
       });
-
-
     },
-
     async selectChannel(channelId: number) {
       await this.getChannelSocket.emit('getChannel', {
         id: channelId,
@@ -197,7 +190,17 @@ export default {
       await this.getChannelSocket.emit('leaveChannel', {
         id: channelId,
       });
+      const currentChannel = this.$store.getters.getCurrentChannel;
+
+      if (currentChannel)
+        if (currentChannel.id === channelId) {
+          this.$store.commit('setCurrentChannel', null);
+          this.currentChannelMessages = [];
+        }
       console.log('leave channel with success');
+    },
+    hasCurrentChannel(): boolean {
+      return this.$store.getters.getCurrentChannel !== null;
     },
     async sendMessage() {
       if (!this.newMessage)
@@ -228,6 +231,7 @@ export default {
       }
       if (!currentChannel) {
         this.$refs.notyf.showNotification('You are not in any channel', 'error');
+        this.sendHelp();
         return;
       }
       await this.getChannelSocket.emit('sendMessage', {
@@ -236,40 +240,20 @@ export default {
       });
     },
 
-		sendHelp() {
-			COMMANDS.forEach(command => {
-				this.currentChannelMessages.push(
-					new Message(
-						-1,
-						command.getCommandHelp(),
-						-1,
-						'System',
-						new Date()
-					)
-				);
-			});
-		},
-
-		testMsg() : Message {
-			return (new Message(1, 'aled', 1, 'Myresa', new Date()));
-		},
-
-		testMsg2() : Message {
-
-			let cmdStr : string = '';
-			COMMANDS.forEach(command => {cmdStr += command.getCommandHelp() + '\n';});
-
-			return (new Message(
-						-1,
-						cmdStr,
-						-1,
-						'System',
-						new Date()
-					));
-		}
-	},
+    sendHelp() {
+      COMMANDS.forEach(command => {
+        this.currentChannelMessages.push(
+            new Message(
+                -1,
+                command.getCommandHelp(),
+                -1,
+                new Date()
+            )
+        );
+      });
+    }
+  },
 };
-
 </script>
 
 <template>
@@ -311,7 +295,6 @@ export default {
       </div>
 
 
-
       <div class="c-channels">
         <div>Direct channels</div>
         <div v-for="channel in directChannels" :key="channel.id" class="channel-item">
@@ -344,6 +327,9 @@ export default {
 
     <div class="c-message-area">
       <div class="c-messages">
+        <div>
+          <p v-show="!hasCurrentChannel()">You are not in a channel</p>
+        </div>
         <div class="c-msg" v-for="message in currentChannelMessages" :key="message.id">
           <div class="c-msg-sender">
             {{ message.userId }}
@@ -380,21 +366,22 @@ export default {
 }
 
 .c-channel-bar {
-	flex: 3;
-	overflow-x: hidden;
-    overflow-y: auto;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	border-right: 8px solid var(--color-border-header);
-	max-height: 100%;
+  flex: 4;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 16px;
 }
 
 .c-message-area {
-	flex: 11;
-	display: flex;
-	flex-direction: column;
+  flex: 11;
+  display: flex;
+  flex-direction: column;
+
 }
+
 
 .c-channels {
   margin-bottom: 10px;
@@ -407,22 +394,20 @@ export default {
 }
 
 .c-messages {
-	/* height: 100%; */
-	overflow-x: hidden;
-	overflow-y: auto;
-	max-height: 90%;
-	height: 90%;
+  background-color: #400000;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 .c-input-box {
-	display: flex;
-	background-color: #004000;
-	width: 100%;
-	align-items: center;
-	justify-content: center;
-	padding-top: 24px;
-	padding-bottom: 24px;
-	height: 10%;
+  display: flex;
+  background-color: #004000;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-top: 24px;
+  padding-bottom: 24px;
 }
 
 .c-form {
@@ -441,6 +426,23 @@ export default {
 .c-form-submit {
   flex: 1;
 }
+
+/* To be put in a component */
+.c-msg {
+  display: flex;
+  flex-direction: row;
+}
+
+.c-msg-sender {
+  flex: 1;
+  background-color: #600000;
+}
+
+.c-msg-content {
+  flex: 8;
+  background-color: #006000;
+}
+
 
 </style>
 
