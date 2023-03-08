@@ -69,22 +69,24 @@ function switchTheme(themeId :number) : void
 
 <style>
 header {
-  display: flex;
-  place-items: center;
-  background: var(--color-background-header);
-  height: 7rem;
-  border-radius: 0px;
-  border-bottom: 8px solid var(--color-border-header);
+	display: flex;
+	place-items: center;
+	background: var(--color-background-header);
+	height: 6rem;
+	min-height: 6rem;
+	border-radius: 0px;
+	border-bottom: 8px solid var(--color-border-header);
 }
 
 footer {
-  display: flex;
-  place-items: center;
-  justify-content: center;
-  background: var(--color-background-header);
-  height: 5rem;
-  border-top: 8px solid var(--color-border-header);
-  color: var(--color-text-soft);
+	display: flex;
+	place-items: center;
+	justify-content: center;
+	background: var(--color-background-header);
+	height: 4rem;
+	min-height: 4rem;
+	border-top: 8px solid var(--color-border-header);
+	color: var(--color-text-soft);
 }
 
 
@@ -131,10 +133,10 @@ a {
 }
 
 .c-subpage {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: row;
+	width: 100%;
+	height: calc(100% - 6rem - 4rem);
+	display: flex;
+	flex-direction: row;
 }
 
 .c-theme-picker {

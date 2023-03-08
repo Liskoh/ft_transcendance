@@ -6,7 +6,7 @@
 /*   By: tnguyen- <tnguyen-@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/20 01:53:36 by tnguyen-          #+#    #+#             */
-/*   Updated: 2023/03/05 15:20:58 by tnguyen-         ###   ########.fr       */
+/*   Updated: 2023/03/08 01:24:50 by tnguyen-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@ import { UserService } from "src/user/service/user.service";
 import { LoginNicknameDto } from "src/user/dto/login-nickname.dto";
 import {DisabledAuth} from "./jwt.guard";
 import { User } from "src/user/entity/user.entity";
+import { ok } from "assert";
 
 
 @Controller('auth') 
@@ -68,7 +69,20 @@ export default class AuthController {
 			redirect_uri: "http://127.0.0.1:5173/auth/intra"
 		}
 		const reqToken = await axios.post('https://api.intra.42.fr/oauth/token', data)
+		console.log(reqToken);
+		if (reqToken.status !== 200)
+			return ;
+		if (reqToken?.data?.access_token === undefined) {
+			console.error('Error jamais sense arrive access_token')
+			return ;
+		}
 		const info = await axios.get('https://api.intra.42.fr/v2/me', {headers: {Authorization: `Bearer ${reqToken.data.access_token}`}})
+		if (info.status !== 200)
+			return ;
+		if (info?.data?.login === undefined) {
+			console.error('Error jamais sense arrive login')
+			return ;
+		}
 		const login = info.data.login;
 
 		let user: User;
@@ -79,13 +93,10 @@ export default class AuthController {
 			user = await this.userService.saveNewUser(login);
 		}
 
-		const payload = {username: user.login, sub: user.id};
-		//if (dataRegister.status === HttpStatusCode.Ok) {
-        //    console.log("success");
-        //    localStorage.setItem("token", dataRegister.access_token);
-        //    return;
-        //  }
+		console.log(user);
+
 		return this.authService.intra(user);
+		//return (login);
 	}
 }
 

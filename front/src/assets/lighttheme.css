@@ -1,7 +1,8 @@
 :root .t-light {
 	--color-text: #282828;
 	--color-text-soft: #505050;
-	--color-background: #e0e0e0;
+	--color-chat-separator: #e0e0e0;
+	--color-background: #f0f0f0;
 	--color-background-header: linear-gradient(45deg, #a0a0a0, #d0d0d0);
 	--color-border-header: #d0d080;
 	--color-nav-accent: #c444b1;
