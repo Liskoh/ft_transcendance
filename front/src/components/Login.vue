@@ -7,12 +7,11 @@
 </template>
 
 <script lang="ts">
-import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST } from "@/consts";
-import { HttpStatusCode } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
+import { VUE_APP_BACK_PORT, VUE_APP_WEB_HOST } from "@/consts";
 
 interface ComponentData {
   username: string;
-  registerUser(): Promise<void>;
 }
 
 export default {
@@ -23,31 +22,28 @@ export default {
   data(): ComponentData {
     return {
       username: "",
-      async registerUser() {
-        const requestOptions = {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ login: this.username }),
-        };
-        const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/auth/register';
-        try {
-          const register = await fetch(
-              input,
-              requestOptions
-          );
-          const dataRegister = await register.json();
-
-          if (dataRegister.status === HttpStatusCode.Ok) {
-            console.log("success");
-            localStorage.setItem("token", dataRegister.access_token);
-            return;
-          }
-        } catch (error) {
-          console.log(error);
-        }
-
-      },
     };
+  },
+  methods: {
+    async registerUser(): Promise<void> {
+      try {
+        const response: AxiosResponse = await axios.post(
+            `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/auth/register`,
+            { login: this.username },
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+        );
+
+        if (response.status === 200) {
+          console.log("success");
+          localStorage.setItem("token", response.data.access_token);
+          return;
+        }
+      } catch (error: AxiosError) {
+        console.log(error);
+      }
+    },
   },
 };
 </script>
