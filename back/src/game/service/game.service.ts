@@ -40,32 +40,54 @@ export class GameService {
         return await this.gameRepository.find();
     }
 
-    /**
-     * update and save match history
-     * @param {MatchHistory} cacheHistory
-     * @returns {Promise<MatchHistory>}
-     */
-    async createMatchHistory(cacheHistory: MatchHistory): Promise<MatchHistory> {
+    //create a repeating task whithtout cron:
+    async handleTask() {
+        setInterval(async () => {
+            await this.checkMatches();
+        }, 1000);
+    }
+
+    async checkMatches() {
+        for (const game of this.activeGames) {
+            if (game.firstPlayer.score >= 5 || game.secondPlayer.score >= 5) {
+                await this.endGame(game);
+            }
+        }
+    }
+
+    async endGame(game: Game) {
+        try {
+            const firstPlayer = await this.userService.getUserById(game.firstPlayer.userId);
+            const secondPlayer = await this.userService.getUserById(game.secondPlayer.userId);
+
+            this.activeGames = this.activeGames.filter(g => g.uuid !== game.uuid);
+            await this.createMatchHistory(firstPlayer.id, secondPlayer.id, game.firstPlayer.score, game.secondPlayer.score);
+            //TODO SEND SOCKET TO CLIENTS
+        } catch (silent) {}
+    }
+    async createMatchHistory(firstUserId: number, secondUserId: number, firstScore: number, secondScore: number): Promise<MatchHistory> {
         const matchHistory = new MatchHistory();
 
-        let firstPlayer;
-        let secondPlayer;
+        let firstPlayer = null
+        let secondPlayer = null;
 
         try {
-            firstPlayer = await this.userService.getUserById(cacheHistory.firstPlayerId);
-            secondPlayer = await this.userService.getUserById(cacheHistory.secondPlayerId);
+            firstPlayer = await this.userService.getUserById(firstUserId);
+            secondPlayer = await this.userService.getUserById(secondUserId);
         } catch (e) {
-            throw new HttpException(
-                'one of the players does not exist',
-                HttpStatus.NOT_FOUND
-            );
+            return null;
         }
 
+        matchHistory.firstUser = firstPlayer;
+        matchHistory.secondUser = secondPlayer;
+        matchHistory.firstPlayerScore = firstScore;
+        matchHistory.secondPlayerScore = secondScore;
+
         //set the winner of the match (in case of equality, the winner is the first player)
-        if (cacheHistory.firstPlayerScore > cacheHistory.secondPlayerScore) {
+        if (firstScore > secondScore) {
             matchHistory.winner = firstPlayer;
             matchHistory.loser = secondPlayer;
-        } else if (cacheHistory.firstPlayerScore < cacheHistory.secondPlayerScore) {
+        } else if (firstScore < secondScore) {
             matchHistory.winner = secondPlayer;
             matchHistory.loser = firstPlayer;
         } else {
@@ -118,6 +140,7 @@ export class GameService {
     /*                                          */
     /*                  DUELS                   */
     /*                                          */
+
     /********************************************/
 
     getWaitingDuelsForUser(user: User): Duel[] {
@@ -329,6 +352,7 @@ export class GameService {
     /*                                          */
     /*                  QUEUE                   */
     /*                                          */
+
     /********************************************/
     getQueue(): Socket[] {
         return this.queueIds;
