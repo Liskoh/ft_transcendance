@@ -7,7 +7,6 @@
     <input v-model="nickname" type="text" />
     <button @click="createDuel">DUEL</button>
 
-<!--    &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45; DUELS &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;-->
     <div v-for="duel in currentDuels" :key="duel.from">
       <div>FROM {{duel.from}}</div>
       <button @click="acceptDuel(duel.from)">ACCEPT</button>
@@ -42,11 +41,6 @@ export default defineComponent({
   // },
   created() {
     const socket = this.$store.getters.getPongSocket();
-
-    if (!socket) {
-      this.$router.push('/');
-      return;
-    }
 
     socket.emit('getDuels');
     socket.emit('getGames');

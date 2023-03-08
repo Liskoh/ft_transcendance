@@ -19,7 +19,7 @@ const router = createRouter({
         {
             path: '/chat',
             name: 'chat',
-            component: () => import('../views/ChatView.vue') 
+            component: () => import('../views/ChatView.vue')
         },
         {
             path: '/playerprofile',
@@ -52,6 +52,11 @@ const router = createRouter({
             component: () => import('../views/RedirectView.vue')
         },
         {
+            path: '/settings',
+            name: 'settings',
+            component: () => import('../views/SettingsView.vue')
+        },
+        {
             path: '/pong',
             name: 'pong',
             component: () => import('../views/PongView.vue')
@@ -61,9 +66,11 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     const token: string | null = localStorage.getItem('token');
-
-    if (to.name !== 'login' && !token) {
-        next({ name: 'login' });
+    console.log(token);
+    console.log(to.name);
+    const intra: string | null = 'authintra';
+    if ((to.name !== 'login' && to.name !== intra ) && !token) {
+        next({name: 'login'});
     } else {
         next();
     }
