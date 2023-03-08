@@ -23,6 +23,7 @@ export class GameService {
         @Inject(UserService)
         private readonly userService: UserService
     ) {
+        this.handleTask();
     }
 
     public usersMap: Map<Socket, string> = new Map<Socket, string>();
@@ -41,10 +42,10 @@ export class GameService {
     }
 
     //create a repeating task whithtout cron:
-    async handleTask() {
+    handleTask() {
         setInterval(async () => {
             await this.checkMatches();
-        }, 1000);
+        }, 500);
     }
 
     async checkMatches() {
@@ -59,6 +60,8 @@ export class GameService {
         try {
             const firstPlayer = await this.userService.getUserById(game.firstPlayer.userId);
             const secondPlayer = await this.userService.getUserById(game.secondPlayer.userId);
+
+            game.emitToEveryone('endGame');
 
             this.activeGames = this.activeGames.filter(g => g.uuid !== game.uuid);
             await this.createMatchHistory(firstPlayer.id, secondPlayer.id, game.firstPlayer.score, game.secondPlayer.score);

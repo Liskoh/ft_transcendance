@@ -6,6 +6,7 @@ import {UserService} from "../user/service/user.service";
 import {UserModule} from "../user/user.module";
 import {GameGateway} from "./gateway/game.gateway";
 import {AuthModule} from "../auth/auth.module";
+import {GameController} from "./controller/game.controller";
 
 @Module({
     exports: [GameService],
@@ -17,7 +18,7 @@ import {AuthModule} from "../auth/auth.module";
             ]
         ),
         ],
-    controllers: [],
+    controllers: [GameController],
     providers: [GameService, GameGateway]
 })
 export class GameModule {
