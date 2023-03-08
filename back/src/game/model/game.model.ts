@@ -30,7 +30,6 @@ export class Game {
     gameState: GameState = GameState.NOT_STARTED;
     gameLevel: GameLevel;
     appearanceState: AppearanceState = AppearanceState.APPEAR;
-    document: Document;
     spectators: Socket[];
     private readonly gameService: GameService;
 
@@ -49,7 +48,6 @@ export class Game {
         this.spectators.forEach(spectator => {
            if (spectator && spectator.connected) {
                spectator.emit(event, data);
-               console.log('emit to spectator');
            }
         });
     }
@@ -100,10 +98,14 @@ export class Game {
 
     getPoint(playerWhoScore: any) : boolean {
         playerWhoScore.score++;
+
         this.emitToEveryone('updateScore', {
             id: playerWhoScore.id,
             score: playerWhoScore.score
         });
+
+        this.resetAllPlace();
+
         this.emitToEveryone('newMessage', 'To continue press Enter');
         if (playerWhoScore.score === MAX_POINTS) {
             this.emitToEveryone('newMessage', 'Player ' + playerWhoScore.id.toString() + ' win the game');
@@ -112,7 +114,6 @@ export class Game {
         }
 
         this.gameState = GameState.PAUSED;
-        this.ball.resetPlace();
 
         return false;
     }
@@ -131,6 +132,8 @@ export class Game {
             // this.ball.coord.coord.left = playerWhoHitTheBall.coord.coord.left - this.ball.size.width;
             this.ball.directionX = -this.ball.speed - (Math.abs(this.ball.directionY) / 2);
         }
+
+        this.ball.move();
     }
 
     moveBall(spectators: Socket[]): boolean {
@@ -150,12 +153,14 @@ export class Game {
             && this.ball.coord.coord.top <= this.firstPlayer.coord.coord.bottom
             && this.ball.coord.coord.left >= this.firstPlayer.coord.coord.left) {
             this.changeBallDirection(this.firstPlayer);
+            return true;
         }
         if (this.ball.coord.coord.right >= this.secondPlayer.coord.coord.left
             && this.ball.coord.coord.bottom >= this.secondPlayer.coord.coord.top
             && this.ball.coord.coord.top <= this.secondPlayer.coord.coord.bottom
             && this.ball.coord.coord.right <= this.secondPlayer.coord.coord.right) {
             this.changeBallDirection(this.secondPlayer);
+            return true;
         }
 
         // if the ball touch the top or bottom of the board

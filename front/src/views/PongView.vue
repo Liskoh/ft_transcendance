@@ -138,6 +138,8 @@ export default defineComponent({
     });
 
     socket.on('resetPlace', (data) => {
+      console.log('resetPlace');
+
       const ballTop: number = this.calculPositionInPercent(data.ball.top);
       const ballLeft: number = this.calculPositionInPercent(data.ball.left);
       const playerTop: number = this.calculPositionInPercent(data.player.top);

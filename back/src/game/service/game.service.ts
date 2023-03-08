@@ -63,8 +63,10 @@ export class GameService {
             this.activeGames = this.activeGames.filter(g => g.uuid !== game.uuid);
             await this.createMatchHistory(firstPlayer.id, secondPlayer.id, game.firstPlayer.score, game.secondPlayer.score);
             //TODO SEND SOCKET TO CLIENTS
-        } catch (silent) {}
+        } catch (silent) {
+        }
     }
+
     async createMatchHistory(firstUserId: number, secondUserId: number, firstScore: number, secondScore: number): Promise<MatchHistory> {
         const matchHistory = new MatchHistory();
 
@@ -252,6 +254,12 @@ export class GameService {
 
             if (game.secondPlayer && game.secondPlayer.client === socket) {
                 return game;
+            }
+
+            for (const spectator of game.spectators) {
+                if (spectator === socket) {
+                    return game;
+                }
             }
         }
         return null;

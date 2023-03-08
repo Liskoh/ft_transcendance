@@ -87,10 +87,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('spectate')
     async handleSpectate(socket: Socket, data: any): Promise<any> {
+        console.log('spectate');
         try {
             const user: User = await getUserBySocket(socket, this.usersService, usersMap);
             const dto: UuidDto = new UuidDto(data);
             await validateOrReject(dto);
+
+            if (!this.gameService.canJoinGame(socket)){
+                await sendErrorToClient(socket, 'gameError', 'You are already in a game');
+                return;
+            }
 
             const game: Game = await this.gameService.getGameByUuid(dto.uuid);
 
@@ -230,6 +236,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
 
             const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService);
+
+            if (this.gameService.isSpectator(firstSocket))
+                this.gameService.removeSpectator(firstSocket);
+
+            if (this.gameService.isSpectator(secondSocket))
+                this.gameService.removeSpectator(secondSocket);
 
             this.gameService.startGame(game);
 

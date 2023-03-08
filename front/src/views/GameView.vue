@@ -35,11 +35,11 @@ export default defineComponent({
       currentGames: [] as Game[],
     };
   },
-  beforeRouteLeave(to, from, next) {
-    const socket = this.$store.getters.getPongSocket();
-    socket.disconnect();
-    next();
-  },
+  // beforeRouteLeave(to, from, next) {
+  //   const socket = this.$store.getters.getPongSocket();
+  //   socket.disconnect();
+  //   next();
+  // },
   created() {
     const socket = this.$store.getters.getPongSocket();
 
@@ -100,3 +100,10 @@ export default defineComponent({
   // },
 });
 </script>
+
+
+<style>
+
+
+
+</style>
