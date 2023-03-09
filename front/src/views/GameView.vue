@@ -12,7 +12,7 @@
         <button class="duelButton" @click="createDuel">DUEL</button>
       </div>
 
-      <div class="duelList" v-for="duel in currentDuels" :key="duel.from">
+      <div class="row duelList" v-for="duel in currentDuels" :key="duel.from">
         <div>FROM {{duel.from}}</div>
         <button class="acceptButton" @click="acceptDuel(duel.from)">ACCEPT</button>
       </div>
@@ -23,7 +23,7 @@
 
       <button class="queueButton" @click="joinQueue">JOIN QUEUE</button>
 
-      <div class="queueList" v-for="game in currentGames" :key="game.uuid">
+      <div class="row queueList" v-for="game in currentGames" :key="game.uuid">
         <div>UUID {{game.uuid}}</div>
         <button class="spectateButton" @click="spectate(game.uuid)">SPECTATE</button>
       </div>
