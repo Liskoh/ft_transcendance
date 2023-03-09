@@ -51,6 +51,7 @@ export class AuthService {
                 'No token provided',
                 HttpStatus.UNAUTHORIZED
             );
+        console.log('token= ' + token);
         const decoded = await this.verifyJwt(token);
 
         if (!decoded)
