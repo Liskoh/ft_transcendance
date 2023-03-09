@@ -10,6 +10,9 @@
       <input type="file" ref="fileInput" @change="handleFileInputChange">
       <button @click="uploadFile">Upload photo</button>
     </div>
+    <div v-if="avatarUrl">
+      <img :src="avatarUrl" alt="User avatar">
+    </div>
   </div>
 </template>
 
@@ -23,7 +26,8 @@ export default defineComponent({
   data() {
     return {
       newNickname: '',
-      selectedFile: null
+      selectedFile: null,
+      avatarUrl: '',
     }
   },
   created() {
@@ -40,6 +44,7 @@ export default defineComponent({
 
   methods: {
     async changeNickname() {
+      await this.loadAvatar('hjordan');
       if (this.newNickname !== '') {
         const socket: Socket = this.$store.getters.getUserSocket();
 
@@ -53,28 +58,62 @@ export default defineComponent({
     handleFileInputChange(event) {
       this.selectedFile = event.target.files[0];
     },
-    /*
-            const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/auth/register';
-        try {
-          const register = await fetch(
-              input,
-              requestOptions
-          );
-     */
 
     async uploadFile() {
       if (this.selectedFile !== null) {
         const formData = new FormData();
         const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/upload';
         formData.append('photo', this.selectedFile);
-        const response = await fetch(input, {
+
+        const token = localStorage.getItem('token');
+        const options = {
           method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('token')
+          },
           body: formData
-        }).then((response) => {
-          console.log(response);
-        }).catch((error) => {
-          console.error('Error:', error);
-        });
+        };
+
+        try {
+          const response = await fetch(input, options);
+
+          if (response.ok) {
+            this.$refs.notyf.showNotification('File uploaded successfully!', 'success');
+          } else {
+            const message = await response.json().message;
+            console.log(message);
+            this.$refs.notyf.showNotification(message, 'error');
+          }
+        } catch (error) {
+          this.$refs.notyf.showNotification(error, 'error');
+        }
+      }
+    },
+
+    async loadAvatar(login: string) {
+      try {
+        const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
+        const token = localStorage.getItem('token');
+        const options = {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('token')
+          },
+        };
+        const response = await fetch(input, options);
+        const message = await response.json().message;
+
+        if (response.ok) {
+          const blob = await response.blob();
+          this.avatarUrl = URL.createObjectURL(blob);
+        } else {
+          const message = await response.text();
+          console.log(message);
+          this.$refs.notyf.showNotification(message, 'error');
+        }
+      } catch (error) {
+        console.error('dsjnfkjsahfjhasfhjks ' + error);
+        this.$refs.notyf.showNotification('Error while loading user avatar', 'error');
       }
     }
   }

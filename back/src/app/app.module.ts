@@ -1,5 +1,5 @@
 import "reflect-metadata"
-import { Module } from '@nestjs/common';
+import {MiddlewareConsumer, Module, NestModule} from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import {AppController} from "./controller/app.controller";
@@ -12,6 +12,7 @@ import {ChannelModule} from "../channel/channel.module";
 import {GameModule} from "../game/game.module";
 import { AuthModule } from "src/auth/auth.module"
 import {JwtModule} from "@nestjs/jwt";
+import {JwtMiddleware} from "../auth/jwt.middleware";
 @Module({
     imports: [
         ConfigModule.forRoot(),
@@ -20,8 +21,15 @@ import {JwtModule} from "@nestjs/jwt";
         ChannelModule,
         GameModule,
 		AuthModule,
+        JwtModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, JwtMiddleware],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer
+            .apply(JwtMiddleware)
+            .forRoutes('users', 'channels', 'games');
+    }
+}

@@ -19,8 +19,11 @@ export class User {
     @Column( {unique: true, length: 8} )
     login: string;
 
-    @Column( {unique: true})
+    @Column( {unique: true, length: 8, nullable: true} )
     nickname: string;
+
+    @Column({default: ''})
+    avatar: string;
 
     @Column({default: UserStatus.OFFLINE})
     status: UserStatus;

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   auth.controller.ts                                 :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: tnguyen- <tnguyen-@student.42lyon.fr>      +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/02/20 01:53:36 by tnguyen-          #+#    #+#             */
-/*   Updated: 2023/03/08 01:24:50 by tnguyen-         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 import { Controller, Get, Post, Body, Param, UseGuards,Request, Req, HttpStatus } from "@nestjs/common";
 import { CreateAuthDto } from "./dtos/auth.dto";
 import { AuthService } from "./auth.service";
@@ -26,6 +14,11 @@ import { ok } from "assert";
 export default class AuthController {
 	constructor(private readonly authService: AuthService, private readonly userService: UserService) {
 
+	}
+
+	@Get('users')
+	async getUsers(): Promise<any> {
+		return this.userService.getUsers();
 	}
 
 	@DisabledAuth()
