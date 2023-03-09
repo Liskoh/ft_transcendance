@@ -241,8 +241,8 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  height: 85vh;
-  width: 80vw;
+  height: 1000;
+  width: 1000;
   background: #000000;
   border: solid 5px #ffffff;
   border-radius: 2px;
