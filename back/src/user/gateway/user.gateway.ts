@@ -15,29 +15,25 @@ import {LoginNicknameDto} from "../dto/login-nickname.dto";
 import {JwtService} from "@nestjs/jwt";
 import {AuthService} from "../../auth/auth.service";
 import {AuthGuard} from "@nestjs/passport";
-import {getUserBySocket, tryHandleConnection, tryHandleDisconnect} from "../../utils";
+import {
+    getUserBySocket,
+    sendErrorToClient,
+    sendSuccessToClient,
+    tryHandleConnection,
+    tryHandleDisconnect
+} from "../../utils";
 
-// @WebSocketGateway(
-//     3500,
-//     {namespace: 'users'}
-// )
 @WebSocketGateway({
     cors: {
         origin: '*'
     },
-    // namespace: 'users'
+    namespace: 'users'
 })
-@WebSocketGateway(
-    {namespace: 'users'}
-)
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(private readonly usersService: UserService,
                 private readonly authService: AuthService
     ) {
-        // super();
-        // this.use(this.authMiddleware);
-    // ){
     }
     @WebSocketServer() server: Server;
 
@@ -47,27 +43,12 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         await tryHandleConnection(socket, this.usersMap,
             this.usersService, this.authService,
-            'channels', ...args);
+            'users', ...args);
     }
 
     async handleDisconnect(socket: any): Promise<any> {
         await tryHandleDisconnect(socket, this.usersMap, 'channels');
     }
-
-    async sendErrorToClient(socket: Socket, name: string, error: any) : Promise<void> {
-        console.log(socket.id + ' socketId send an invalid request: ' + error);
-
-        if (error instanceof HttpException) {
-            socket.emit(name, error);
-            return;
-        }
-
-        if (error instanceof Object) {
-            socket.emit(name, {message: "Invalid request, please check your data"});
-            return;
-        }
-    }
-    // @UseGuards(AuthGuard('jwt'))
 
     @SubscribeMessage('register')
     async register(client: any, payload: any): Promise<any> {
@@ -86,10 +67,15 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             await validateOrReject(new LoginNicknameDto(payload.login));
 
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
-
+            console.log(user.nickname)
             await this.usersService.changeNickname(user, payload.login);
+            await sendSuccessToClient(socket, 'userSuccess', 'Nickname changed successfully');
+            console.log('Nickname changed successfully');
+
+            const userAfterChange = await this.usersService.getUserById(user.id);
+            console.log(userAfterChange.nickname)
         } catch (error) {
-            await this.sendErrorToClient(socket, 'userError', error);
+            await sendErrorToClient(socket, 'userError', error);
         }
     }
 
@@ -109,7 +95,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             await this.usersService.followAsFriend(user, targetUser);
         } catch (error) {
-            await this.sendErrorToClient(socket, 'userError', error);
+            await sendErrorToClient(socket, 'userError', error);
         }
     }
 
@@ -137,8 +123,9 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 id: targetUser.id,
                 nickname: targetUser.nickname
             });
+            await sendSuccessToClient(socket, 'userSuccess', 'User blocked successfully');
         } catch (error) {
-            await this.sendErrorToClient(socket, 'userError', error);
+            await sendErrorToClient(socket, 'userError', error);
         }
     }
 
@@ -159,7 +146,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             await this.usersService.unblockUser(user, targetUser);
         } catch (error) {
-            await this.sendErrorToClient(socket, 'userError', error);
+            await sendErrorToClient(socket, 'userError', error);
         }
     }
 }

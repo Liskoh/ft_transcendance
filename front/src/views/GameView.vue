@@ -57,11 +57,6 @@ export default defineComponent({
   created() {
     const socket = this.$store.getters.getPongSocket();
 
-    if (!socket) {
-      this.$router.push('/');
-      return;
-    }
-
     socket.emit('getDuels');
     socket.emit('getGames');
 
@@ -81,6 +76,11 @@ export default defineComponent({
       // window.history.pushState(null, null, '/pong');
       this.$router.push('/pong');
     });
+
+    socket.on('endGame', (data: any) => {
+      this.$router.push('/game');
+    });
+
   },
   methods: {
     createDuel() {
