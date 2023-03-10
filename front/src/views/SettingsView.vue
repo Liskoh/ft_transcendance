@@ -17,10 +17,9 @@
         >Change nickname
         </v-btn>
       </v-col>
-      <v-col cols="2" md="6">
+      <v-col cols="1" md="6">
         <v-file-input
             label="Avatar"
-            prepend-icon="mdi-camera"
             v-model="selectedFile"
             accept="image/*"
             show-size
@@ -34,15 +33,42 @@
         >Upload avatar
         </v-btn>
       </v-col>
-
       <v-col cols="2" md="6">
-        <v-label color="primary" class="text-h5">
-          Current avatar:
-        </v-label>
-          <v-avatar size="300">
-            <v-img :src="avatarUrl" alt="User avatar"/>
-          </v-avatar>
+        <v-card color="primary">
+          <v-card-title>
+            Avatar
+          </v-card-title>
+          <v-card-text>
+            <v-avatar size="300">
+              <v-img :src="avatarUrl" alt="User avatar"/>
+            </v-avatar>
+          </v-card-text>
+        </v-card>
       </v-col>
+      <v-col cols="2" md="6">
+        <v-card color="primary">
+          <v-card-title>
+            Friends
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item v-for="friend in friends" :key="friend.login">
+<!--                <v-list-item-content>-->
+                  <v-list-item-title>{{ friend.login }}</v-list-item-title>
+                  <v-list-item-subtitle
+                      :class="{'red--text': friend.status === 'online', 'green--text': friend.status === 'offline'}">
+                    {{ friend.status }}
+                  </v-list-item-subtitle>
+<!--                </v-list-item-content>-->
+                <v-list-item-action>
+                  <v-btn color="error" @click="removeFriend(friend.login)">Remove</v-btn>
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
     </v-row>
   </v-container>
 </template>

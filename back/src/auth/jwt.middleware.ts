@@ -13,6 +13,11 @@ export class JwtMiddleware implements NestMiddleware {
     }
 
     async use(req: Request, res: Response, next: NextFunction) {
+
+        if (!req.headers.authorization) {
+            throw new HttpException('Missing authorization header', HttpStatus.UNAUTHORIZED);
+        }
+
         const authHeader = req.headers.authorization;
         if (!authHeader) {
             throw new HttpException('Missing authorization header', HttpStatus.UNAUTHORIZED);
@@ -31,12 +36,15 @@ export class JwtMiddleware implements NestMiddleware {
         } catch (err) {
             throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
         }
-
+        console.log("first");
+        if (!decoded) {
+            throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
+        }
         const login = decoded.username;
         if (!login) {
             throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
         }
-
+        console.log("second");
         try {
             req.user = await this.userService.getUserByLogin(login);
             next();

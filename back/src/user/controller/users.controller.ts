@@ -102,15 +102,22 @@ export class UsersController {
         })
     }))
     async uploadFile(@UploadedFile() file, @Req() req): Promise<any> {
-        const user: User = req.user;
+        if (!file) {
+            return {
+                HTTPStatus: HttpStatus.BAD_REQUEST,
+                message: 'No file uploaded'
+            }
+        }
 
+        const user: User = req.user;
         user.avatar = file.filename;
         await this.usersService.saveUser(user);
         console.log(user.avatar);
-        // return {
-        //     HTTPStatus: HttpStatus.OK,
-        //     message: 'File uploaded successfully ( ' + file.filename + ' )'
-        // }
+
+        return {
+            HTTPStatus: HttpStatus.OK,
+            message: 'File uploaded successfully ( ' + file.filename + ' )'
+        }
     }
 
 }
