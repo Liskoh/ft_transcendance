@@ -46,12 +46,15 @@ export class UsersController {
     async getAvatar(@Param('login') login: string, @Res() res: Response): Promise<void> {
         console.log('called');
         try {
+            console.log('called2');
             const user: User = await this.usersService.getUserByLogin(login);
             const filename = user.avatar;
             if (filename && filename.length > user.login.length) {
-                const imagePath = path.join('./uploads', `${filename}.png`);
+                console.log('called3');
+                const imagePath = path.join('./uploads', filename);
                 res.sendFile(imagePath, {root: '.'});
             } else {
+                console.log('called4');
                 res.status(HttpStatus.NOT_FOUND).send(`Avatar for user ${login} not found`);
             }
         } catch (error) {
@@ -73,11 +76,12 @@ export class UsersController {
                 if (!allowedExtensions.includes(extension)) {
                     return cb(new HttpException('Extension not allowed', HttpStatus.BAD_REQUEST), null);
                 }
+                console.log(1);
                 const user = req.user;
                 if (!user) {
                     return cb(new HttpException('User not found', HttpStatus.BAD_REQUEST), null);
                 }
-
+                console.log(2);
                 const login = user.login;
                 const find = await UsersController.findUserFileWithoutExtension('./uploads', login);
                 if (find) {
@@ -88,6 +92,7 @@ export class UsersController {
                         return cb(new HttpException('Error while deleting old file', HttpStatus.BAD_REQUEST), null);
                     }
                 }
+                console.log(3);
                 const filename = login + extension;
                 cb(null, filename);
             }
