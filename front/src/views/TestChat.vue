@@ -2,6 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="4">
+        <v-card color="grey-darken-3">
         <v-btn color="primary" @click="showCreateModal = true">
           Create Channel
         </v-btn>
@@ -81,11 +82,11 @@
             </v-card-actions>
           </v-card>
         </v-dialog>
-
+      </v-card>
       </v-col>
-      <v-col cols="4">
+      <v-col cols="8">
         <h2>{{ (!currentChannel || !currentChannel.name) ? "You are not in a channel" : currentChannel.name }}</h2>
-        <v-card>
+        <v-card color="grey-darken-3">
           <v-card-text>
             <div class="message" v-for="message in currentChannel.messages" :key="message.id">
               <strong>{{ message.username }}</strong>: {{ message.text }}

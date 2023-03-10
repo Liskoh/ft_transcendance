@@ -34,7 +34,7 @@
         </v-btn>
       </v-col>
       <v-col cols="2" md="6">
-        <v-card color="primary">
+        <v-card color="grey-darken-3">
           <v-card-title>
             Avatar
           </v-card-title>
