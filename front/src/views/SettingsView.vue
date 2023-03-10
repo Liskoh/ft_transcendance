@@ -1,34 +1,94 @@
 <template>
-  <div>
+  <v-container>
     <notification ref="notyf"/>
-    <div>
-      <label for="nickname-input">Nickname:</label>
-      <input type="text" id="nickname-input" v-model="newNickname">
-      <button @click="changeNickname">Change nickname</button>
-    </div>
-    <div>
-      <input type="file" ref="fileInput" @change="handleFileInputChange">
-      <button @click="uploadFile">Upload photo</button>
-    </div>
-    <div v-if="avatarUrl">
-      <img :src="avatarUrl" alt="User avatar">
-    </div>
-    <div>
-      <h2>Friends:</h2>
-      <ul>
-        <li v-for="friend in friends" :key="friend.login">
-          <span>{{ friend.login }} - {{ friend.nickname }} - {{ friend.status }}</span>
-        </li>
-      </ul>
-    </div>
-  </div>
+    <v-row>
+      <v-col cols="1" md="6">
+        <v-text-field
+            label="Nickname"
+            persistent-hint
+            type="input"
+            v-model="newNickname"
+            v-on:keydown.enter="changeNickname"
+        ></v-text-field>
+        <v-btn
+            color="primary"
+            @click="changeNickname"
+            block
+        >Change nickname
+        </v-btn>
+      </v-col>
+      <v-col cols="1" md="6">
+        <v-file-input
+            label="Avatar"
+            v-model="selectedFile"
+            accept="image/*"
+            show-size
+            v-show="uploadFile"
+            @change="handleFileInputChange"
+        ></v-file-input>
+        <v-btn
+            color="primary"
+            @click="uploadFile"
+            block
+        >Upload avatar
+        </v-btn>
+      </v-col>
+      <v-col cols="2" md="6">
+        <v-card color="primary">
+          <v-card-title>
+            Avatar
+          </v-card-title>
+          <v-card-text>
+            <v-avatar size="300">
+              <v-img :src="avatarUrl" alt="User avatar"/>
+            </v-avatar>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="2" md="6">
+        <v-card color="primary">
+          <v-card-title>
+            Friends
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item v-for="friend in friends" :key="friend.login">
+<!--                <v-list-item-content>-->
+                  <v-list-item-title>{{ friend.login }}</v-list-item-title>
+                  <v-list-item-subtitle
+                      :class="{'red--text': friend.status === 'online', 'green--text': friend.status === 'offline'}">
+                    {{ friend.status }}
+                  </v-list-item-subtitle>
+<!--                </v-list-item-content>-->
+                <v-list-item-action>
+                  <v-btn color="error" @click="removeFriend(friend.login)">Remove</v-btn>
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+    </v-row>
+  </v-container>
 </template>
+
+
+<!--        <div class="fixed-size-image-container">-->
+<!--          <img :src="avatarUrl" alt="avatar">-->
+<!--        </div>-->
+<style>
+.fixed-size-image-container {
+  max-width: 100px;
+}
+</style>
 
 <script lang="ts">
 import {defineComponent} from 'vue';
 import {Socket} from 'socket.io-client';
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from '@/consts';
 import type {User} from '@/models/user.model';
+import login from "@/components/Login.vue";
 
 export default defineComponent({
   name: 'SettingsView',
@@ -60,7 +120,6 @@ export default defineComponent({
       if (!user)
         return;
       this.$store.commit('setMe', user);
-      this.newNickname = user.nickname;
     });
 
     socket.on('friends', (data: any) => {
@@ -82,17 +141,17 @@ export default defineComponent({
   methods: {
     async changeNickname() {
 
-      if (true) {
-        this.$router.push({name: 'profile', params: {login: 'hjordan'}});
-        return;
-      }
+      // if (true) {
+      //   this.$router.push({name: 'profile', params: {login: 'hjordan'}});
+      //   return;
+      // }
+      console.log('changing nickname' + this.newNickname);
       if (this.newNickname !== '') {
         const socket: Socket = this.$store.getters.getUserSocket();
 
         socket.emit('changeNickname', {
           login: this.newNickname
         });
-        // Changer le surnom ici
       }
     },
 
@@ -120,6 +179,7 @@ export default defineComponent({
 
           if (response.ok) {
             this.$refs.notyf.showNotification('File uploaded successfully!', 'success');
+            this.avatarUrl = await this.fetchAvatar('hjordan');
           } else {
             const message = await response.json().message;
             console.log(message);
@@ -149,10 +209,10 @@ export default defineComponent({
           const blob = await response.blob();
           return URL.createObjectURL(blob);
         } else {
-          // return '/default.jpg';
+          return '/default.jpg';
         }
       } catch (error) {
-        // return '/default.jpg';
+        return '/default.jpg';
       }
     },
 

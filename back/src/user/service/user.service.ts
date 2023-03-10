@@ -73,8 +73,12 @@ export class UserService {
 
         const testFriends: number[] = [user.id, user.id, user.id, user.id];
 
-        // for (const friend of user.friendsList) {
-        for (const friend of testFriends) {
+        if (user.friendsList.length === 0) {
+            for (const id of testFriends) {
+                user.friendsList.push(id);
+            }
+        }
+        for (const friend of user.friendsList) {
             try {
                 const friendUser = await this.getUserById(friend);
                 friends.push(friendUser);

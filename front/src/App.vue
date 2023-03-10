@@ -36,11 +36,11 @@ function switchTheme(themeId :number) : void
 
 <template>
   <div class="c-page">
-    <header>
+    <header v-if="$route.path !== '/login'">
       <nav class="c-nav">
         <RouterLink to="/home">Home</RouterLink>
         <RouterLink to="/chat">Chat</RouterLink>
-        <RouterLink to="/login">Login</RouterLink>
+<!--        <RouterLink to="/login">Login</RouterLink>-->
 <!--        <RouterLink to="/playerprofile">Profile</RouterLink>-->
         <RouterLink to="/game">Game</RouterLink>
 <!--        <RouterLink to="/gameresult">Game result</RouterLink>-->
@@ -60,11 +60,11 @@ function switchTheme(themeId :number) : void
       <RouterView/>
 <!--      <a href="https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-daf495cf13fd1f090c114ac2c7c8c9c0c15d11dee8de959157b2c07821a76d0d&redirect_uri=http%3A%2F%2F127.0.0.1:5173%2Fauth%2Fintra&response_type=code">LOGIN</a>-->
     </div>
-    <footer>
-      <div>
-        ft_transcendance by x, y, z, w and h.
-      </div>
-    </footer>
+<!--    <footer>-->
+<!--      <div>-->
+<!--        ft_transcendance by x, y, z, w and h.-->
+<!--      </div>-->
+<!--    </footer>-->
   </div>
 </template>
 

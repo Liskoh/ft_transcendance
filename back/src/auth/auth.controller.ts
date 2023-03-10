@@ -21,6 +21,14 @@ export default class AuthController {
 		return this.userService.getUsers();
 	}
 
+	@Get('verify')
+	async verifyJwt(@Request() req) : Promise<any>{
+		return {
+			status: HttpStatus.OK,
+			message: "OK"
+		}
+	}
+
 	@DisabledAuth()
 	@Post('register')
 	async register(@Request() req) : Promise<any>{

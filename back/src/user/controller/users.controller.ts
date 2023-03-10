@@ -49,6 +49,9 @@ export class UsersController {
             console.log('called2');
             const user: User = await this.usersService.getUserByLogin(login);
             const filename = user.avatar;
+            if (!fs.existsSync('./uploads/'))
+                fs.mkdirSync('./uploads/');
+
             if (filename && filename.length > user.login.length) {
                 console.log('called3');
                 const imagePath = path.join('./uploads', filename);
@@ -99,15 +102,22 @@ export class UsersController {
         })
     }))
     async uploadFile(@UploadedFile() file, @Req() req): Promise<any> {
-        const user: User = req.user;
+        if (!file) {
+            return {
+                HTTPStatus: HttpStatus.BAD_REQUEST,
+                message: 'No file uploaded'
+            }
+        }
 
+        const user: User = req.user;
         user.avatar = file.filename;
         await this.usersService.saveUser(user);
         console.log(user.avatar);
-        // return {
-        //     HTTPStatus: HttpStatus.OK,
-        //     message: 'File uploaded successfully ( ' + file.filename + ' )'
-        // }
+
+        return {
+            HTTPStatus: HttpStatus.OK,
+            message: 'File uploaded successfully ( ' + file.filename + ' )'
+        }
     }
 
 }

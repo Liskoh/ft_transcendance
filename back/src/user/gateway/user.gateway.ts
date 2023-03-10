@@ -129,6 +129,20 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
+    @SubscribeMessage('unfollowAsFriend')
+    async unfollowAsFriend(socket: Socket, payload: any): Promise<any> {
+        try {
+            // await validateOrReject(new LoginNicknameDto(payload.login));
+            //
+            // const user = await getUserBySocket(socket, this.usersService, this.usersMap);
+            // const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
+            //
+            // await this.usersService.unfollowAsFriend(user, targetUser);
+        } catch (error) {
+            await sendErrorToClient(socket, 'userError', error);
+        }
+    }
+
     /**
      * block user
      * @param {Socket} socket
