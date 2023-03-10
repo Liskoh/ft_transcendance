@@ -9,10 +9,10 @@
             <v-btn color="success darken-2" @click="createDuel">DUEL</v-btn>
           </v-card-text>
         </v-card>
-        <v-card color="primary" v-for="duel in currentDuels" :key="duel.from" class="my-4">
+        <v-card color="grey-darken-3" v-for="duel in currentDuels" :key="duel.from" class="my-4">
           <v-card-title>FROM {{duel.from}}</v-card-title>
           <v-card-actions>
-            <v-btn color="warning darken-2" @click="acceptDuel(duel.from)">ACCEPT</v-btn>
+            <v-btn color="green" @click="acceptDuel(duel.from)">ACCEPT</v-btn>
           </v-card-actions>
         </v-card>
       </v-col>
@@ -22,7 +22,7 @@
             <v-btn color="success darken-2" @click="joinQueue">JOIN QUEUE</v-btn>
           </v-card-text>
         </v-card>
-        <v-card color="primary" v-for="game in currentGames" :key="game.uuid" class="my-4">
+        <v-card color="grey-darken-3" v-for="game in currentGames" :key="game.uuid" class="my-4">
           <v-card-title>hjordan VS test</v-card-title>
           <v-card-actions>
             <v-btn color="success darken-2" @click="spectate(game.uuid)">SPECTATE</v-btn>

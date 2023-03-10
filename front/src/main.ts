@@ -23,14 +23,16 @@ const vuetify = createVuetify({
     ssr: true,
     components,
     directives,
-    icons: {
-        defaultSet: 'fa',
-        aliases,
-        sets: {
-            fa,
-            mdi,
+    themes: {
+        light : {
+            dark: false,
+            primary: '#E53935',
+            secondary: '#FFCDD2',
+            // dark: false,
+            // primary: #E53935,
+            // secondary: #FFCDD2,
         }
-    },
+    }
 })
 
 const app = createApp(App);
@@ -40,6 +42,7 @@ app.use(store);
 app.use(vuetify);
 // app.use(Toast);
 app.config.globalProperties.$notyf = new Notyf()
+app.config.isCustomElement = tag => tag.startsWith('v-')
 app.component('notification', Notification);
 app.mount('#app')
 

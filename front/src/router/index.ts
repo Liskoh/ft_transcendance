@@ -23,6 +23,11 @@ const router = createRouter({
             component: () => import('../views/ChatView.vue')
         },
         {
+            path: '/testchat',
+            name: 'testchat',
+            component: () => import('../views/TestChat.vue')
+        },
+        {
             path: '/playerprofile',
             name: 'playerprofile',
             component: () => import('../views/PlayerProfileView.vue') // Lazy Load
