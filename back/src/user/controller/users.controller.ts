@@ -49,6 +49,9 @@ export class UsersController {
             console.log('called2');
             const user: User = await this.usersService.getUserByLogin(login);
             const filename = user.avatar;
+            if (!fs.existsSync('./uploads/'))
+                fs.mkdirSync('./uploads/');
+
             if (filename && filename.length > user.login.length) {
                 console.log('called3');
                 const imagePath = path.join('./uploads', filename);
