@@ -61,13 +61,19 @@ const router = createRouter({
             name: 'pong',
             component: () => import('../views/PongView.vue')
         },
+        {
+            path: '/profile/:login',
+            name: 'profile',
+            props: true,
+            component: () => import('../views/ProfileView.vue')
+        }
     ]
 })
 
 router.beforeEach((to, from, next) => {
     const token: string | null = localStorage.getItem('token');
-    console.log(token);
-    console.log(to.name);
+    // console.log(token);
+    // console.log(to.name);
     const intra: string | null = 'authintra';
     if ((to.name !== 'login' && to.name !== intra ) && !token) {
         next({name: 'login'});

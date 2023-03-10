@@ -35,6 +35,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 private readonly authService: AuthService
     ) {
     }
+
     @WebSocketServer() server: Server;
 
     usersMap: Map<Socket, string> = new Map<Socket, string>();
@@ -44,16 +45,45 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await tryHandleConnection(socket, this.usersMap,
             this.usersService, this.authService,
             'users', ...args);
+
+        await this.sendMyInfo(socket);
     }
 
     async handleDisconnect(socket: any): Promise<any> {
         await tryHandleDisconnect(socket, this.usersMap, 'channels');
     }
 
-    @SubscribeMessage('register')
-    async register(client: any, payload: any): Promise<any> {
-
+    @SubscribeMessage('getMe')
+    async getMe(socket: Socket): Promise<any> {
+        await this.sendMyInfo(socket);
     }
+
+    @SubscribeMessage('getFriends')
+    async getFriends(socket: Socket): Promise<any> {
+        await this.sendMyFriends(socket);
+    }
+
+    async sendMyInfo(socket: Socket): Promise<void> {
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+            socket.emit('me', this.getMappedUser(user));
+        } catch (error) {
+        }
+    }
+
+    async sendMyFriends(socket: Socket): Promise<void> {
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+
+            const friends: User[] = await this.usersService.getFriends(user);
+
+            const mappedFriends = friends.map(friend => this.getMappedUser(friend));
+
+            socket.emit('friends', mappedFriends);
+        } catch (error) {
+        }
+    }
+
 
     /**
      * Change user nickname
@@ -148,5 +178,14 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } catch (error) {
             await sendErrorToClient(socket, 'userError', error);
         }
+    }
+
+    getMappedUser(user: User): any {
+        return {
+            id: user.id,
+            login: user.login,
+            nickname: user.nickname,
+            status: user.status
+        };
     }
 }

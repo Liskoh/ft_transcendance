@@ -13,6 +13,14 @@
     <div v-if="avatarUrl">
       <img :src="avatarUrl" alt="User avatar">
     </div>
+    <div>
+      <h2>Friends:</h2>
+      <ul>
+        <li v-for="friend in friends" :key="friend.login">
+          <span>{{ friend.login }} - {{ friend.nickname }} - {{ friend.status }}</span>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -20,6 +28,7 @@
 import {defineComponent} from 'vue';
 import {Socket} from 'socket.io-client';
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from '@/consts';
+import type {User} from '@/models/user.model';
 
 export default defineComponent({
   name: 'SettingsView',
@@ -33,6 +42,10 @@ export default defineComponent({
   created() {
     const socket: Socket = this.$store.getters.getUserSocket();
 
+    //emits:
+    socket.emit('getMe');
+    socket.emit('getFriends');
+
     socket.on('userSuccess', (data: any) => {
       this.$refs.notyf.showNotification(data, 'success');
     });
@@ -40,11 +53,39 @@ export default defineComponent({
     socket.on('userError', (data: any) => {
       this.$refs.notyf.showNotification(data, 'error');
     });
+
+    socket.on('me', (data: any) => {
+      const user: User = data;
+
+      if (!user)
+        return;
+      this.$store.commit('setMe', user);
+      this.newNickname = user.nickname;
+    });
+
+    socket.on('friends', (data: any) => {
+      const friends: User[] = [];
+      console.log('friends');
+      for (const friend of data) {
+        console.log(friend);
+        friends.push(friend);
+      }
+
+      this.$store.commit('setFriends', friends);
+    });
+
+    (async () => {
+      this.avatarUrl = await this.fetchAvatar('hjordan');
+    })();
   },
 
   methods: {
     async changeNickname() {
-      await this.loadAvatar('hjordan');
+
+      if (true) {
+        this.$router.push({name: 'profile', params: {login: 'hjordan'}});
+        return;
+      }
       if (this.newNickname !== '') {
         const socket: Socket = this.$store.getters.getUserSocket();
 
@@ -90,6 +131,31 @@ export default defineComponent({
       }
     },
 
+    async fetchAvatar(login: string): Promise<any> {
+      console.log('fetching avatar');
+      try {
+        const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
+        console.log(input);
+        const token = localStorage.getItem('token');
+        const options = {
+          method: 'GET',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('token')
+          },
+        };
+        const response = await fetch(input, options);
+        if (response.ok) {
+          console.log('avatar fetched ok');
+          const blob = await response.blob();
+          return URL.createObjectURL(blob);
+        } else {
+          // return '/default.jpg';
+        }
+      } catch (error) {
+        // return '/default.jpg';
+      }
+    },
+
     async loadAvatar(login: string) {
       try {
         const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
@@ -116,6 +182,12 @@ export default defineComponent({
         this.$refs.notyf.showNotification('Error while loading user avatar', 'error');
       }
     }
+  },
+  computed: {
+    // Récupérer la liste des amis depuis le store
+    friends(): User[] {
+      return this.$store.getters.getFriends();
+    },
   }
 })
 </script>

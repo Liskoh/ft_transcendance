@@ -67,6 +67,32 @@ export class UserService {
         return user;
     }
 
+    async getFriends(user: User): Promise<User[]> {
+        const friends: User[] = [];
+        const toRemove: number[] = [];
+
+        const testFriends: number[] = [user.id, user.id, user.id, user.id];
+
+        // for (const friend of user.friendsList) {
+        for (const friend of testFriends) {
+            try {
+                const friendUser = await this.getUserById(friend);
+                friends.push(friendUser);
+            } catch (e) {
+                toRemove.push(friend);
+            }
+        }
+
+        if (toRemove.length > 0) {
+            for (const id of toRemove) {
+                user.friendsList.splice(user.friendsList.indexOf(id), 1);
+            }
+            await this.saveUser(user);
+        }
+
+        return friends;
+    }
+
 
     /**
      * find and return user by nickname
@@ -221,21 +247,21 @@ export class UserService {
      * @returns {Promise<User>}
      */
     async unblockUser(from: User, to: User): Promise<User> {
-            if (this.isSameUser(from, to))
-                throw new HttpException(
-                    "You can't unblock yourself",
-                    HttpStatus.BAD_REQUEST
-                );
+        if (this.isSameUser(from, to))
+            throw new HttpException(
+                "You can't unblock yourself",
+                HttpStatus.BAD_REQUEST
+            );
 
-            if (!from.blockedList.includes(to.id))
-                throw new HttpException(
-                    "You didn't block this user",
-                    HttpStatus.BAD_REQUEST
-                );
+        if (!from.blockedList.includes(to.id))
+            throw new HttpException(
+                "You didn't block this user",
+                HttpStatus.BAD_REQUEST
+            );
 
-            from.blockedList.splice(from.blockedList.indexOf(to.id), 1);
+        from.blockedList.splice(from.blockedList.indexOf(to.id), 1);
 
-            return await this.usersRepository.save(from);
+        return await this.usersRepository.save(from);
     }
 
     /**

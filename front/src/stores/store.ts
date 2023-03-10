@@ -14,6 +14,8 @@ export const store = createStore({
         directChannels: <Channel[]>[],
         waitingDuels: <Duel[]>[],
         playing: <boolean>false,
+        me: <User | unknown>null,
+        friends: <User[]>[],
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
         userSocket: <Socket | unknown>null,
@@ -51,6 +53,14 @@ export const store = createStore({
 
         isPlaying: state => {
             return state.playing;
+        },
+
+        getMe: state => () => {
+            return state.me;
+        },
+
+        getFriends: state => () => {
+            return state.friends;
         },
 
         getWaitingDuels: state => state.waitingDuels,
@@ -95,6 +105,15 @@ export const store = createStore({
 
         setWaitingDuels(state, waitingDuels) {
             state.waitingDuels = waitingDuels;
-        }
+        },
+
+        setMe(state, me) {
+            state.me = me;
+        },
+
+        setFriends(state, friends) {
+            state.friends = friends;
+        },
+
     }
 });
