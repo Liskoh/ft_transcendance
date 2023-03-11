@@ -88,6 +88,11 @@
         <h2>{{ (!currentChannel || !currentChannel.name) ? "You are not in a channel" : currentChannel.name }}</h2>
         <v-card color="grey-darken-3">
           <v-card-text>
+<!--            <v-btn class="message-action" @click="showModal(message)">-->
+<!--              <v-avatar size="30" color="primary">-->
+<!--                <v-icon>mdi-account</v-icon>-->
+<!--              </v-avatar>-->
+<!--            </v-btn>-->
             <div class="message" v-for="message in currentChannel.messages" :key="message.id">
               <strong>{{ message.username }}</strong>: {{ message.text }}
             </div>
@@ -97,6 +102,24 @@
             <v-btn color="primary" @click="sendMessage()">Send</v-btn>
           </v-card-actions>
         </v-card>
+        <v-dialog v-model="modalVisible">
+          <v-card>
+            <v-card-title>Choose an action</v-card-title>
+            <v-card-text>
+              <v-list>
+                <v-list-item @click="">
+                  <v-list-item-title>Duel on pong</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="">
+                  <v-list-item-title>Block user</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="">
+                  <v-list-item-title>Follow user</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
       </v-col>
     </v-row>
   </v-container>
@@ -144,15 +167,17 @@ export default {
       defaultMessage: "Not in a channel",
       newMessage: "",
       showAvailables: false,
-      showJoined: true,
+      showJoined: false,
       showDm: false,
       showPasswordModal: false,
       password: "",
       showCreateModal: false,
+      modalVisible: false,
       newChannelName: "",
       newChannelPassword: "",
       newChannelType: "public",
       channelTypes: ["public", "private"],
+      selectedMessage: null,
     };
   },
 
@@ -165,7 +190,10 @@ export default {
     },
   },
   methods: {
-
+    showModal(message) {
+      this.selectedMessage = message;
+      this.modalVisible = true;
+    },
     createChannel() {
       console.log(this.newChannelName);
       console.log(this.newChannelPassword);
@@ -196,6 +224,10 @@ export default {
     },
     sendMessage() {
       // Do something to send the message
+      if (!this.currentChannel)
+        this.currentChannel = this.channels[0];
+
+      this.currentChannel.messages = [];
       this.currentChannel.messages.push({id: 1, username: "User", text: this.newMessage});
       this.newMessage = "";
     },
