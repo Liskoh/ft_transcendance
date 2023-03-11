@@ -1,16 +1,17 @@
 <template>
-  <v-app>   <v-app-bar app color="primary">
-      <v-app-bar-nav-icon @click="drawer = !drawer" />
+  <v-app>
+    <v-app-bar app color="primary">
+      <v-app-bar-nav-icon @click="drawer = !drawer"/>
       <v-toolbar-title>
         ft_transcendence
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-navbar
-          :items="navItems"
-          :value="activeNavItem"
-          @input="activeNavItem = $event"
-          dense
-          flat
+        :items="navItems"
+        :value="activeNavItem"
+        @input="activeNavItem = $event"
+        dense
+        flat
       />
     </v-app-bar>
     <v-main>
@@ -20,15 +21,16 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
-import { ref } from 'vue';
+import {RouterLink, RouterView} from 'vue-router';
+import {ref} from 'vue';
+
 const drawer = ref(false);
 
 const navItems = [
-  { text: 'Chat', value: 'chat', to: '/chat' },
-  { text: 'Game', value: 'game', to: '/game' },
-  { text: 'Settings', value: 'settings', to: '/settings' },
-  { text: 'Pong', value: 'pong', to: '/pong' }
+  {text: 'Chat', value: 'chat', to: '/chat'},
+  {text: 'Game', value: 'game', to: '/game'},
+  {text: 'Settings', value: 'settings', to: '/settings'},
+  {text: 'Pong', value: 'pong', to: '/pong'}
 ];
 
 const activeNavItem = ref(navItems[0].value);
