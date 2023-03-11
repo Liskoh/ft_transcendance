@@ -201,7 +201,9 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
             for (const [key, value] of this.usersMap) {
                 await this.sendJoinAbleChannels(key, channels);
             }
+            console.log('createChannel ' + JSON.stringify(payload));
         } catch (error) {
+            console.log(error);
             await sendErrorToClient(socket, 'channelError', error);
         }
     }
@@ -371,7 +373,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 created = true;
             }
 
-            if (!channel.name.toLowerCase().includes(user.nickname.toLowerCase()) || channel.name.toLowerCase().includes(targetUser.nickname.toLowerCase())) {
+            if (!channel.name.toLowerCase().includes(user.nickname.toLowerCase()) || !channel.name.toLowerCase().includes(targetUser.nickname.toLowerCase())) {
                 channel.name = user.nickname + ' & ' + targetUser.nickname;
                 await this.channelsService.saveChannel(channel);
                 created = true;
@@ -390,6 +392,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                     userId: user.id,
                     nickname: user.nickname,
                     date: message.date,
+                    users: users,
                 },
             );
 
@@ -592,11 +595,11 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 id: message.id,
                 content: message.text,
                 userId: message.user.id,
+                nickname: message.user.nickname,
                 date: message.date,
             })),
         });
 
         return channelToReturn;
     }
-
 }

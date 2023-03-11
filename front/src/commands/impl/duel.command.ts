@@ -1,9 +1,10 @@
 import { AbstractCommand } from '../abstract.command';
+import {SocketType} from "@/utils/socket-type.enum";
 
 export class DuelCommand extends AbstractCommand {
 
     constructor(prefix: string, key: string) {
-        super(prefix, key);
+        super(prefix, key, SocketType.USER);
     }
 
     public getCommandData(channelId: number, commandArgs: string[]): Object {
