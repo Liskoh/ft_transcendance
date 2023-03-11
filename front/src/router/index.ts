@@ -1,7 +1,5 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 import Login from "@/components/Login.vue";
-import Upload from "@/components/Upload.vue";
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 
 const router = createRouter({
@@ -10,12 +8,7 @@ const router = createRouter({
         {
             path: '/',
             name: 'root',
-            redirect: '/home'
-        },
-        {
-            path: '/home',
-            name: 'home',
-            component: HomeView
+            redirect: '/settings'
         },
         {
             path: '/chat',
@@ -23,24 +16,9 @@ const router = createRouter({
             component: () => import('../views/ChatView.vue')
         },
         {
-            path: '/testchat',
-            name: 'testchat',
-            component: () => import('../views/TestChat.vue')
-        },
-        {
-            path: '/playerprofile',
-            name: 'playerprofile',
-            component: () => import('../views/PlayerProfileView.vue') // Lazy Load
-        },
-        {
             path: '/login',
             name: 'login',
             component: Login
-        },
-        {
-            path: '/upload',
-            name: 'upload',
-            component: Upload
         },
         {
             path: '/game',

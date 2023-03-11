@@ -1,11 +1,12 @@
-import { AbstractCommand } from '../abstract.command';
+import {AbstractCommand} from '../abstract.command';
+import {SocketType} from "@/utils/socket-type.enum";
 
 export class SetUnsetAdminCommand extends AbstractCommand {
 
     private readonly giveAdminRole: boolean;
 
     constructor(prefix: string, key: string, giveAdminRole: boolean) {
-        super(prefix, key);
+        super(prefix, key, SocketType.CHANNEL);
         this.giveAdminRole = giveAdminRole;
     }
 
