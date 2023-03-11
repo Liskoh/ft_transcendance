@@ -21,6 +21,7 @@
     "vue2-dropzone": "^3.6.0",
     "vuejs-notify": "^1.0.27",
     "vuetify": "^3.1.4",
+    "vuetify-notify": "^1.0.6",
     "vuex": "^4.1.0"
   },
   "devDependencies": {

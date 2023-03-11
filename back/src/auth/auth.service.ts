@@ -20,17 +20,14 @@ export class AuthService {
             'Invalid token',
             HttpStatus.UNAUTHORIZED
         );
-        console.log(client.handshake.headers);
         if (!token)
             throw tokenError;
 
-        console.log('token= ' + token);
         const payload = this.verifyJwt(token);
 
         if (!payload)
             throw tokenError;
 
-        console.log('payload= ' + payload);
         let user;
 
         try {
@@ -51,7 +48,6 @@ export class AuthService {
                 'No token provided',
                 HttpStatus.UNAUTHORIZED
             );
-        console.log('token= ' + token);
         const decoded = await this.verifyJwt(token);
 
         if (!decoded)

@@ -1,31 +1,30 @@
 <template>
   <v-container>
-    <notification ref="notyf"/>
     <v-row>
       <v-col cols="4">
         <v-card color="grey-darken-3">
-        <v-btn color="primary" @click="showCreateModal = true">
-          Create Channel
-        </v-btn>
-        <v-dialog v-model="showCreateModal" max-width="500">
-          <v-card color="grey-darken-3">
-            <v-card-title>Create Channel</v-card-title>
-            <v-card-text>
-              <v-form>
-                <v-text-field v-model="newChannelName" label="Channel Name" required outlined></v-text-field>
-                <v-text-field v-model="newChannelPassword" label="Password" outlined></v-text-field>
-                <v-select v-model="newChannelType" label="Channel Type" :items="channelTypes"></v-select>
-              </v-form>
-            </v-card-text>
-            <v-card-actions>
-              <v-btn color="primary" @click="createChannel()">Create</v-btn>
-              <v-btn color="error" @click="showCreateModal = false">Cancel</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-        <h2>Joined Channels</h2>
-        <v-list v-show="showJoined">
-<!--          <v-list-item-group v-model="selectedChannel">-->
+          <v-btn color="primary" @click="showCreateModal = true">
+            Create Channel
+          </v-btn>
+          <v-dialog v-model="showCreateModal" max-width="500">
+            <v-card color="grey-darken-3">
+              <v-card-title>Create Channel</v-card-title>
+              <v-card-text>
+                <v-form>
+                  <v-text-field v-model="newChannelName" label="Channel Name" required outlined></v-text-field>
+                  <v-text-field v-model="newChannelPassword" label="Password" outlined></v-text-field>
+                  <v-select v-model="newChannelType" label="Channel Type" :items="channelTypes"></v-select>
+                </v-form>
+              </v-card-text>
+              <v-card-actions>
+                <v-btn color="primary" @click="createChannel()">Create</v-btn>
+                <v-btn color="error" @click="showCreateModal = false">Cancel</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <h2>Joined Channels</h2>
+          <v-list v-show="showJoined">
+            <!--          <v-list-item-group v-model="selectedChannel">-->
             <v-list-item v-for="channel in joinedChannels" :key="channel.id">
               <v-list-item-title>{{ channel.name }}</v-list-item-title>
               <v-list-item-action>
@@ -33,28 +32,28 @@
                 <v-btn color="error" @click="leaveChannel(channel.id)">Leave</v-btn>
               </v-list-item-action>
             </v-list-item>
-<!--          </v-list-item-group>-->
-        </v-list>
-        <v-btn color="primary" @click="showJoined = !showJoined">
-          {{ showJoined ? "Hide Channels" : "Show Channels" }}
-        </v-btn>
-        <h2>DM channels</h2>
-        <v-list v-show="showDm">
-<!--          <v-list-item-group v-model="selectedChannel">-->
+            <!--          </v-list-item-group>-->
+          </v-list>
+          <v-btn color="primary" @click="showJoined = !showJoined">
+            {{ showJoined ? "Hide Channels" : "Show Channels" }}
+          </v-btn>
+          <h2>DM channels</h2>
+          <v-list v-show="showDm">
+            <!--          <v-list-item-group v-model="selectedChannel">-->
             <v-list-item v-for="channel in directChannels" :key="channel.id">
               <v-list-item-title>{{ channel.name }}</v-list-item-title>
               <v-list-item-action>
                 <v-btn color="primary" @click="selectChannel(channel.id)">Select</v-btn>
               </v-list-item-action>
             </v-list-item>
-<!--          </v-list-item-group>-->
-        </v-list>
-        <v-btn color="primary" @click="showDm = !showDm">
-          {{ showDm ? "Hide DMs" : "Show Dms" }}
-        </v-btn>
-        <h2>Available Channels</h2>
-        <v-list v-show="showAvailables">
-<!--          <v-list-item-group v-model="selectedChannel">-->
+            <!--          </v-list-item-group>-->
+          </v-list>
+          <v-btn color="primary" @click="showDm = !showDm">
+            {{ showDm ? "Hide DMs" : "Show Dms" }}
+          </v-btn>
+          <h2>Available Channels</h2>
+          <v-list v-show="showAvailables">
+            <!--          <v-list-item-group v-model="selectedChannel">-->
             <v-list-item v-for="channel in availableChannels" :key="channel.id">
               <v-list-item-title>{{ channel.name }}</v-list-item-title>
               <v-list-item-action>
@@ -66,55 +65,60 @@
                 </v-btn>
               </v-list-item-action>
             </v-list-item>
-<!--          </v-list-item-group>-->
-        </v-list>
-        <v-btn color="primary" @click="showAvailables = !showAvailables">
-          {{ showAvailables ? "Hide Channels" : "Show Channels" }}
-        </v-btn>
-        <v-dialog v-model="showPasswordModal" max-width="500">
-          <v-card>
-            <v-card-title>Enter Password</v-card-title>
-            <v-card-text>
-              <v-text-field v-model="password" label="Password" outlined></v-text-field>
-            </v-card-text>
-            <v-card-actions>
-              <v-btn color="primary" @click="joinChannel(selectedChannel.id, password)">Join</v-btn>
-              <v-btn color="error" @click="showPasswordModal = false">Cancel</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </v-card>
+            <!--          </v-list-item-group>-->
+          </v-list>
+          <v-btn color="primary" @click="showAvailables = !showAvailables">
+            {{ showAvailables ? "Hide Channels" : "Show Channels" }}
+          </v-btn>
+          <v-dialog v-model="showPasswordModal" max-width="500">
+            <v-card>
+              <v-card-title>Enter Password</v-card-title>
+              <v-card-text>
+                <v-text-field v-model="password" label="Password" outlined></v-text-field>
+              </v-card-text>
+              <v-card-actions>
+                <v-btn color="primary" @click="joinChannel(selectedChannel.id, password)">Join</v-btn>
+                <v-btn color="error" @click="showPasswordModal = false">Cancel</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-card>
       </v-col>
       <v-col cols="8">
         <h2>{{ (!currentChannel || !currentChannel.name) ? "You are not in a channel" : currentChannel.name }}</h2>
-        <v-card color="grey-darken-3" v-if="currentChannel">
-          <v-card-text>
-<!--            <v-btn class="message-action" @click="showModal(message)">-->
-<!--              <v-avatar size="30" color="primary">-->
-<!--                <v-icon>mdi-account</v-icon>-->
-<!--              </v-avatar>-->
-<!--            </v-btn>-->
-            <div class="message" v-for="message in currentChannelMessages" :key="message.id">
-              <strong>{{ message.nickname }}</strong>: {{ message.content }}
-            </div>
-          </v-card-text>
-          <v-card-actions>
-            <v-text-field v-model="newMessage" label="Message" outlined></v-text-field>
-            <v-btn color="primary" @click="sendMessage()">Send</v-btn>
-          </v-card-actions>
+        <v-card color="grey-darken-3" v-if="currentChannel" style="max-height: 500px; overflow-y: auto;">
+          <!--          <v-card-text>-->
+          <!--            <div class="message" v-for="message in currentChannelMessages" :key="message.id">-->
+          <!--              <strong>{{ message.nickname }}</strong>: {{ message.content }}-->
+          <!--            </div>-->
+          <!--          </v-card-text>-->
+          <v-list-item v-for="message in currentChannelMessages" :key="message.id" @click="showModal(message)">
+            <!--            <v-avatar>-->
+            <!--              <img :src="message.avatar" alt="Avatar">-->
+            <!--            </v-avatar>-->
+            <!--            <v-list-item-content>-->
+            <v-list-item-title class="text-subtitle-4">{{ message.nickname }}</v-list-item-title>
+            <v-list-item-subtitle>{{ message.content }}</v-list-item-subtitle>
+            <!--            </v-list-item-content>-->
+          </v-list-item>
         </v-card>
+        <v-card-actions>
+          <v-text-field v-model="newMessage" label="Message" outlined></v-text-field>
+          <v-btn color="primary" @click="sendMessage()">Send</v-btn>
+        </v-card-actions>
+
         <v-dialog v-model="modalVisible">
-          <v-card>
+          <v-card color="grey-darken-3">
             <v-card-title>Choose an action</v-card-title>
             <v-card-text>
               <v-list>
-                <v-list-item @click="">
+                <v-list-item @click="duelOnPong">
                   <v-list-item-title>Duel on pong</v-list-item-title>
                 </v-list-item>
-                <v-list-item @click="">
+                <v-list-item @click="blockUser">
                   <v-list-item-title>Block user</v-list-item-title>
                 </v-list-item>
-                <v-list-item @click="">
+                <v-list-item @click="followAsFriend">
                   <v-list-item-title>Follow user</v-list-item-title>
                 </v-list-item>
               </v-list>
@@ -144,26 +148,100 @@ export default {
   name: "TestChat",
   store,
   created() {
-    this.$store.commit('setChannelSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
-          extraHeaders: {
-            Authorization: 'Bearer ' + localStorage.getItem('token')
-          }
-        })
-    );
-
-    this.getChannelSocket.emit('getChannels');
+    const socket: Socket = this.$store.getters.getChannelSocket();
+    console.log(socket.id + ' ' + socket.connected);
+    socket.emit('getChannels');
 
     if (this.$store.getters.getCurrentChannel) {
       this.selectChannel(this.$store.getters.getCurrentChannel.id);
     }
+
+    socket.on('getChannelSuccess', (data) => {
+      const channel = data;
+      this.$store.commit('setCurrentChannel', channel);
+
+      const channelFromStore = this.$store.getters.getCurrentChannel;
+      console.log('channel from store ' + channelFromStore.name);
+      if (channelFromStore) {
+        this.currentChannelMessages = channelFromStore.messages;
+        //this.$refs.notyf.showNotification('You are now on channel ' + channelFromStore.name, +'!', 'success');
+      }
+
+      this.$forceUpdate();
+    });
+
+    socket.on('channelError', (data) => {
+      //this.$refs.notyf.showNotification(data, 'error');
+    });
+
+    socket.on('channelSuccess', (data) => {
+      //this.$refs.notyf.showNotification(data, 'success');
+    });
+
+    socket.on('channelInfo', (data) => {
+      ////this.$refs.notyf.showNotification(data, 'success');
+    });
+
+    //channels data:
+    socket.on('joinableChannels', (data) => {
+      this.$store.commit('setAvailableChannels', data);
+      console.log('joinableChannels', JSON.stringify(this.$store.getters.getAvailableChannels));
+      this.$forceUpdate();
+    });
+
+    socket.on('joinedChannels', (data) => {
+      this.$store.commit('setJoinedChannels', data);
+      // console.log('joinedChannels', JSON.stringify(this.$store.getters.getJoinedChannels));
+      this.$forceUpdate();
+    });
+
+    socket.on('directChannels', (data) => {
+      this.$store.commit('setDirectChannels', data);
+      this.$forceUpdate();
+    });
+
+    socket.on('resetCurrent', (data) => {
+      this.$store.commit('setCurrentChannel', null);
+      this.currentChannelMessages = [];
+    });
+
+    socket.on('sendOnGame', (data) => {
+      this.$router.push({name: 'game'});
+    });
+
+    socket.on('message', (data) => {
+      console.log('message', data);
+      const message = new Message(
+          data.id,
+          data.channelId,
+          data.content,
+          data.userId,
+          data.nickname,
+          data.date
+      );
+
+    const currentChannel: Channel = this.$store.getters.getCurrentChannel;
+
+    if (!currentChannel || currentChannel.id !== message.channelId) {
+      return;
+    }
+    console.log('123');
+    console.log(JSON.stringify(currentChannel));
+    this.currentChannelMessages.push(message);
+    });
   },
+  // beforeRouteLeave(to, from, next) {
+  //   const socket: Socket = this.$store.getters.getChannelSocket();
+  //   socket.disconnect();
+  //
+  //   next();
+  // },
   data() {
     return {
       currentChannelMessages() {
         return [];
       },
       selectedChannel: <Channel | unknown>null,
-      defaultMessage: "Not in a channel",
       newMessage: "",
       showAvailables: false,
       showJoined: false,
@@ -174,9 +252,9 @@ export default {
       modalVisible: false,
       newChannelName: "",
       newChannelPassword: "",
-      newChannelType: "public",
-      channelTypes: ["public", "private"],
-      selectedMessage: null,
+      newChannelType: "PUBLIC",
+      channelTypes: ["PUBLIC", "PRIVATE"],
+      selectedNickname: null,
     };
   },
 
@@ -187,18 +265,41 @@ export default {
       directChannels: state => state.directChannels,
       currentChannel: state => state.currentChannel,
     }),
-    getChannelSocket() {
-      return this.$store.getters.getChannelSocket;
-    },
   },
   methods: {
-    showModal(message) {
-      this.selectedMessage = message;
+    showModal(message: Message) {
+      this.selectedNickname = message.nickname;
       this.modalVisible = true;
+    },
+    async duelOnPong() {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      await socket.emit('duel', {
+        login: this.selectedNickname
+      });
+      console.log('duel on pong ' + this.selectedNickname);
+      this.modalVisible = false;
+    },
+    async followAsFriend() {
+      const socket: Socket = this.$store.getters.getUserSocket();
+      console.log('follow ' + this.selectedNickname);
+      await socket.emit('followAsFriend', {
+        login: this.selectedNickname
+      });
+      this.modalVisible = false;
+    },
+    async blockUser() {
+      const socket: Socket = this.$store.getters.getUserSocket();
+      console.log('blockUser ' + this.selectedNickname);
+      await socket.emit('blockUser', {
+        login: this.selectedNickname
+      });
+      this.modalVisible = false;
     },
     //last
     async createChannel() {
-      await this.getChannelSocket.emit('createChannel', {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      console.log(socket.connected);
+      await socket.emit('createChannel', {
         name: this.newChannelName,
         channelType: this.newChannelType,
         password: this.newChannelPassword
@@ -207,23 +308,25 @@ export default {
       this.showCreateModal = false;
       this.newChannelName = "";
       this.newChannelPassword = "";
-      this.newChannelType = "public";
+      this.newChannelType = "PUBLIC";
       console.log('create new channel');
     },
     async joinChannel(channel: Channel, password?: string) {
-      await this.getChannelSocket.emit('joinChannel', {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      await socket.emit('joinChannel', {
         id: channel.id,
         password: password
       });
       // await this.getChannelSocket.emit('getChannels');
       console.log('join channel with success');
       // await this.selectChannel(id);
-      await this.getChannelSocket.emit('getChannel', {
+      await socket.emit('getChannel', {
         id: channel.id,
       });
     },
     async selectChannel(channelId: number) {
-      await this.getChannelSocket.emit('getChannel', {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      await socket.emit('getChannel', {
         id: channelId,
       });
       const array: number[] = this.$store.getters.getJoinedChannels.map((channel: Channel) => channel.id);
@@ -232,7 +335,8 @@ export default {
         await this.joinChannel(channelId);
     },
     async leaveChannel(channelId: number) {
-      await this.getChannelSocket.emit('leaveChannel', {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      await socket.emit('leaveChannel', {
         id: channelId,
       });
       const currentChannel = this.$store.getters.getCurrentChannel;
@@ -255,10 +359,11 @@ export default {
 
       const currentChannel = this.$store.getters.getCurrentChannel;
       if (!currentChannel) {
-        // //this.$refs.notyf.showNotification('You are not in any channel', 'error');
+        // ////this.$refs.notyf.showNotification('You are not in any channel', 'error');
         return;
       }
 
+      const socket: Socket = this.$store.getters.getChannelSocket();
       const commandArray = msgContent.split(' ');
       const commandName = commandArray[0];
 
@@ -268,7 +373,7 @@ export default {
         // msgContent = "";
         if (command) {
           console.log('command found');
-          await command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), this.getChannelSocket);
+          await command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), socket);
           return;
         }
 
@@ -276,19 +381,25 @@ export default {
         return;
       }
 
-      await this.getChannelSocket.emit('sendMessage', {
+      socket.emit('sendMessage', {
         channelId: currentChannel.id,
         text: msgContent,
       });
     },
 
     sendHelp() {
+      if (!this.currentChannelMessages)
+        return;
+
+
       COMMANDS.forEach(command => {
         this.currentChannelMessages.push(
             new Message(
                 -1,
+                -1,
                 command.getCommandHelp(),
                 -1,
+                'System',
                 new Date()
             )
         );
@@ -296,73 +407,6 @@ export default {
     }
   },
   mounted() {
-    this.getChannelSocket.on('getChannelSuccess', (data) => {
-      const channel = data;
-      this.$store.commit('setCurrentChannel', channel);
-
-      const channelFromStore = this.$store.getters.getCurrentChannel;
-      console.log('channel from store ' + channelFromStore.name);
-      if (channelFromStore) {
-        this.currentChannelMessages = channelFromStore.messages;
-        this.$refs.notyf.showNotification('You are now on channel ' + channelFromStore.name, + '!', 'success');
-      }
-
-      this.$forceUpdate();
-    });
-
-    this.getChannelSocket.on('channelError', (data) => {
-      this.$refs.notyf.showNotification(data, 'error');
-    });
-
-    this.getChannelSocket.on('channelSuccess', (data) => {
-      this.$refs.notyf.showNotification(data, 'success');
-    });
-
-    this.getChannelSocket.on('channelInfo', (data) => {
-      //this.$refs.notyf.showNotification(data, 'success');
-    });
-
-    //channels data:
-    this.getChannelSocket.on('joinableChannels', (data) => {
-      this.$store.commit('setAvailableChannels', data);
-      console.log('joinableChannels', JSON.stringify(this.$store.getters.getAvailableChannels));
-      this.$forceUpdate();
-    });
-
-    this.getChannelSocket.on('joinedChannels', (data) => {
-      this.$store.commit('setJoinedChannels', data);
-      // console.log('joinedChannels', JSON.stringify(this.$store.getters.getJoinedChannels));
-      this.$forceUpdate();
-    });
-
-    this.getChannelSocket.on('directChannels', (data) => {
-      this.$store.commit('setDirectChannels', data);
-      this.$forceUpdate();
-    });
-
-    this.getChannelSocket.on('resetCurrent', (data) => {
-      this.$store.commit('setCurrentChannel', null);
-      this.currentChannelMessages = [];
-    });
-
-    this.getChannelSocket.on('message', (data) => {
-      const message = new Message(
-          data.id,
-          data.channelId,
-          data.content,
-          data.userId,
-          data.nickname,
-          data.date
-      );
-
-      const currentChannel: Channel = this.$store.getters.getCurrentChannel;
-
-      if (!currentChannel || currentChannel.id !== message.channelId) {
-        return;
-      }
-
-      this.currentChannelMessages.push(message);
-    });
   },
 };
 </script>

@@ -16,6 +16,7 @@ export const store = createStore({
         playing: <boolean>false,
         me: <User | unknown>null,
         friends: <User[]>[],
+        blockedUsers: <User[]>[],
         currentChannel: <Channel | unknown>null,
         channelSocket: <Socket | unknown>null,
         userSocket: <Socket | unknown>null,
@@ -28,10 +29,20 @@ export const store = createStore({
 
         getCurrentChannel: state => state.currentChannel,
 
-        getChannelSocket: state => state.channelSocket,
+        getChannelSocket: state => () => {
+            if (state.channelSocket === null || !state.channelSocket.connected) {
+                console.log('new channel socket');
+                state.channelSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
+                    extraHeaders: {
+                        Authorization: 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
+            }
+            return state.channelSocket;
+        },
         getUserSocket: state => () => {
+            console.log('new user socket');
             if (state.userSocket === null || !state.userSocket.connected) {
-                console.log('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users')
                 state.userSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users', {
                     extraHeaders: {
                         Authorization: 'Bearer ' + localStorage.getItem('token')
@@ -61,6 +72,10 @@ export const store = createStore({
 
         getFriends: state => () => {
             return state.friends;
+        },
+
+        getBlockedUsers: state => () => {
+            return state.blockedUsers;
         },
 
         getWaitingDuels: state => state.waitingDuels,
@@ -113,6 +128,10 @@ export const store = createStore({
 
         setFriends(state, friends) {
             state.friends = friends;
+        },
+
+        setBlockedUsers(state, blockedUsers) {
+            state.blockedUsers = blockedUsers;
         },
 
     }

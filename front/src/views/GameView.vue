@@ -10,7 +10,7 @@
           </v-card-text>
         </v-card>
         <v-card color="grey-darken-3" v-for="duel in currentDuels" :key="duel.from" class="my-4">
-          <v-card-title>FROM {{duel.from}}</v-card-title>
+          <v-card-title>From {{duel.from}}</v-card-title>
           <v-card-actions>
             <v-btn color="green" @click="acceptDuel(duel.from)">ACCEPT</v-btn>
           </v-card-actions>
@@ -23,7 +23,7 @@
           </v-card-text>
         </v-card>
         <v-card color="grey-darken-3" v-for="game in currentGames" :key="game.uuid" class="my-4">
-          <v-card-title>hjordan VS test</v-card-title>
+          <v-card-title>{{game.firstNickname}} Vs. {{game.secondNickname}}</v-card-title>
           <v-card-actions>
             <v-btn color="success darken-2" @click="spectate(game.uuid)">SPECTATE</v-btn>
           </v-card-actions>
@@ -60,45 +60,45 @@ export default defineComponent({
     socket.emit('getDuels');
     socket.emit('getGames');
 
-    // socket.on('duels', (data: any) => {
-    //   console.log('duels', data);
-    //   this.currentDuels = data;
-    // });
+    socket.on('duels', (data: any) => {
+      console.log('duels', data);
+      this.currentDuels = data;
+    });
 
-    const duels: Duel[] = [
-      {
-        from: 'test',
-        expirationDate: new Date(),
-      },
-      {
-        from: 'test2',
-        expirationDate: new Date(),
-      },
-      {
-        from: 'test3',
-        expirationDate: new Date(),}
-    ];
+    // const duels: Duel[] = [
+    //   {
+    //     from: 'test',
+    //     expirationDate: new Date(),
+    //   },
+    //   {
+    //     from: 'test2',
+    //     expirationDate: new Date(),
+    //   },
+    //   {
+    //     from: 'test3',
+    //     expirationDate: new Date(),}
+    // ];
 
-    this.currentDuels = duels;
+    // this.currentDuels = duels;
 
-    // socket.on('games', (data: any) => {
-    //   console.log('games', data);
-    //   this.currentGames = data;
-    // });
+    socket.on('games', (data: any) => {
+      console.log('games', data);
+      this.currentGames = data;
+    });
 
-    const games: Game[] = [
-      {
-        uuid: 'test',
-      },
-      {
-        uuid: 'test2',
-      },
-      {
-        uuid: 'test3',
-      }
-    ];
-
-    this.currentGames = games;
+    // const games: Game[] = [
+    //   {
+    //     uuid: 'test',
+    //   },
+    //   {
+    //     uuid: 'test2',
+    //   },
+    //   {
+    //     uuid: 'test3',
+    //   }
+    // ];
+    //
+    // this.currentGames = games;
 
     socket.on('sendOnPong', (data: any) => {
       console.log('sendOnPong', data);

@@ -24,16 +24,19 @@ const vuetify = createVuetify({
     components,
     directives,
     themes: {
-        light : {
-            dark: false,
-            primary: '#E53935',
-            secondary: '#FFCDD2',
-            // dark: false,
-            // primary: #E53935,
-            // secondary: #FFCDD2,
+        light: {
+            background: '#F5F5F5',
+            primary: '#3F51B5', // bleu
+            secondary: '#9C27B0', // violet
+            accent: '#FF5722', // orange
+            error: '#f44336', // rouge
+            warning: '#FFC107', // jaune
+            info: '#00BCD4', // bleu ciel
+            success: '#4CAF50' // vert
         }
     }
-})
+});
+
 
 const app = createApp(App);
 app.use(createPinia())

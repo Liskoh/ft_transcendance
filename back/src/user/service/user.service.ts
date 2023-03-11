@@ -71,13 +71,6 @@ export class UserService {
         const friends: User[] = [];
         const toRemove: number[] = [];
 
-        const testFriends: number[] = [user.id, user.id, user.id, user.id];
-
-        if (user.friendsList.length === 0) {
-            for (const id of testFriends) {
-                user.friendsList.push(id);
-            }
-        }
         for (const friend of user.friendsList) {
             try {
                 const friendUser = await this.getUserById(friend);
@@ -95,6 +88,29 @@ export class UserService {
         }
 
         return friends;
+    }
+
+    async getBlockedUsers(user: User): Promise<User[]> {
+        const blockedUsers: User[] = [];
+        const toRemove: number[] = [];
+
+        for (const blockedUser of user.blockedList) {
+            try {
+                const blockedUserUser = await this.getUserById(blockedUser);
+                blockedUsers.push(blockedUserUser);
+            } catch (e) {
+                toRemove.push(blockedUser);
+            }
+        }
+
+        if (toRemove.length > 0) {
+            for (const id of toRemove) {
+                user.blockedList.splice(user.blockedList.indexOf(id), 1);
+            }
+            await this.saveUser(user);
+        }
+
+        return blockedUsers;
     }
 
 
@@ -217,6 +233,28 @@ export class UserService {
         //saving from and to
         await this.usersRepository.save(to);
         return await this.usersRepository.save(from);
+    }
+
+    async unfollowAsFriend(from: User, to: User): Promise<User> {
+
+            if (this.isSameUser(from, to))
+                throw new HttpException(
+                    "You can't unfollow yourself",
+                    HttpStatus.BAD_REQUEST
+                );
+
+            if (!from.friendsList.includes(to.id))
+                throw new HttpException(
+                    "You are not friends with this user",
+                    HttpStatus.BAD_REQUEST
+                );
+
+            //remove from friends list
+            from.friendsList.splice(from.friendsList.indexOf(to.id), 1);
+
+            //saving from and to
+            await this.usersRepository.save(to);
+            return await this.usersRepository.save(from);
     }
 
     /**

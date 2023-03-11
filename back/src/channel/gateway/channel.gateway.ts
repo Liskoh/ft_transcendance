@@ -36,6 +36,9 @@ import {
 import {Message} from "../entity/message.entity";
 import {SendDirectMessageDto} from "../dto/send-direct-message.dto";
 import {PunishmentType} from "../enum/punishment-type.enum";
+import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
+import {GameService} from "../../game/service/game.service";
+import {Duel} from "../../game/interface/duel.interface";
 
 @WebSocketGateway(
     {
@@ -51,6 +54,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
         private readonly channelsService: ChannelService,
         private readonly usersService: UserService,
         private readonly authService: AuthService,
+        private readonly gameService: GameService,
         // private readonly jwtService: JwtService,
     ) {
     }
@@ -467,6 +471,34 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 }
             }
         } catch (error) {
+            await sendErrorToClient(socket, 'channelError', error);
+        }
+    }
+
+    @SubscribeMessage('duel')
+    async duel(socket: Socket, payload: any): Promise<any> {
+        try {
+            const dto = new LoginNicknameDto(payload.login);
+            await validateOrReject(dto);
+
+            const user = await getUserBySocket(socket, this.usersService, this.usersMap);
+            const targetUser = await this.usersService.getUserByNickname(dto.login);
+
+            const duel: Duel = this.gameService.createDuel(user, targetUser);
+            const targetSocket = await getSocketsByUser(targetUser, this.usersMap);
+
+            await sendSuccessToClient(socket, 'channelSuccess', 'You have challenged '
+                + targetUser.nickname + ' for a pong duel! (go on Game tab)');
+
+            if (!targetSocket)
+                return;
+
+            await sendSuccessToClient(targetSocket, 'channelSuccess', 'You have been challenged by '
+                + user.nickname + ' for a pong duel! (go on Game tab)');
+
+            socket.emit('sendOnGame');
+        } catch (error) {
+            console.log(error);
             await sendErrorToClient(socket, 'channelError', error);
         }
     }

@@ -46,7 +46,7 @@ const router = createRouter({
             component: () => import('../views/PongView.vue')
         },
         {
-            path: '/profile/:login',
+            path: '/profile/:nickname',
             name: 'profile',
             props: true,
             component: () => import('../views/ProfileView.vue')
