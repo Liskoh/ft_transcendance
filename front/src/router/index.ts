@@ -1,7 +1,5 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 import Login from "@/components/Login.vue";
-import Upload from "@/components/Upload.vue";
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 
 const router = createRouter({
@@ -13,11 +11,6 @@ const router = createRouter({
             redirect: '/settings'
         },
         {
-            path: '/home',
-            name: 'home',
-            component: HomeView
-        },
-        {
             path: '/chat',
             name: 'chat',
             component: () => import('../views/ChatView.vue')
@@ -26,11 +19,6 @@ const router = createRouter({
             path: '/login',
             name: 'login',
             component: Login
-        },
-        {
-            path: '/upload',
-            name: 'upload',
-            component: Upload
         },
         {
             path: '/game',
