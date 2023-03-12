@@ -61,8 +61,7 @@
               <v-list-item v-for="friend in friends" :key="friend.login">
 <!--                <v-list-item-content>-->
                   <v-list-item-title>{{ friend.nickname }}</v-list-item-title>
-                  <v-list-item-subtitle
-                      :class="{'red--text': friend.status === 'online', 'green--text': friend.status === 'offline'}">
+                  <v-list-item-subtitle>
                     {{ friend.status }}
                   </v-list-item-subtitle>
 <!--                </v-list-item-content>-->
@@ -278,33 +277,6 @@ export default defineComponent({
         return '/default.jpg';
       }
     },
-
-    async loadAvatar(login: string) {
-      try {
-        const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
-        const token = localStorage.getItem('token');
-        const options = {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + localStorage.getItem('token')
-          },
-        };
-        const response = await fetch(input, options);
-        const message = await response.json().message;
-
-        if (response.ok) {
-          const blob = await response.blob();
-          this.avatarUrl = URL.createObjectURL(blob);
-        } else {
-          const message = await response.text();
-          console.log(message);
-          // this.$refs.notyf.showNotification(message, 'error');
-        }
-      } catch (error) {
-        console.error('dsjnfkjsahfjhasfhjks ' + error);
-        // this.$refs.notyf.showNotification('Error while loading user avatar', 'error');
-      }
-    }
   },
   computed: {
     friends(): User[] {

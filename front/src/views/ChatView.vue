@@ -88,12 +88,12 @@
         <h2>{{ (!currentChannel || !currentChannel.name) ? "You are not in a channel" : currentChannel.name }}</h2>
         <v-card color="grey-darken-3" v-if="currentChannel" style="max-height: 500px; overflow-y: auto;">
           <v-list-item v-for="message in currentChannelMessages" :key="message.id" @click="showModal(message)">
-            <v-list-item-title class="text-subtitle-4">{{ message.nickname }}</v-list-item-title>
+            <v-list-item-title class="text-subtitle-5">{{ message.nickname }}</v-list-item-title>
             <v-list-item-subtitle>{{ message.content }}</v-list-item-subtitle>
           </v-list-item>
         </v-card>
         <v-card-actions>
-          <v-text-field v-model="newMessage" label="Message" outlined></v-text-field>
+          <v-text-field v-model="newMessage" label="Message" outlined @keyup.enter="sendMessage()"></v-text-field>
           <v-btn color="primary" @click="sendMessage()">Send</v-btn>
         </v-card-actions>
 
@@ -139,7 +139,7 @@ export default {
   store,
   created() {
     const socket: Socket = this.$store.getters.getChannelSocket();
-    console.log(socket.id + ' ' + socket.connected);
+    //console.log(socket.id + ' ' + socket.connected);
     socket.emit('getChannels');
 
     if (this.$store.getters.getCurrentChannel) {
@@ -151,7 +151,7 @@ export default {
       this.$store.commit('setCurrentChannel', channel);
 
       const channelFromStore = this.$store.getters.getCurrentChannel;
-      console.log('channel from store ' + channelFromStore.name);
+      //console.log('channel from store ' + channelFromStore.name);
       if (channelFromStore) {
         this.currentChannelMessages = channelFromStore.messages;
         //this.$refs.notyf.showNotification('You are now on channel ' + channelFromStore.name, +'!', 'success');
@@ -175,19 +175,20 @@ export default {
     //channels data:
     socket.on('joinableChannels', (data) => {
       this.$store.commit('setAvailableChannels', data);
-      console.log('joinableChannels', JSON.stringify(this.$store.getters.getAvailableChannels));
+      //console.log('joinableChannels', JSON.stringify(this.$store.getters.getAvailableChannels));
       this.$forceUpdate();
     });
 
     socket.on('joinedChannels', (data) => {
       this.$store.commit('setJoinedChannels', data);
-      // console.log('joinedChannels', JSON.stringify(this.$store.getters.getJoinedChannels));
+      // //console.log('joinedChannels', JSON.stringify(this.$store.getters.getJoinedChannels));
       this.$forceUpdate();
     });
 
     socket.on('directChannels', (data) => {
       this.$store.commit('setDirectChannels', data);
       this.$forceUpdate();
+      console.log('channel ', 2);
     });
 
     socket.on('resetCurrent', (data) => {
@@ -200,7 +201,7 @@ export default {
     });
 
     socket.on('message', (data) => {
-      console.log('message', data);
+      ////console.log('message', data);
       const message = new Message(
           data.id,
           data.channelId,
@@ -210,22 +211,25 @@ export default {
           data.date
       );
 
+
     const currentChannel: Channel = this.$store.getters.getCurrentChannel;
 
     if (!currentChannel || currentChannel.id !== message.channelId) {
       return;
     }
-    console.log('123');
-    console.log(JSON.stringify(currentChannel));
+    ////console.log('123');
+    ////console.log(JSON.stringify(currentChannel));
+      console.log('message', 2);
     this.currentChannelMessages.push(message);
     });
   },
-  // beforeRouteLeave(to, from, next) {
-  //   const socket: Socket = this.$store.getters.getChannelSocket();
-  //   socket.disconnect();
-  //
-  //   next();
-  // },
+  beforeRouteLeave(to, from, next) {
+    const socket: Socket = this.$store.getters.getChannelSocket();
+
+    socket.disconnect();
+    this.$store.commit('setChannelSocket', socket);
+    next();
+  },
   data() {
     return {
       currentChannelMessages() {
@@ -266,12 +270,12 @@ export default {
       await socket.emit('duel', {
         login: this.selectedNickname
       });
-      console.log('duel on pong ' + this.selectedNickname);
+      ////console.log('duel on pong ' + this.selectedNickname);
       this.modalVisible = false;
     },
     async followAsFriend() {
       const socket: Socket = this.$store.getters.getUserSocket();
-      console.log('follow ' + this.selectedNickname);
+      ////console.log('follow ' + this.selectedNickname);
       await socket.emit('followAsFriend', {
         login: this.selectedNickname
       });
@@ -279,7 +283,7 @@ export default {
     },
     async blockUser() {
       const socket: Socket = this.$store.getters.getUserSocket();
-      console.log('blockUser ' + this.selectedNickname);
+      ////console.log('blockUser ' + this.selectedNickname);
       await socket.emit('blockUser', {
         login: this.selectedNickname
       });
@@ -288,7 +292,7 @@ export default {
     //last
     async createChannel() {
       const socket: Socket = this.$store.getters.getChannelSocket();
-      console.log(socket.connected);
+      ////console.log(socket.connected);
       await socket.emit('createChannel', {
         name: this.newChannelName,
         channelType: this.newChannelType,
@@ -299,7 +303,7 @@ export default {
       this.newChannelName = "";
       this.newChannelPassword = "";
       this.newChannelType = "PUBLIC";
-      console.log('create new channel');
+      ////console.log('create new channel');
     },
     async joinChannel(channel: Channel, password?: string) {
       const socket: Socket = this.$store.getters.getChannelSocket();
@@ -308,7 +312,7 @@ export default {
         password: password
       });
       // await this.getChannelSocket.emit('getChannels');
-      console.log('join channel with success');
+      ////console.log('join channel with success');
       // await this.selectChannel(id);
       await socket.emit('getChannel', {
         id: channel.id,
@@ -336,7 +340,7 @@ export default {
           this.$store.commit('setCurrentChannel', null);
           this.currentChannelMessages = [];
         }
-      console.log('leave channel with success');
+      ////console.log('leave channel with success');
     },
     hasCurrentChannel(): boolean {
       return this.$store.getters.getCurrentChannel !== null;
@@ -362,7 +366,7 @@ export default {
         const command = getCommandByName(commandName);
         // msgContent = "";
         if (command) {
-          console.log('command found');
+          ////console.log('command found');
           await command.emitCommand(command.getCommandData(currentChannel.id, commandArgs), socket);
           return;
         }

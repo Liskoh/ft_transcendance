@@ -41,6 +41,9 @@ export default {
       text: ''
     }
   },
+  created() {
+
+  },
   methods: {
     search() {
       this.$router.push({name: 'profile', params: {nickname: this.text}});

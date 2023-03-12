@@ -42,7 +42,7 @@ export class ChannelService {
         return await this.channelsRepository.find();
     }
 
-    async clear() : Promise<void> {
+    async clear(): Promise<void> {
         await this.channelsRepository.clear();
     }
 
@@ -462,10 +462,10 @@ export class ChannelService {
 
         if (channel.channelType === ChannelType.DM)
             return;
-            // throw new HttpException(
-            //     'You can not join DM',
-            //     HttpStatus.BAD_REQUEST
-            // );
+        // throw new HttpException(
+        //     'You can not join DM',
+        //     HttpStatus.BAD_REQUEST
+        // );
 
         if (this.isMember(channel, user))
             throw new HttpException(
@@ -591,8 +591,10 @@ export class ChannelService {
     getMessagesForUser(channel: Channel, user: User): Message[] {
         const messages = channel.messages;
 
-        return messages.filter(m =>
+        const filteredMessages = messages.filter(m =>
             !user.blockedList.includes(m.user.id));
+
+        return filteredMessages.reverse();
     }
 
     /*

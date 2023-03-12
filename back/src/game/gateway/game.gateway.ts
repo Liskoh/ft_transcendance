@@ -241,7 +241,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (this.gameService.isSpectator(secondSocket))
                 this.gameService.removeSpectator(secondSocket);
 
-            this.gameService.startGame(game);
+            await this.gameService.startGame(game);
 
             if (firstSocket && firstSocket.connected) {
                 firstSocket.emit('sendOnPong');
@@ -298,7 +298,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService);
 
-            this.gameService.startGame(game);
+            await this.gameService.startGame(game);
 
             if (firstSocket && firstSocket.connected) {
                 firstSocket.emit('sendOnPong');

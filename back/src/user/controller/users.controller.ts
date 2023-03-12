@@ -9,7 +9,7 @@ import {
     UploadedFile,
     UseInterceptors
 } from "@nestjs/common";
-import { Response } from 'express';
+import {Response} from 'express';
 import {UserService} from "../service/user.service";
 import * as fs from 'fs';
 import {FileInterceptor} from "@nestjs/platform-express";
@@ -18,6 +18,8 @@ import * as path from "path";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
 import {validateOrReject} from "class-validator";
+import {MatchHistory} from "../../game/entity/match-history.entity";
+import {GameService} from "../../game/service/game.service";
 
 const allowedExtensions = ['.jpg', '.jpeg', '.png'];
 
@@ -26,6 +28,7 @@ export class UsersController {
 
     constructor(
         private readonly usersService: UserService,
+        private readonly gameService: GameService,
     ) {
     }
 
@@ -45,14 +48,19 @@ export class UsersController {
     }
 
     @Get('profile/:nickname')
-    async getProfile(@Req() req, @Res() res: Response): Promise<any> {
+    async getProfile(@Param('nickname') nickname: string, @Res() res: Response): Promise<any> {
         try {
-            const dto: LoginNicknameDto = new LoginNicknameDto(req.params.login);
+            const dto: LoginNicknameDto = new LoginNicknameDto(nickname);
             await validateOrReject(dto);
 
             const user: User = await this.usersService.getUserByNickname(dto.login);
-            return res.status(HttpStatus.OK).send(user);
+
+            const history: MatchHistory = await this.gameService.createMatchHistory(user.id, user.id, 2, 2);
+            const toReturn = await this.getUserWithStats(user);
+
+            return res.status(HttpStatus.OK).send(toReturn);
         } catch (error) {
+            console.log(error);
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(`Error while getting profile`);
         }
     }
@@ -128,6 +136,28 @@ export class UsersController {
             HTTPStatus: HttpStatus.OK,
             message: 'File uploaded successfully ( ' + file.filename + ' )'
         }
+    }
+
+    async getUserWithStats(user: User): Promise<any> {
+        const data: MatchHistory[] = await this.gameService.getData();
+        const matches: MatchHistory[] = this.gameService.getMatchHistory(user, data);
+
+        return {
+            id: user.id,
+            login: user.login,
+            nickname: user.nickname,
+            status: user.status,
+            matches: matches.map(match => {
+                return {
+                    id: match.id,
+                    winner: match.winner.nickname,
+                    loser: match.loser.nickname,
+                    winnerScore: (match.firstPlayerScore > match.secondPlayerScore) ? match.firstPlayerScore : match.secondPlayerScore,
+                    loserScore: (match.firstPlayerScore < match.secondPlayerScore) ? match.firstPlayerScore : match.secondPlayerScore,
+                    date: match.date,
+                };
+            }),
+        };
     }
 
 }

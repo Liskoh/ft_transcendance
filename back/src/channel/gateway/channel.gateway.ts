@@ -82,6 +82,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 //in case if we need to send message to specific users
                 if (users) {
                     users.forEach(user => {
+                        console.log(user.login + ' ' + users.length);
                         if (user.login === value)
                             key.emit(type, payload);
                     });
@@ -333,6 +334,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
             const users = await this.channelsService.sendMessage(channel, user, dto.text);
             const message: Message = await this.channelsService.saveMessage(dto.text, user, channel);
 
+            console.log(user.nickname + ' send message to channel ' + channel.name);
             this.emitOnChannel(
                 channel,
                 'message',
@@ -346,7 +348,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 },
                 users
             );
-            console.log(user.nickname + ' send message to channel ' + channel.name);
             await sendSuccessToClient(socket, 'channelSuccess', 'message sent with success');
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
@@ -614,6 +615,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
      * @returns {any}
      */
     getChannelToSend(channel: Channel, user: User): any {
+
         const channelToReturn = ({
             id: channel.id,
             name: channel.name,
