@@ -122,6 +122,18 @@ export class GameService {
         return history;
     }
 
+    getMatchHistory(user: User, data: MatchHistory[]): MatchHistory[] {
+        let history: MatchHistory[] = [];
+
+        for (const match of data) {
+            if (match.loser.id === user.id || match.winner.id === user.id) {
+                history.push(match);
+            }
+        }
+
+        return history;
+    }
+
     /**
      * return loses for a user
      * @param {User} user

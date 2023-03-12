@@ -1,17 +1,20 @@
 <template>
-  <div>
-    <h1>User Details</h1>
-    <div>
-      <label for="name">Name:</label>
-      <span id="name">{{ nickname }}</span>
-    </div>
-  </div>
+  <v-container>
+    <v-row>
+      <v-col class="text-center" align-self="start">
+        <h1>{{ nickname }}</h1>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
-<script>
-import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
+<script lang="ts">
+import {defineComponent} from 'vue';
+import {Socket} from 'socket.io-client';
+import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from '@/consts';
+import {User} from "@/models/user.model";
 
-export default {
+export default defineComponent({
   name: 'ProfileView',
   props: {
     nickname: {
@@ -21,52 +24,49 @@ export default {
   },
   data() {
     return {
-      user: null,
+      user: User,
     };
   },
   created() {
-    // await this.fetchProfile(this.login);
+    const socket: Socket = this.$store.getters.getUserSocket();
+
+    socket.emit('getUserInfo', {
+      login: this.nickname,
+    });
+
+    socket.on('userInfo', (data: any) => {
+      const user: User = data;
+
+      if (!user) {
+        return;
+      }
+
+      this.user = user;
+    });
   },
   // methods: {
-  //    async fetchProfile(nickname: string): Promise<any> {
-  //     try {
-  //       const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/profile/${this.login}`;
-  //       const response = await fetch(input);
-  //
-  //       if (response.ok) {
-  //         const data = await response.json();
-  //         console.log(data);
-  //       } else {
-  //         console.log('Erreur lors de la récupération du profil');
-  //       }
-  //       // Faire quelque chose avec les données de l'utilisateur
-  //     } catch (error) {
-  //       console.error('Erreur lors de la récupération du profil :', error);
-  //     }
-  //   },
-  //   async fetchAvatar(login: string): Promise<any> {
+  //   async fetchAvatar(login: string) {
   //     try {
   //       const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
-  //       console.log(input);
   //       const token = localStorage.getItem('token');
   //       const options = {
   //         method: 'GET',
   //         headers: {
-  //           Authorization: 'Bearer ' + localStorage.getItem('token')
+  //           Authorization: 'Bearer ' + token,
   //         },
   //       };
   //       const response = await fetch(input, options);
+  //
   //       if (response.ok) {
-  //         console.log('avatar fetched ok');
   //         const blob = await response.blob();
-  //         return URL.createObjectURL(blob);
+  //         this.avatarUrl = URL.createObjectURL(blob);
   //       } else {
-  //         return '/default.jpg';
+  //         this.avatarUrl = '/default.jpg';
   //       }
   //     } catch (error) {
-  //       return '/default.jpg';
+  //       this.avatarUrl = '/default.jpg';
   //     }
   //   },
   // },
-};
+});
 </script>

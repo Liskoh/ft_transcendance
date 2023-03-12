@@ -22,6 +22,7 @@ import {
     tryHandleConnection,
     tryHandleDisconnect
 } from "../../utils";
+import {GameService} from "../../game/service/game.service";
 
 @WebSocketGateway({
     cors: {
@@ -32,7 +33,8 @@ import {
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(private readonly usersService: UserService,
-                private readonly authService: AuthService
+                private readonly authService: AuthService,
+                private readonly gameService: GameService,
     ) {
     }
 
@@ -45,7 +47,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.usersService, this.authService,
             'users', ...args);
 
-        await this.sendMyInfo(socket);
+        // await this.sendMyInfo(socket);
     }
 
     async handleDisconnect(socket: any): Promise<any> {
@@ -73,6 +75,10 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             socket.emit('me', this.getMappedUser(user));
         } catch (error) {
         }
+    }
+
+    async sendUserInfo(socket: Socket, user: User): Promise<void> {
+        socket.emit('user', this.getMappedUser(user));
     }
 
     async sendMyFriends(socket: Socket): Promise<void> {
@@ -208,12 +214,14 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
+    const
+
     getMappedUser(user: User): any {
         return {
             id: user.id,
             login: user.login,
             nickname: user.nickname,
-            status: user.status
+            status: user.status,
         };
     }
 }

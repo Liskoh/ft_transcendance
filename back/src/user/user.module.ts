@@ -7,12 +7,14 @@ import {UsersController} from "./controller/users.controller";
 import {JwtModule, JwtService} from "@nestjs/jwt";
 import {AuthModule} from "../auth/auth.module";
 import {AuthService} from "../auth/auth.service";
+import {GameModule} from "../game/game.module";
 
 @Module({
     exports: [UserService],
     imports: [
         forwardRef(() => AuthModule),
-        TypeOrmModule.forFeature([User])
+        TypeOrmModule.forFeature([User]),
+        forwardRef(() => GameModule),
     ],
     controllers: [UsersController],
     providers: [
@@ -20,4 +22,5 @@ import {AuthService} from "../auth/auth.service";
         UserGateway,
     ]
 })
-export class UserModule {}
+export class UserModule {
+}

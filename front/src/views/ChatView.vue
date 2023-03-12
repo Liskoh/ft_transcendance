@@ -7,7 +7,7 @@
             Create Channel
           </v-btn>
           <v-dialog v-model="showCreateModal" max-width="500">
-            <v-card color="grey-darken-3">
+            <v-card>
               <v-card-title>Create Channel</v-card-title>
               <v-card-text>
                 <v-form>
@@ -24,7 +24,6 @@
           </v-dialog>
           <h2>Joined Channels</h2>
           <v-list v-show="showJoined">
-            <!--          <v-list-item-group v-model="selectedChannel">-->
             <v-list-item v-for="channel in joinedChannels" :key="channel.id">
               <v-list-item-title>{{ channel.name }}</v-list-item-title>
               <v-list-item-action>
@@ -32,8 +31,9 @@
                 <v-btn color="error" @click="leaveChannel(channel.id)">Leave</v-btn>
               </v-list-item-action>
             </v-list-item>
-            <!--          </v-list-item-group>-->
           </v-list>
+
+
           <v-btn color="primary" @click="showJoined = !showJoined">
             {{ showJoined ? "Hide Channels" : "Show Channels" }}
           </v-btn>
@@ -87,19 +87,9 @@
       <v-col cols="8">
         <h2>{{ (!currentChannel || !currentChannel.name) ? "You are not in a channel" : currentChannel.name }}</h2>
         <v-card color="grey-darken-3" v-if="currentChannel" style="max-height: 500px; overflow-y: auto;">
-          <!--          <v-card-text>-->
-          <!--            <div class="message" v-for="message in currentChannelMessages" :key="message.id">-->
-          <!--              <strong>{{ message.nickname }}</strong>: {{ message.content }}-->
-          <!--            </div>-->
-          <!--          </v-card-text>-->
           <v-list-item v-for="message in currentChannelMessages" :key="message.id" @click="showModal(message)">
-            <!--            <v-avatar>-->
-            <!--              <img :src="message.avatar" alt="Avatar">-->
-            <!--            </v-avatar>-->
-            <!--            <v-list-item-content>-->
             <v-list-item-title class="text-subtitle-4">{{ message.nickname }}</v-list-item-title>
             <v-list-item-subtitle>{{ message.content }}</v-list-item-subtitle>
-            <!--            </v-list-item-content>-->
           </v-list-item>
         </v-card>
         <v-card-actions>
