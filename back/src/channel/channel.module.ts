@@ -8,6 +8,7 @@ import {Punishment} from "./entity/punishment.entity";
 import {ChannelGateway} from "./gateway/channel.gateway";
 import {ChannelController} from "./controller/channel.controller";
 import {AuthModule} from "../auth/auth.module";
+import {GameModule} from "../game/game.module";
 
 
 @Module({
@@ -21,7 +22,8 @@ import {AuthModule} from "../auth/auth.module";
                 Punishment,
                 ]
         ),
-        UserModule
+        UserModule,
+        GameModule
     ],
     controllers: [ChannelController],
     providers: [ChannelService, ChannelGateway]

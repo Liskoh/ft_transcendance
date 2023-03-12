@@ -16,6 +16,12 @@
             block
         >Change nickname
         </v-btn>
+        <v-btn
+            color="error"
+            @click="myProfile"
+            block
+        >My Profile
+        </v-btn>
       </v-col>
       <v-col cols="1" md="6">
         <v-file-input
@@ -54,14 +60,31 @@
             <v-list>
               <v-list-item v-for="friend in friends" :key="friend.login">
 <!--                <v-list-item-content>-->
-                  <v-list-item-title>{{ friend.login }}</v-list-item-title>
+                  <v-list-item-title>{{ friend.nickname }}</v-list-item-title>
                   <v-list-item-subtitle
                       :class="{'red--text': friend.status === 'online', 'green--text': friend.status === 'offline'}">
                     {{ friend.status }}
                   </v-list-item-subtitle>
 <!--                </v-list-item-content>-->
                 <v-list-item-action>
-                  <v-btn color="error" @click="removeFriend(friend.login)">Remove</v-btn>
+                  <v-btn color="error" @click="removeFriend(friend.nickname)">Remove</v-btn>
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+        <v-card color="purple-darken-3">
+          <v-card-title>
+            Users blocked
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item v-for="blocked in blockedUsers" :key="blocked.nickname">
+                <!--                <v-list-item-content>-->
+                <v-list-item-title>{{ blocked.nickname }}</v-list-item-title>
+                <!--                </v-list-item-content>-->
+                <v-list-item-action>
+                  <v-btn color="success" @click="unblockUser(blocked.nickname)">Unblock</v-btn>
                 </v-list-item-action>
               </v-list-item>
             </v-list>
@@ -105,13 +128,14 @@ export default defineComponent({
     //emits:
     socket.emit('getMe');
     socket.emit('getFriends');
+    socket.emit('getBlockedUsers');
 
     socket.on('userSuccess', (data: any) => {
-      this.$refs.notyf.showNotification(data, 'success');
+      // this.$refs.notyf.showNotification(data, 'success');
     });
 
     socket.on('userError', (data: any) => {
-      this.$refs.notyf.showNotification(data, 'error');
+      // this.$refs.notyf.showNotification(data, 'error');
     });
 
     socket.on('me', (data: any) => {
@@ -120,32 +144,44 @@ export default defineComponent({
       if (!user)
         return;
       this.$store.commit('setMe', user);
+
+      (async () => {
+        this.avatarUrl = await this.fetchAvatar(user.login);
+      })();
     });
 
     socket.on('friends', (data: any) => {
+      console.log(JSON.stringify(data));
       const friends: User[] = [];
-      console.log('friends');
       for (const friend of data) {
-        console.log(friend);
         friends.push(friend);
       }
 
       this.$store.commit('setFriends', friends);
     });
 
-    (async () => {
-      this.avatarUrl = await this.fetchAvatar('hjordan');
-    })();
+    socket.on('blockedUsers', (data: any) => {
+      console.log(JSON.stringify(data));
+      const blockedUsers: User[] = [];
+      for (const blockedUser of data) {
+        blockedUsers.push(blockedUser);
+      }
+
+      this.$store.commit('setBlockedUsers', blockedUsers);
+    });
+
   },
 
   methods: {
+    async myProfile() {
+      this.$router.push({name: 'profile', params: {login: this.$store.getters.getMe().login}});
+    },
     async changeNickname() {
 
       // if (true) {
       //   this.$router.push({name: 'profile', params: {login: 'hjordan'}});
       //   return;
       // }
-      console.log('changing nickname' + this.newNickname);
       if (this.newNickname !== '') {
         const socket: Socket = this.$store.getters.getUserSocket();
 
@@ -157,6 +193,22 @@ export default defineComponent({
 
     handleFileInputChange(event) {
       this.selectedFile = event.target.files[0];
+    },
+
+    async removeFriend(login: string) {
+      const socket: Socket = this.$store.getters.getUserSocket();
+
+     await socket.emit('unfollowAsFriend', {
+        login: login
+      });
+    },
+
+    async unblockUser(login: string) {
+      const socket: Socket = this.$store.getters.getUserSocket();
+      console.log('unblockUser', login);
+      await socket.emit('unblockUser', {
+        login: login
+      });
     },
 
     async uploadFile() {
@@ -178,15 +230,15 @@ export default defineComponent({
           const response = await fetch(input, options);
 
           if (response.ok) {
-            this.$refs.notyf.showNotification('File uploaded successfully!', 'success');
-            this.avatarUrl = await this.fetchAvatar('hjordan');
+            // this.$refs.notyf.showNotification('File uploaded successfully!', 'success');
+            this.avatarUrl = await this.fetchAvatar(this.$store.getters.getMe.login);
           } else {
             const message = await response.json().message;
             console.log(message);
-            this.$refs.notyf.showNotification(message, 'error');
+            // this.$refs.notyf.showNotification(message, 'error');
           }
         } catch (error) {
-          this.$refs.notyf.showNotification(error, 'error');
+          // this.$refs.notyf.showNotification(error, 'error');
         }
       }
     },
@@ -235,18 +287,20 @@ export default defineComponent({
         } else {
           const message = await response.text();
           console.log(message);
-          this.$refs.notyf.showNotification(message, 'error');
+          // this.$refs.notyf.showNotification(message, 'error');
         }
       } catch (error) {
         console.error('dsjnfkjsahfjhasfhjks ' + error);
-        this.$refs.notyf.showNotification('Error while loading user avatar', 'error');
+        // this.$refs.notyf.showNotification('Error while loading user avatar', 'error');
       }
     }
   },
   computed: {
-    // Récupérer la liste des amis depuis le store
     friends(): User[] {
       return this.$store.getters.getFriends();
+    },
+    blockedUsers(): User[] {
+      return this.$store.getters.getBlockedUsers();
     },
   }
 })

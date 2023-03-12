@@ -40,7 +40,6 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     usersMap: Map<Socket, string> = new Map<Socket, string>();
 
-
     async handleConnection(socket: Socket, ...args: any[]): Promise<any> {
         await tryHandleConnection(socket, this.usersMap,
             this.usersService, this.authService,
@@ -63,6 +62,11 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await this.sendMyFriends(socket);
     }
 
+    @SubscribeMessage('getBlockedUsers')
+    async getBlockedUsers(socket: Socket): Promise<any> {
+        await this.sendMyBlockedUsers(socket);
+    }
+
     async sendMyInfo(socket: Socket): Promise<void> {
         try {
             const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
@@ -74,12 +78,21 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async sendMyFriends(socket: Socket): Promise<void> {
         try {
             const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
-
             const friends: User[] = await this.usersService.getFriends(user);
-
             const mappedFriends = friends.map(friend => this.getMappedUser(friend));
 
             socket.emit('friends', mappedFriends);
+        } catch (error) {
+        }
+    }
+
+    async sendMyBlockedUsers(socket: Socket): Promise<void> {
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+            const blockedUsers: User[] = await this.usersService.getBlockedUsers(user);
+            const mappedBlockedUsers = blockedUsers.map(blockedUser => this.getMappedUser(blockedUser));
+
+            socket.emit('blockedUsers', mappedBlockedUsers);
         } catch (error) {
         }
     }
@@ -117,6 +130,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
      */
     @SubscribeMessage('followAsFriend')
     async followAsFriend(socket: Socket, payload: any): Promise<any> {
+        console.log('followAsFriend');
         try {
             await validateOrReject(new LoginNicknameDto(payload.login));
 
@@ -124,6 +138,9 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.followAsFriend(user, targetUser);
+
+            await sendSuccessToClient(socket, 'userSuccess', 'You are now friends with '
+                + targetUser.nickname);
         } catch (error) {
             await sendErrorToClient(socket, 'userError', error);
         }
@@ -132,12 +149,13 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('unfollowAsFriend')
     async unfollowAsFriend(socket: Socket, payload: any): Promise<any> {
         try {
-            // await validateOrReject(new LoginNicknameDto(payload.login));
-            //
-            // const user = await getUserBySocket(socket, this.usersService, this.usersMap);
-            // const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
-            //
-            // await this.usersService.unfollowAsFriend(user, targetUser);
+            await validateOrReject(new LoginNicknameDto(payload.login));
+
+            const user = await getUserBySocket(socket, this.usersService, this.usersMap);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
+
+            await this.usersService.unfollowAsFriend(user, targetUser);
+            await this.sendMyFriends(socket);
         } catch (error) {
             await sendErrorToClient(socket, 'userError', error);
         }
@@ -152,26 +170,20 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('blockUser')
     async blockUser(socket: Socket, payload: any): Promise<any> {
         try {
-            await validateOrReject(new LoginNicknameDto(payload.login));
+            const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+            await validateOrReject(dto);
 
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
-            // const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
-
-            const users = await this.usersService.getUsers();
-            const randomIndex = Math.floor(Math.random() * users.length);
-
-            const targetUser = await this.usersService.getUserById(users[randomIndex].id);
+            const targetUser = await this.usersService.getUserByLoginOrNickname(dto.login);
 
             await this.usersService.blockUser(user, targetUser);
-            socket.emit('userBlocked', {
-                id: targetUser.id,
-                nickname: targetUser.nickname
-            });
             await sendSuccessToClient(socket, 'userSuccess', 'User blocked successfully');
         } catch (error) {
             await sendErrorToClient(socket, 'userError', error);
+            console.log(error);
         }
     }
+
 
 
     /**
@@ -182,6 +194,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
      */
     @SubscribeMessage('unblockUser')
     async unblockUser(socket: Socket, payload: any): Promise<any> {
+        console.log('unblockUser');
         try {
             await validateOrReject(new LoginNicknameDto(payload.login));
 
@@ -189,6 +202,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const targetUser = await this.usersService.getUserByLoginOrNickname(payload.login);
 
             await this.usersService.unblockUser(user, targetUser);
+            await this.sendMyBlockedUsers(socket);
         } catch (error) {
             await sendErrorToClient(socket, 'userError', error);
         }

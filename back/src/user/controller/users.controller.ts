@@ -16,6 +16,8 @@ import {FileInterceptor} from "@nestjs/platform-express";
 import {diskStorage} from 'multer';
 import * as path from "path";
 import {User} from "../entity/user.entity";
+import {LoginNicknameDto} from "../dto/login-nickname.dto";
+import {validateOrReject} from "class-validator";
 
 const allowedExtensions = ['.jpg', '.jpeg', '.png'];
 
@@ -42,26 +44,34 @@ export class UsersController {
         }
     }
 
+    @Get('profile/:nickname')
+    async getProfile(@Req() req, @Res() res: Response): Promise<any> {
+        try {
+            const dto: LoginNicknameDto = new LoginNicknameDto(req.params.login);
+            await validateOrReject(dto);
+
+            const user: User = await this.usersService.getUserByNickname(dto.login);
+            return res.status(HttpStatus.OK).send(user);
+        } catch (error) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(`Error while getting profile`);
+        }
+    }
+
     @Get('avatar/:login')
     async getAvatar(@Param('login') login: string, @Res() res: Response): Promise<void> {
-        console.log('called');
         try {
-            console.log('called2');
             const user: User = await this.usersService.getUserByLogin(login);
             const filename = user.avatar;
             if (!fs.existsSync('./uploads/'))
                 fs.mkdirSync('./uploads/');
 
             if (filename && filename.length > user.login.length) {
-                console.log('called3');
                 const imagePath = path.join('./uploads', filename);
                 res.sendFile(imagePath, {root: '.'});
             } else {
-                console.log('called4');
                 res.status(HttpStatus.NOT_FOUND).send(`Avatar for user ${login} not found`);
             }
         } catch (error) {
-            console.error(error);
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(`Error while getting avatar for user ${login}`);
         }
     }

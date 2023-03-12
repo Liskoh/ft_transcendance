@@ -67,7 +67,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 }
 
             } catch (error) {
-                console.log(55);
             }
         }
     }
@@ -81,7 +80,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (this.gameService.leaveQueue(socket))
                 console.log(socket.id + " ===>  leaved the queue");
         } catch (error) {
-            console.log('handleDisconnect error: ' + error);
         }
     }
 
