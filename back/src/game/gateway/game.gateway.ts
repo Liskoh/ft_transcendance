@@ -187,7 +187,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const targetSocket: Socket = await getSocketsByUser(targetUser, usersMap);
 
             if (targetSocket) {
-                targetSocket.emit('updateDuels');
+                await this.onGetDuels(targetSocket, null);
             }
         } catch (error) {
             console.log(error);
