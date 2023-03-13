@@ -109,6 +109,13 @@
                     <v-list-item-subtitle>View this user's profile page</v-list-item-subtitle>
                   </v-list-item-title>
                 </v-list-item>
+                <v-list-item @click="directMessage">
+                  <v-list-item-title>
+                    Direct message
+                    <v-icon>mdi-message-outline</v-icon>
+                    <v-list-item-subtitle>Send this user a direct message</v-list-item-subtitle>
+                  </v-list-item-title>
+                </v-list-item>
                 <v-list-item @click="duelOnPong">
                   <v-list-item-title>
                     Duel on pong
@@ -264,8 +271,8 @@ export default {
       selectedChannel: <Channel | unknown>null,
       newMessage: "",
       showAvailables: false,
-      showJoined: false,
-      showDm: false,
+      showJoined: true,
+      showDm: true,
       showPasswordModal: false,
       password: "",
       showCreateModal: false,
@@ -301,6 +308,15 @@ export default {
         login: this.selectedNickname
       });
       ////console.log('duel on pong ' + this.selectedNickname);
+      this.modalVisible = false;
+    },
+    async directMessage() {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      ////console.log('directMessage ' + this.selectedNickname);
+      await socket.emit('sendDirectMessage', {
+        nickname: this.selectedNickname,
+        text: 'Hello, I would like to play with you!'
+      });
       this.modalVisible = false;
     },
     async followAsFriend() {
