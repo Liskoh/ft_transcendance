@@ -11,6 +11,7 @@ import {Player} from "../model/player.model";
 import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
 import {validateOrReject} from "class-validator";
 import {getUserBySocket, sendErrorToClient} from "../../utils";
+import {UserStatus} from "../../user/enum/user-status.enum";
 
 // import { CronJob } from 'cron';
 
@@ -41,6 +42,12 @@ export class GameService {
         return await this.gameRepository.find();
     }
 
+    async saveMatchHistory(matchHistory: MatchHistory): Promise<MatchHistory> {
+        try {
+            return await this.gameRepository.save(matchHistory);
+        } catch (e) {}
+    }
+
     //create a repeating task whithtout cron:
     handleTask() {
         setInterval(async () => {
@@ -62,6 +69,12 @@ export class GameService {
             const secondPlayer = await this.userService.getUserById(game.secondPlayer.userId);
 
             game.emitToEveryone('endGame');
+
+            if (firstPlayer.status === UserStatus.IN_GAME)
+                firstPlayer.status = UserStatus.ONLINE;
+
+            if (secondPlayer.status === UserStatus.IN_GAME)
+                secondPlayer.status = UserStatus.ONLINE;
 
             this.activeGames = this.activeGames.filter(g => g.uuid !== game.uuid);
             await this.createMatchHistory(firstPlayer.id, secondPlayer.id, game.firstPlayer.score, game.secondPlayer.score);
@@ -115,6 +128,18 @@ export class GameService {
 
         for (const match of data) {
             if (match.winner.id === user.id) {
+                history.push(match);
+            }
+        }
+
+        return history;
+    }
+
+    getMatchHistory(user: User, data: MatchHistory[]): MatchHistory[] {
+        let history: MatchHistory[] = [];
+
+        for (const match of data) {
+            if (match.loser.id === user.id || match.winner.id === user.id) {
                 history.push(match);
             }
         }
@@ -296,10 +321,18 @@ export class GameService {
         return null;
     }
 
-    startGame(game: Game): void {
+    async startGame(game: Game): Promise<void> {
         this.activeGames.push(game);
-
         game.startGame();
+
+        try {
+            const firstUser: User = await this.userService.getUserById(game.firstPlayer.userId);
+            const secondUser: User = await this.userService.getUserById(game.secondPlayer.userId);
+
+            firstUser.status = UserStatus.IN_GAME;
+            secondUser.status = UserStatus.IN_GAME;
+        } catch (error) {
+        }
     }
 
     canJoinGame(socket: Socket): boolean {

@@ -1,57 +1,72 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary">
-      <v-app-bar-nav-icon @click="drawer = !drawer" />
-      <v-toolbar-title>
-        ft_transcendence
-      </v-toolbar-title>
+    <v-app-bar color="primary">
       <v-spacer></v-spacer>
-      <v-navbar
-          :items="navItems"
-          :value="activeNavItem"
-          @input="activeNavItem = $event"
-          dense
-          flat
-      />
+      <v-btn @click="dialog = true" icon>
+        <v-icon>mdi-magnify</v-icon>
+      </v-btn>
+      <v-dialog v-model="dialog">
+        <v-text-field label="Enter Nickname" v-model="text"></v-text-field>
+        <v-btn @click="search">SEARCH</v-btn>
+      </v-dialog>
+      <router-link to="/chat">
+        <v-btn icon>
+          <v-icon>mdi-message</v-icon>
+        </v-btn>
+      </router-link>
+      <router-link to="/game">
+        <v-btn icon>
+          <v-icon>mdi-gamepad-variant</v-icon>
+        </v-btn>
+      </router-link>
+      <router-link to="/settings">
+        <v-btn icon>
+          <v-icon>mdi-account</v-icon>
+        </v-btn>
+      </router-link>
     </v-app-bar>
     <v-main>
-      <RouterView/>
+      <router-view>
+      </router-view>
     </v-main>
   </v-app>
 </template>
 
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
-import { ref } from 'vue';
+<script>
+import {store} from "@/stores/store";
+import io from "socket.io-client";
+import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 
-const drawer = ref(false);
-
-const navItems = [
-  { text: 'Chat', value: 'chat', to: '/chat' },
-  { text: 'Game', value: 'game', to: '/game' },
-  { text: 'Settings', value: 'settings', to: '/settings' },
-  { text: 'Pong', value: 'pong', to: '/pong' }
-];
-
-const activeNavItem = ref(navItems[0].value);
+export default {
+  name: 'App',
+  store,
+  data() {
+    return {
+      // hover: false,
+      dialog: false,
+      text: ''
+    }
+  },
+  created() {
+    const socket = this.$store.getters.getUserSocket();
+    console.log('app vue created');
+    if (!socket) {
+      this.$store.commit('setUserSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users', {
+        extraHeaders: {
+          Authorization: 'Bearer ' + localStorage.getItem('token')
+        }
+      }));
+    }
+  },
+  methods: {
+    search() {
+      this.$router.push({name: 'profile', params: {nickname: this.text}});
+      this.dialog = false;
+      this.text = ''
+    }
+  }
+}
 </script>
 
 <style>
-.v-toolbar__title {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  font-size: 24px;
-}
-
-.v-main {
-  height: calc(100vh - 64px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: #2C3E50;
-  color: white;
-}
 </style>

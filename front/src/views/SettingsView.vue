@@ -61,8 +61,7 @@
               <v-list-item v-for="friend in friends" :key="friend.login">
 <!--                <v-list-item-content>-->
                   <v-list-item-title>{{ friend.nickname }}</v-list-item-title>
-                  <v-list-item-subtitle
-                      :class="{'red--text': friend.status === 'online', 'green--text': friend.status === 'offline'}">
+                  <v-list-item-subtitle>
                     {{ friend.status }}
                   </v-list-item-subtitle>
 <!--                </v-list-item-content>-->
@@ -73,7 +72,7 @@
             </v-list>
           </v-card-text>
         </v-card>
-        <v-card color="purple-darken-3">
+        <v-card color="primary">
           <v-card-title>
             Users blocked
           </v-card-title>
@@ -91,7 +90,6 @@
           </v-card-text>
         </v-card>
       </v-col>
-
     </v-row>
   </v-container>
 </template>
@@ -125,6 +123,7 @@ export default defineComponent({
   created() {
     const socket: Socket = this.$store.getters.getUserSocket();
 
+    socket.removeAllListeners();
     //emits:
     socket.emit('getMe');
     socket.emit('getFriends');
@@ -145,13 +144,13 @@ export default defineComponent({
         return;
       this.$store.commit('setMe', user);
 
+      console.log(JSON.stringify('me= ' + JSON.stringify(this.$store.getters.getMe())));
       (async () => {
         this.avatarUrl = await this.fetchAvatar(user.login);
       })();
     });
 
     socket.on('friends', (data: any) => {
-      console.log(JSON.stringify(data));
       const friends: User[] = [];
       for (const friend of data) {
         friends.push(friend);
@@ -161,7 +160,6 @@ export default defineComponent({
     });
 
     socket.on('blockedUsers', (data: any) => {
-      console.log(JSON.stringify(data));
       const blockedUsers: User[] = [];
       for (const blockedUser of data) {
         blockedUsers.push(blockedUser);
@@ -174,7 +172,12 @@ export default defineComponent({
 
   methods: {
     async myProfile() {
-      this.$router.push({name: 'profile', params: {login: this.$store.getters.getMe().login}});
+      const user: User = this.$store.getters.getMe();
+      if (!user)
+        return;
+      console.log('myProfile ' + JSON.stringify(user));
+
+      this.$router.push({name: 'profile', params: {nickname: user.nickname}});
     },
     async changeNickname() {
 
@@ -191,8 +194,12 @@ export default defineComponent({
       }
     },
 
-    handleFileInputChange(event) {
-      this.selectedFile = event.target.files[0];
+    handleFileInputChange(event: any)  {
+      if (event.target.files.length > 0) {
+        this.selectedFile = event.target.files[0];
+      } else {
+        this.selectedFile = null;
+      }
     },
 
     async removeFriend(login: string) {
@@ -212,6 +219,7 @@ export default defineComponent({
     },
 
     async uploadFile() {
+      console.log('uploadFile ' + JSON.stringify(this.selectedFile));
       if (this.selectedFile !== null) {
         const formData = new FormData();
         const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/upload';
@@ -231,10 +239,10 @@ export default defineComponent({
 
           if (response.ok) {
             // this.$refs.notyf.showNotification('File uploaded successfully!', 'success');
-            this.avatarUrl = await this.fetchAvatar(this.$store.getters.getMe.login);
+            this.avatarUrl = await this.fetchAvatar(this.$store.getters.getMe().login);
           } else {
-            const message = await response.json().message;
-            console.log(message);
+            // const message = await response.json().message;
+            // console.log(message);
             // this.$refs.notyf.showNotification(message, 'error');
           }
         } catch (error) {
@@ -244,10 +252,9 @@ export default defineComponent({
     },
 
     async fetchAvatar(login: string): Promise<any> {
-      console.log('fetching avatar');
       try {
         const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
-        console.log(input);
+        // console.log(input);
         const token = localStorage.getItem('token');
         const options = {
           method: 'GET',
@@ -257,7 +264,7 @@ export default defineComponent({
         };
         const response = await fetch(input, options);
         if (response.ok) {
-          console.log('avatar fetched ok');
+          // console.log('avatar fetched ok');
           const blob = await response.blob();
           return URL.createObjectURL(blob);
         } else {
@@ -267,33 +274,6 @@ export default defineComponent({
         return '/default.jpg';
       }
     },
-
-    async loadAvatar(login: string) {
-      try {
-        const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
-        const token = localStorage.getItem('token');
-        const options = {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + localStorage.getItem('token')
-          },
-        };
-        const response = await fetch(input, options);
-        const message = await response.json().message;
-
-        if (response.ok) {
-          const blob = await response.blob();
-          this.avatarUrl = URL.createObjectURL(blob);
-        } else {
-          const message = await response.text();
-          console.log(message);
-          // this.$refs.notyf.showNotification(message, 'error');
-        }
-      } catch (error) {
-        console.error('dsjnfkjsahfjhasfhjks ' + error);
-        // this.$refs.notyf.showNotification('Error while loading user avatar', 'error');
-      }
-    }
   },
   computed: {
     friends(): User[] {

@@ -1,5 +1,4 @@
 import {
-    MessageBody,
     OnGatewayConnection,
     OnGatewayDisconnect,
     SubscribeMessage,
@@ -7,14 +6,11 @@ import {
     WebSocketServer
 } from "@nestjs/websockets";
 import {Server, Socket} from "socket.io";
-import {HttpException, Logger, UseGuards, UsePipes, ValidationPipe} from "@nestjs/common";
 import {UserService} from "../service/user.service";
-import {validate, validateOrReject, ValidationError} from "class-validator";
+import {validateOrReject} from "class-validator";
 import {User} from "../entity/user.entity";
 import {LoginNicknameDto} from "../dto/login-nickname.dto";
-import {JwtService} from "@nestjs/jwt";
 import {AuthService} from "../../auth/auth.service";
-import {AuthGuard} from "@nestjs/passport";
 import {
     getUserBySocket,
     sendErrorToClient,
@@ -22,6 +18,8 @@ import {
     tryHandleConnection,
     tryHandleDisconnect
 } from "../../utils";
+import {GameService} from "../../game/service/game.service";
+import {UserStatus} from "../enum/user-status.enum";
 
 @WebSocketGateway({
     cors: {
@@ -32,7 +30,8 @@ import {
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(private readonly usersService: UserService,
-                private readonly authService: AuthService
+                private readonly authService: AuthService,
+                private readonly gameService: GameService,
     ) {
     }
 
@@ -45,11 +44,22 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.usersService, this.authService,
             'users', ...args);
 
-        await this.sendMyInfo(socket);
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+
+            user.status = UserStatus.ONLINE;
+            await this.usersService.saveUser(user);
+        } catch (error) {}
     }
 
     async handleDisconnect(socket: any): Promise<any> {
         await tryHandleDisconnect(socket, this.usersMap, 'channels');
+        try {
+            const user: User = await getUserBySocket(socket, this.usersService, this.usersMap);
+
+            user.status = UserStatus.OFFLINE;
+            await this.usersService.saveUser(user);
+        } catch (error) {}
     }
 
     @SubscribeMessage('getMe')
@@ -213,7 +223,7 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
             id: user.id,
             login: user.login,
             nickname: user.nickname,
-            status: user.status
+            status: user.status,
         };
     }
 }

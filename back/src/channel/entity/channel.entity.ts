@@ -29,7 +29,7 @@ export class Channel {
     @ManyToMany(type => User, user => user.channels, { eager: true, cascade: true})
     users: User[];
 
-    @ManyToMany(type => Message, {eager: true})
+    @ManyToMany(type => Message,{eager: true})
     @JoinTable()
     messages: Message[];
 
