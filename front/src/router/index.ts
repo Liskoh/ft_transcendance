@@ -1,5 +1,5 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import Login from "@/components/Login.vue";
+import Login from "@/views/LoginView.vue";
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
 
 const router = createRouter({
@@ -57,9 +57,9 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
     const token: string | null = localStorage.getItem('token');
     let ret: boolean = false;
-    const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/upload';
+    const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/verify';
     const options = {
-        method: 'POST',
+        method: 'GET',
         headers: {
             Authorization: 'Bearer ' + localStorage.getItem('token')
         },
@@ -77,7 +77,6 @@ router.beforeEach(async (to, from, next) => {
             return;
         }
     }
-    console.log(ret);
     next();
 })
 

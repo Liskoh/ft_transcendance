@@ -47,6 +47,11 @@ export class UsersController {
         }
     }
 
+    @Get('verify')
+    async verify(@Req() req, @Res() res: Response): Promise<any> {
+        return res.status(HttpStatus.OK).send('OK');
+    }
+
     @Get('profile/:nickname')
     async getProfile(@Param('nickname') nickname: string, @Res() res: Response): Promise<any> {
         try {

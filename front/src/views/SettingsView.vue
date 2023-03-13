@@ -109,7 +109,7 @@ import {defineComponent} from 'vue';
 import {Socket} from 'socket.io-client';
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from '@/consts';
 import type {User} from '@/models/user.model';
-import login from "@/components/Login.vue";
+import login from "@/views/LoginView.vue";
 
 export default defineComponent({
   name: 'SettingsView',
