@@ -126,10 +126,8 @@ export class Game {
             (playerWhoHitTheBall.size.height / 2));
 
         if (playerWhoHitTheBall.id === this.firstPlayer.id) {
-            // this.ball.coord.coord.left = playerWhoHitTheBall.coord.coord.right;
             this.ball.directionX = this.ball.speed + (Math.abs(this.ball.directionY) / 2);
         } else if (playerWhoHitTheBall.id === this.secondPlayer.id) {
-            // this.ball.coord.coord.left = playerWhoHitTheBall.coord.coord.left - this.ball.size.width;
             this.ball.directionX = -this.ball.speed - (Math.abs(this.ball.directionY) / 2);
         }
 
@@ -244,7 +242,7 @@ export class Game {
             }
         })
 
-        setTimeout(this.moveAll.bind(this), 10);
+        setTimeout(this.moveAll.bind(this), 20);
     }
 
     // checkGameLevel() : void {
