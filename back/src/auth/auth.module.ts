@@ -6,6 +6,7 @@ import {JwtModule} from "@nestjs/jwt";
 import {PassportModule} from "@nestjs/passport";
 import {JwtStrategy} from "./jwt.strategy";
 import {APP_GUARD} from "@nestjs/core";
+import {GoogleStrategy} from "./google.strategy";
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import {APP_GUARD} from "@nestjs/core";
     ],
     providers: [
         AuthService,
+        GoogleStrategy,
         JwtStrategy,
         {
             provide: APP_GUARD,

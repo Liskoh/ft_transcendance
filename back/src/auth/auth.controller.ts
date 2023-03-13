@@ -20,6 +20,7 @@ import { LoginNicknameDto } from "src/user/dto/login-nickname.dto";
 import {DisabledAuth} from "./jwt.guard";
 import { User } from "src/user/entity/user.entity";
 import { ok } from "assert";
+import { AuthGuard } from "@nestjs/passport";
 
 
 @Controller('auth') 
@@ -55,7 +56,18 @@ export default class AuthController {
 	createAuth(@Body() createAuthDto: CreateAuthDto) {
 		createAuthDto.client_id = "test";
 	}
-	
+
+	@Get()
+	@UseGuards(AuthGuard('google'))
+	async googleAuth(@Req() req) {
+	}
+
+	@Get('/auth/google/callback')
+	@UseGuards(AuthGuard('google'))
+	googleAuthRedirect(@Req() req) {
+		return this.authService.googleLogin(req);
+	}
+
 	@Get('intra')
 	async connectIntra(@Req() req) {
 		const code = req.query.code
