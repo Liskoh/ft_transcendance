@@ -28,7 +28,7 @@ export class Player {
         this.userId = userId;
         this.name = 'player' + this.id;
         this.client = client;
-        this.speed = BOARD_HEIGHT / 100;
+        this.speed = BOARD_HEIGHT * 1.25 / 100;
         this.score = 0;
         this.size = {
             width: position.width,

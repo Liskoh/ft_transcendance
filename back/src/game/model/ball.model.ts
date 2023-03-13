@@ -19,7 +19,7 @@ export class Ball {
                     height: number,
                     width: number
                 }) {
-        this.speed = BOARD_HEIGHT * 0.5 / 100;
+        this.speed = BOARD_HEIGHT * 0.75 / 100;
         this.directionX = Math.floor(Math.random() * 2) === 0 ? -1 * this.speed : this.speed;
         this.directionY = 0;
         this.size = {

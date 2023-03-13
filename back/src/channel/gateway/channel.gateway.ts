@@ -39,6 +39,8 @@ import {PunishmentType} from "../enum/punishment-type.enum";
 import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
 import {GameService} from "../../game/service/game.service";
 import {Duel} from "../../game/interface/duel.interface";
+import {CreateDuelDto} from "../../game/dto/create-duel.dto";
+import {GameLevel} from "../../game/enum/game-level.enum";
 
 @WebSocketGateway(
     {
@@ -479,13 +481,14 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @SubscribeMessage('duel')
     async duel(socket: Socket, payload: any): Promise<any> {
         try {
-            const dto = new LoginNicknameDto(payload.login);
+            const dto: CreateDuelDto = new CreateDuelDto(payload);
             await validateOrReject(dto);
 
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
             const targetUser = await this.usersService.getUserByNickname(dto.login);
+            const gameLevel: GameLevel = dto.gameLevel;
 
-            const duel: Duel = this.gameService.createDuel(user, targetUser);
+            const duel: Duel = this.gameService.createDuel(user, targetUser, gameLevel);
             const targetSocket = await getSocketsByUser(targetUser, this.usersMap);
 
             await sendSuccessToClient(socket, 'channelSuccess', 'You have challenged '

@@ -6,7 +6,24 @@
         <v-card color="primary">
           <v-card-text>
             <v-text-field v-model="nickname" label="Nickname"></v-text-field>
-            <v-btn color="success darken-2" @click="createDuel">DUEL</v-btn>
+            <v-btn color="success darken-2" @click="showLevel = true">DUEL</v-btn>
+            <v-dialog v-model="showLevel" max-width="500">
+              <v-card>
+                <v-card-title class="headline">Choose level</v-card-title>
+                <v-card-text>
+                  <v-radio-group v-model="selectedLevel" row>
+                    <v-radio label="Easy" value="easy"></v-radio>
+                    <v-radio label="Medium" value="medium"></v-radio>
+                    <v-radio label="Hard" value="hard"></v-radio>
+                  </v-radio-group>
+                </v-card-text>
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="green darken-1" text @click="showLevel = false">Cancel</v-btn>
+                  <v-btn color="green darken-1" text @click="createDuel(selectedLevel); showLevel = false">Duel</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
           </v-card-text>
         </v-card>
         <v-card color="grey-darken-3" v-for="duel in currentDuels" :key="duel.from" class="my-4">
@@ -47,6 +64,8 @@ export default defineComponent({
       nickname: '',
       currentDuels: [] as Duel[],
       currentGames: [] as Game[],
+      showLevel: false,
+      selectedLevel: 'easy',
     };
   },
   // beforeRouteLeave(to, from, next) {
@@ -113,10 +132,11 @@ export default defineComponent({
 
   },
   methods: {
-    createDuel() {
+    createDuel(level) {
       const socket = this.$store.getters.getPongSocket();
       socket.emit('createDuel', {
         login: this.nickname,
+        gameLevel: level,
       });
     },
     acceptDuel(from: string) {

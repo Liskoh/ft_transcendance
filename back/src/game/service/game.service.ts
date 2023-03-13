@@ -12,6 +12,8 @@ import {LoginNicknameDto} from "../../user/dto/login-nickname.dto";
 import {validateOrReject} from "class-validator";
 import {getUserBySocket, sendErrorToClient} from "../../utils";
 import {UserStatus} from "../../user/enum/user-status.enum";
+import {GameLevel} from "../enum/game-level.enum";
+import {CreateDuelDto} from "../dto/create-duel.dto";
 
 // import { CronJob } from 'cron';
 
@@ -215,13 +217,14 @@ export class GameService {
 
     async onCreateDuel(client: Socket, usersMap: Map<Socket, string>, payload: any): Promise<any> {
         try {
-            const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+            const dto: CreateDuelDto = new CreateDuelDto(payload);
             await validateOrReject(dto);
 
             const user: User = await getUserBySocket(client, this.userService, usersMap);
             const targetUser: User = await this.userService.getUserByNickname(dto.login);
+            const gameLevel: GameLevel = dto.gameLevel;
 
-            const duel: Duel = this.createDuel(user, targetUser);
+            const duel: Duel = this.createDuel(user, targetUser, gameLevel);
         } catch (error) {
             console.log(error);
             await sendErrorToClient(client, 'duelError', error.message);
@@ -235,7 +238,7 @@ export class GameService {
      * @param {User} target
      * @returns {Duel}
      */
-    createDuel(user: User, target: User): Duel {
+    createDuel(user: User, target: User, level: GameLevel): Duel {
         this.removeExpiredDuels();
         console.log(this.duels);
 
@@ -257,6 +260,7 @@ export class GameService {
             secondUserId: target.id,
             firstUserNickname: user.nickname,
             secondUserNickname: target.nickname,
+            gameLevel: level,
             expirationDate: new Date(new Date().getTime() + 30 * 1000), //30 seconds
             accepted: false
         };
