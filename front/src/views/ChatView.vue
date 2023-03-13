@@ -102,14 +102,32 @@
             <v-card-title>Choose an action</v-card-title>
             <v-card-text>
               <v-list>
+                <v-list-item @click="viewProfile">
+                  <v-list-item-title>
+                    View profile page
+                    <v-icon>mdi-account</v-icon>
+                    <v-list-item-subtitle>View this user's profile page</v-list-item-subtitle>
+                  </v-list-item-title>
+                </v-list-item>
                 <v-list-item @click="duelOnPong">
-                  <v-list-item-title>Duel on pong</v-list-item-title>
+                  <v-list-item-title>
+                    Duel on pong
+                    <v-icon>mdi-controller</v-icon>
+                    <v-list-item-subtitle>Play a game of pong with this user</v-list-item-subtitle>
+                  </v-list-item-title>
                 </v-list-item>
                 <v-list-item @click="blockUser">
-                  <v-list-item-title>Block user</v-list-item-title>
+                  <v-list-item-title>
+                    Block user
+                    <v-icon>mdi-account-cancel</v-icon>
+                    <v-list-item-subtitle>Block this user from sending you messages</v-list-item-subtitle>
+                  </v-list-item-title>
                 </v-list-item>
                 <v-list-item @click="followAsFriend">
-                  <v-list-item-title>Follow user</v-list-item-title>
+                  <v-list-item-title>Follow user
+                    <v-icon>mdi-account-plus</v-icon>
+                    <v-list-item-subtitle>Follow this user</v-list-item-subtitle>
+                  </v-list-item-title>
                 </v-list-item>
               </v-list>
             </v-card-text>
@@ -168,10 +186,12 @@ export default {
     });
 
     socket.on('channelError', (data) => {
+      console.log('channel error ' + data.message);
       //this.$refs.notyf.showNotification(data, 'error');
     });
 
     socket.on('channelSuccess', (data) => {
+      console.log('channel success ' + data.message);
       //this.$refs.notyf.showNotification(data, 'success');
     });
 
@@ -270,6 +290,10 @@ export default {
     showModal(message: Message) {
       this.selectedNickname = message.nickname;
       this.modalVisible = true;
+    },
+    viewProfile() {
+      this.$router.push({name: 'profile', params: {nickname: this.selectedNickname}});
+      this.modalVisible = false;
     },
     async duelOnPong() {
       const socket: Socket = this.$store.getters.getChannelSocket();

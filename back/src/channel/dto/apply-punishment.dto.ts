@@ -7,6 +7,8 @@ export class ApplyPunishmentDto {
         this.nickname = payload.nickname;
         this.punishmentType = PunishmentType[payload.punishmentType.toUpperCase()];
         this.date = new Date(payload.date);
+        if (!payload.date)
+            this.date = null;
     }
 
     @IsNumber()

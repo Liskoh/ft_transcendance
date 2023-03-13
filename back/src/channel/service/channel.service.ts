@@ -327,9 +327,12 @@ export class ChannelService {
                 HttpStatus.BAD_REQUEST
             );
 
+        console.log('type=' + punishmentType);
+        console.log('channel ' + channel.punishments.map(p => p.punishmentType));
+
         console.log('channelName ' + channel.name);
         console.log('ownerName: ' + owner.nickname);
-        console.log('channelower: ' + channel.owner.nickname);
+        console.log('date: ' + date);
 
         if (!this.isAdministrator(channel, owner))
             throw new HttpException(
@@ -366,6 +369,7 @@ export class ChannelService {
                 HttpStatus.BAD_REQUEST
             );
 
+
         let punishment = new Punishment(user, punishmentType, date);
 
         //save punishment
@@ -400,6 +404,7 @@ export class ChannelService {
                 HttpStatus.BAD_REQUEST
             );
 
+        console.log('channelName ' + punishmentType);
         if (!this.isPunished(channel, user, punishmentType))
             throw new HttpException(
                 'User is not punished',
@@ -407,12 +412,15 @@ export class ChannelService {
             );
 
         //in case if the punishment is permanent (we have to remove it)
+        const now = new Date();
         let punishment = channel.punishments.find(
             punishment => punishment.user.id === user.id &&
                 punishment.punishmentType === punishmentType &&
-                punishment.endDate !== null &&
+                (punishment.endDate === null || now < punishment.endDate) &&
                 punishmentType !== PunishmentType.KICK
         );
+
+        console.log('punishment ' + punishment);
 
         if (!punishment)
             throw new HttpException(
@@ -556,7 +564,7 @@ export class ChannelService {
                 HttpStatus.FORBIDDEN
             );
 
-        if (this.isPunished(channel, user, PunishmentType.BAN) || this.isPunished(channel, user, PunishmentType.KICK))
+        if (this.isPunished(channel, user, PunishmentType.BAN) || this.isPunished(channel, user, PunishmentType.MUTE))
             throw new HttpException(
                 'You are punished in this channel',
                 HttpStatus.FORBIDDEN
@@ -677,12 +685,22 @@ export class ChannelService {
                 punish.punishmentType !== PunishmentType.KICK
         );
 
-        //in case punish is permanent or active
-        for (const punish of punishments)
-            if (punish.user.id === user.id && punish.punishmentType === punishmentType)
-                if (punish.endDate === null || punish.endDate > currentDate)
-                    return true;
+        // console.log(punishments.map(p => ({
+        //     user: p.user.nickname,
+        //     punishmentType: p.punishmentType,
+        //     endDate: p.endDate
+        // })));
 
+        //in case punish is permanent or active
+        for (const punish of punishments) {
+            if (punish.user.id === user.id && punish.punishmentType === punishmentType) {
+                console.log(punish.endDate);
+                if (punish.endDate === null || punish.endDate > currentDate) {
+                    console.log('punished');
+                    return true;
+                }
+            }
+        }
         return false
     }
 

@@ -19,7 +19,7 @@ import '@mdi/font/css/materialdesignicons.css' // Ensure you are using css-loade
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 const myCustomLightTheme = {
-    dark: false,
+    dark: true,
     colors: {
         background: '#292626',
         surface: '#292727',

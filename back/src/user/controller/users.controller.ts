@@ -72,9 +72,13 @@ export class UsersController {
             if (!fs.existsSync('./uploads/'))
                 fs.mkdirSync('./uploads/');
 
-            if (filename && filename.length > user.login.length) {
+            if (filename) {
                 const imagePath = path.join('./uploads', filename);
-                res.sendFile(imagePath, {root: '.'});
+
+                if (imagePath && fs.existsSync(imagePath))
+                    res.sendFile(imagePath, {root: '.'});
+                else
+                    res.status(HttpStatus.NOT_FOUND).send(`Avatar for user ${login} not found`);
             } else {
                 res.status(HttpStatus.NOT_FOUND).send(`Avatar for user ${login} not found`);
             }
