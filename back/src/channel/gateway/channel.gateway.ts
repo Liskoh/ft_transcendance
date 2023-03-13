@@ -269,25 +269,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
         }
     }
 
-    @SubscribeMessage('createDirectChannel')
-    async createDirectChannel(socket: Socket, payload: IdDto): Promise<any> {
-        try {
-            await validate(payload);
-
-            const user = await getUserBySocket(socket, this.usersService, this.usersMap);
-            const userId = payload.id;
-            const targetUser = await this.usersService.getUserById(userId);
-            const channels = await this.channelsService.getChannels();
-
-            const channel = await this.channelsService.createDirectMessageChannel(user, targetUser, channels);
-
-            socket.emit('createDirectChannelSuccess', channel);
-        } catch (error) {
-            socket.emit('channelError', error);
-        }
-    }
-
-
     /**
      * get all data from a channel
      * @param {Socket} socket
@@ -365,7 +346,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
             const targetUser = await this.usersService.getUserByNickname(dto.nickname);
-            const channels = await this.channelsService.getChannels();
+            let channels = await this.channelsService.getChannels();
 
             let channel: Channel = await this.channelsService.getDirectChannel(user, targetUser, channels);
             let created: boolean = false;
@@ -398,13 +379,22 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 },
             );
 
+
             if (!created)
                 return;
+            else
+                console.log("fkjklfjskdjf");
+
+            channels = await this.channelsService.getChannels();
+            // channels.push(channel);
+            console.log(user.nickname + ' send message to ewrrwre ' + channel.name);
 
             await this.sendDirectChannels(socket, channels);
+            await this.getChannel(socket, {id: channel.id});
 
             const targetSocket = await getSocketsByUser(targetUser, this.usersMap);
             if (targetSocket) {
+                await this.sendDirectChannels(targetSocket, channels);
                 await sendSuccessToClient(targetSocket, 'channelSuccess', user.nickname + ' send you a private message!');
             }
 
