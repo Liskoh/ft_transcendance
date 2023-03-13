@@ -28,6 +28,8 @@ import {IdDto} from "../../channel/dto/id.dto";
 import {UuidDto} from "../dto/uuid.dto";
 import {ContextCreator} from "@nestjs/core/helpers/context-creator";
 import {BOARD_HEIGHT, BOARD_WIDTH} from "../../consts";
+import {CreateDuelDto} from "../dto/create-duel.dto";
+import {GameLevel} from "../enum/game-level.enum";
 
 const usersMap: Map<Socket, string> = new Map();
 
@@ -174,13 +176,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('createDuel')
     async onCreateDuel(client: Socket, payload: any): Promise<any> {
         try {
-            const dto: LoginNicknameDto = new LoginNicknameDto(payload.login);
+            const dto: CreateDuelDto = new CreateDuelDto(payload);
             await validateOrReject(dto);
 
             const user: User = await getUserBySocket(client, this.usersService, usersMap);
             const targetUser: User = await this.usersService.getUserByNickname(dto.login);
+            const gameLevel: GameLevel = dto.gameLevel;
 
-            const duel: Duel = this.gameService.createDuel(user, targetUser);
+            const duel: Duel = this.gameService.createDuel(user, targetUser, gameLevel);
             const targetSocket: Socket = await getSocketsByUser(targetUser, usersMap);
 
             if (targetSocket) {
@@ -233,7 +236,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const secondPlayer: Player = this.initSinglePlayer(secondSocket, targetUser, false);
             const ball: Ball = this.initBall(firstPlayer, secondPlayer);
 
-            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService);
+            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService, duel.gameLevel);
 
             if (this.gameService.isSpectator(firstSocket))
                 this.gameService.removeSpectator(firstSocket);
@@ -296,7 +299,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log('ballSize : ' + JSON.stringify(ball.size));
 
 
-            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService);
+            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService, GameLevel.MEDIUM);
 
             await this.gameService.startGame(game);
 

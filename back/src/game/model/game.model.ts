@@ -14,13 +14,14 @@ import {GameService} from "../service/game.service";
 
 export class Game {
 
-    constructor(firstPlayer: Player, secondPlayer: Player, ball: Ball, gameService: GameService) {
+    constructor(firstPlayer: Player, secondPlayer: Player, ball: Ball, gameService: GameService, gameLevel: GameLevel) {
         this.uuid = uuidv4();
         this.ball = ball;
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
         this.spectators = [];
         this.gameService = gameService;
+        this.gameLevel = gameLevel;
     }
 
     uuid: string;
@@ -245,17 +246,16 @@ export class Game {
         setTimeout(this.moveAll.bind(this), 20);
     }
 
-    // checkGameLevel() : void {
-    //     if (this.gameLevel === GameLevel.EASY) {
-    //         this.ball.speed /= 2;
-    //     }
-    // }
+    checkGameLevel() : void {
+        if (this.gameLevel === GameLevel.EASY) {
+            this.ball.speed /= 2;
+        }
+    }
 
     startGame(): void {
         this.gameState = GameState.STARTED;
         this.emitToEveryone('newMessage', 'Game Started');
-        // this.checkGameLevel();
-        // this.gameLevel = GameLevel.HARD;
+        this.checkGameLevel();
         this.resetGame();
         this.moveAll();
 
