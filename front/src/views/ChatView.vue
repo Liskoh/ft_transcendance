@@ -116,12 +116,29 @@
                     <v-list-item-subtitle>Send this user a direct message</v-list-item-subtitle>
                   </v-list-item-title>
                 </v-list-item>
-                <v-list-item @click="duelOnPong">
+                <v-list-item @click="showLevel = true">
                   <v-list-item-title>
                     Duel on pong
                     <v-icon>mdi-controller</v-icon>
                     <v-list-item-subtitle>Play a game of pong with this user</v-list-item-subtitle>
                   </v-list-item-title>
+                  <v-dialog v-model="showLevel" max-width="500">
+                    <v-card>
+                      <v-card-title class="headline">Choose level</v-card-title>
+                      <v-card-text>
+                        <v-radio-group v-model="selectedLevel" row>
+                          <v-radio label="Easy" value="easy"></v-radio>
+                          <v-radio label="Medium" value="medium"></v-radio>
+                          <v-radio label="Hard" value="hard"></v-radio>
+                        </v-radio-group>
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="green darken-1" text @click="showLevel = false">Cancel</v-btn>
+                        <v-btn color="green darken-1" text @click="duelOnPong(selectedLevel); showLevel = false">Duel</v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
                 </v-list-item>
                 <v-list-item @click="blockUser">
                   <v-list-item-title>
@@ -142,6 +159,9 @@
         </v-dialog>
       </v-col>
     </v-row>
+    <v-snackbar v-model="snackbar.show" :timeout="snackbar.timeout" :color="snackbar.color">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -186,7 +206,9 @@ export default {
       //console.log('channel from store ' + channelFromStore.name);
       if (channelFromStore) {
         this.currentChannelMessages = channelFromStore.messages;
-        //this.$refs.notyf.showNotification('You are now on channel ' + channelFromStore.name, +'!', 'success');
+        this.snackbar.message = 'You are now on channel ' + channelFromStore.name +'!';
+        this.snackbar.color = 'success';
+        this.snackbar.show = true;
       }
 
       this.$forceUpdate();
@@ -194,16 +216,22 @@ export default {
 
     socket.on('channelError', (data) => {
       console.log('channel error ' + data.message);
-      //this.$refs.notyf.showNotification(data, 'error');
+      this.snackbar.message = data.message;
+      this.snackbar.color = 'error';
+      this.snackbar.show = true;
     });
 
     socket.on('channelSuccess', (data) => {
       console.log('channel success ' + data.message);
-      //this.$refs.notyf.showNotification(data, 'success');
+      this.snackbar.message = data.message;
+      this.snackbar.color = 'success';
+      this.snackbar.show = true;
     });
 
     socket.on('channelInfo', (data) => {
-      ////this.$refs.notyf.showNotification(data, 'success');
+      this.snackbar.message = data.message;
+      this.snackbar.color = 'success';
+      this.snackbar.show = true;
     });
 
     //channels data:
@@ -282,6 +310,14 @@ export default {
       newChannelType: "PUBLIC",
       channelTypes: ["PUBLIC", "PRIVATE"],
       selectedNickname: null,
+      showLevel: false,
+      selectedLevel: 'easy',
+      snackbar: {
+        show: false,
+        message: '',
+        timeout: 3000,
+        color: 'error'
+      }
     };
   },
 
@@ -302,10 +338,11 @@ export default {
       this.$router.push({name: 'profile', params: {nickname: this.selectedNickname}});
       this.modalVisible = false;
     },
-    async duelOnPong() {
+    async duelOnPong(level: string) {
       const socket: Socket = this.$store.getters.getChannelSocket();
       await socket.emit('duel', {
-        login: this.selectedNickname
+        login: this.selectedNickname,
+        gameLevel: level
       });
       ////console.log('duel on pong ' + this.selectedNickname);
       this.modalVisible = false;
@@ -399,7 +436,9 @@ export default {
 
       const currentChannel = this.$store.getters.getCurrentChannel;
       if (!currentChannel) {
-        // ////this.$refs.notyf.showNotification('You are not in any channel', 'error');
+        this.snackbar.message = 'You are not in any channel';
+        this.snackbar.color = 'error';
+        this.snackbar.show = true;
         return;
       }
 

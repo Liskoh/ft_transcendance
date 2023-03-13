@@ -47,6 +47,9 @@
         </v-card>
       </v-col>
     </v-row>
+    <v-snackbar v-model="snackbar.show" :timeout="snackbar.timeout" :color="snackbar.color">
+      {{ snackbar.message }}
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -66,6 +69,12 @@ export default defineComponent({
       currentGames: [] as Game[],
       showLevel: false,
       selectedLevel: 'easy',
+      snackbar: {
+        show: false,
+        message: '',
+        timeout: 3000,
+        color: 'error'
+      }
     };
   },
   // beforeRouteLeave(to, from, next) {
@@ -144,7 +153,9 @@ export default defineComponent({
       socket.emit('acceptDuel', { login: from });
     },
     joinQueue() {
-      this.$refs.notyf.showNotification('Message de notification', 'success');
+      this.snackbar.message = 'Message de notification';
+      this.snackbar.color = 'success';
+      this.snackbar.show = true;
       const socket = this.$store.getters.getPongSocket();
       socket.emit('joinQueue');
       console.log('joinQueue');
