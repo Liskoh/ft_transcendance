@@ -66,11 +66,6 @@ export class AuthService {
                 access_token: this.jwtService.sign(payload),
             }
         }
-		const payload = {username: user.login, sub: user.id};
-		return {
-			status: HttpStatus.OK,
-			access_token: this.jwtService.sign(payload),
-		}
 	}
 
     async register(login: string): Promise<any> {

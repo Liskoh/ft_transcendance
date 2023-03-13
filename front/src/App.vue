@@ -1,6 +1,9 @@
 <template>
   <v-app>
     <v-app-bar color="primary">
+      <v-btn icon @click="logout">
+        <v-icon>mdi-logout</v-icon>
+      </v-btn>
       <v-spacer></v-spacer>
       <v-btn @click="dialog = true" icon>
         <v-icon>mdi-magnify</v-icon>
@@ -48,17 +51,12 @@ export default {
     }
   },
   created() {
-    const socket = this.$store.getters.getUserSocket();
-    console.log('app vue created');
-    if (!socket) {
-      this.$store.commit('setUserSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users', {
-        extraHeaders: {
-          Authorization: 'Bearer ' + localStorage.getItem('token')
-        }
-      }));
-    }
   },
   methods: {
+    logout() {
+      localStorage.removeItem('token');
+      this.$router.push({name: 'login'});
+    },
     search() {
       this.$router.push({name: 'profile', params: {nickname: this.text}});
       this.dialog = false;
