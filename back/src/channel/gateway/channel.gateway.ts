@@ -84,7 +84,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
                 //in case if we need to send message to specific users
                 if (users) {
                     users.forEach(user => {
-                        console.log(user.login + ' ' + users.length);
                         if (user.login === value)
                             key.emit(type, payload);
                     });
@@ -134,7 +133,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
         try {
             const user = await getUserBySocket(socket, this.usersService, this.usersMap);
             const channels = await this.channelsService.getAvailableChannelsByUser(user, dataChannels);
-            console.log(channels.length);
 
             const joinAbleChannels = [];
 
@@ -188,7 +186,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
      */
     @SubscribeMessage('createChannel')
     async createChannel(socket: Socket, payload: any): Promise<any> {
-        console.log('createChannel ' + JSON.stringify(payload));
         try {
             const dto = new CreateChannelDto(payload);
             await validateOrReject(payload);
@@ -266,7 +263,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
             await this.channelsService.changeChannelType(channel, user, channelType);
 
-            console.log('changeChannelTypeSuccess');
             socket.emit('changeChannelTypeSuccess');
         } catch (error) {
             await sendErrorToClient(socket, 'channelError', error);
@@ -300,7 +296,6 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
      */
     @SubscribeMessage('getChannel')
     async getChannel(socket: Socket, payload: any): Promise<any> {
-        console.log('getChannel ' + payload.id);
         try {
             const dto = new IdDto(payload);
             await validateOrReject(dto);
@@ -516,6 +511,7 @@ export class ChannelGateway implements OnGatewayConnection, OnGatewayDisconnect 
      */
     @SubscribeMessage('applyPunishment')
     async applyPunishment(socket: Socket, payload: any): Promise<any> {
+        console.log('applyPunishment ' + JSON.stringify(payload));
         try {
             const dto = new ApplyPunishmentDto(payload);
             await validateOrReject(dto);
