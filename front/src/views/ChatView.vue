@@ -135,16 +135,23 @@ import io, {Socket} from "socket.io-client";
 import {Channel} from "@/models/channel.model";
 
 export default {
-  name: "TestChat",
+  name: "Chat",
   store,
   created() {
-    const socket: Socket = this.$store.getters.getChannelSocket();
-    //console.log(socket.id + ' ' + socket.connected);
-    socket.emit('getChannels');
+    let socket: Socket = this.$store.getters.getChannelSocket();
 
-    if (this.$store.getters.getCurrentChannel) {
-      this.selectChannel(this.$store.getters.getCurrentChannel.id);
+    if (!socket) {
+      console.log('creating socket');
+      this.$store.commit('setChannelSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
+        extraHeaders: {
+          Authorization: 'Bearer ' + localStorage.getItem('token')
+        }
+      }));
+      console.log('socket created');
     }
+
+    socket = this.$store.getters.getChannelSocket();
+    socket.removeAllListeners();
 
     socket.on('getChannelSuccess', (data) => {
       const channel = data;
@@ -175,20 +182,17 @@ export default {
     //channels data:
     socket.on('joinableChannels', (data) => {
       this.$store.commit('setAvailableChannels', data);
-      //console.log('joinableChannels', JSON.stringify(this.$store.getters.getAvailableChannels));
       this.$forceUpdate();
     });
 
     socket.on('joinedChannels', (data) => {
       this.$store.commit('setJoinedChannels', data);
-      // //console.log('joinedChannels', JSON.stringify(this.$store.getters.getJoinedChannels));
       this.$forceUpdate();
     });
 
     socket.on('directChannels', (data) => {
       this.$store.commit('setDirectChannels', data);
       this.$forceUpdate();
-      console.log('channel ', 2);
     });
 
     socket.on('resetCurrent', (data) => {
@@ -201,7 +205,6 @@ export default {
     });
 
     socket.on('message', (data) => {
-      ////console.log('message', data);
       const message = new Message(
           data.id,
           data.channelId,
@@ -211,25 +214,28 @@ export default {
           data.date
       );
 
+      const currentChannel: Channel = this.$store.getters.getCurrentChannel;
 
-    const currentChannel: Channel = this.$store.getters.getCurrentChannel;
-
-    if (!currentChannel || currentChannel.id !== message.channelId) {
-      return;
-    }
-    ////console.log('123');
-    ////console.log(JSON.stringify(currentChannel));
-      console.log('message', 2);
-    this.currentChannelMessages.push(message);
+      if (!currentChannel || currentChannel.id !== message.channelId) {
+        return;
+      }
+      this.currentChannelMessages.push(message);
     });
-  },
-  beforeRouteLeave(to, from, next) {
-    const socket: Socket = this.$store.getters.getChannelSocket();
 
-    socket.disconnect();
-    this.$store.commit('setChannelSocket', socket);
-    next();
+    socket.emit('getChannels');
+
+    if (this.$store.getters.getCurrentChannel) {
+      this.selectChannel(this.$store.getters.getCurrentChannel.id);
+    }
+
   },
+  // beforeRouteLeave(to, from, next) {
+  //   const socket: Socket = this.$store.getters.getChannelSocket();
+  //
+  //   socket.disconnect();
+  //   this.$store.commit('setChannelSocket', socket);
+  //   next();
+  // },
   data() {
     return {
       currentChannelMessages() {

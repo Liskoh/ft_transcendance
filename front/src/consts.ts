@@ -5,8 +5,6 @@ import {ChangeChannelTypeCommand} from "@/commands/impl/change-channel-type.comm
 import {PunishCommand} from "@/commands/impl/punish.command";
 import {UnPunishCommand} from "@/commands/impl/un-punish.command";
 import {SetUnsetAdminCommand} from "@/commands/impl/set-unset-admin.command";
-import {BlockUnblockCommand} from "@/commands/impl/block-unblock.command";
-import {FollowCommand} from "@/commands/impl/follow.command";
 import {MessagePrivateCommand} from "@/commands/impl/message-private.command";
 
 // export const SOCKET_SERVER = io('http://localhost:8000/');
@@ -18,9 +16,6 @@ export const COMMANDS: AbstractCommand[] = [] = [
     new UnPunishCommand('/un-punish', 'cancelPunishment'),
     new SetUnsetAdminCommand('/set-admin', 'toggleAdminRole', true),
     new SetUnsetAdminCommand('/unset-admin', 'toggleAdminRole', false),
-    new BlockUnblockCommand('/block', 'blockUser'),
-    new BlockUnblockCommand('/unblock', 'unblockUser'),
-    new FollowCommand('/follow', 'followAsFriend'),
     new MessagePrivateCommand('/mp', 'sendDirectMessage'),
 ];
 

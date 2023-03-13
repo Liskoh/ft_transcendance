@@ -30,18 +30,16 @@ export const store = createStore({
         getCurrentChannel: state => state.currentChannel,
 
         getChannelSocket: state => () => {
-            if (state.channelSocket === null || !state.channelSocket.connected) {
-                console.log('new channel socket');
-                state.channelSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
-                    extraHeaders: {
-                        Authorization: 'Bearer ' + localStorage.getItem('token')
-                    }
-                });
-            }
+            // if (state.channelSocket === null || !state.channelSocket.connected) {
+            //     state.channelSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/channels', {
+            //         extraHeaders: {
+            //             Authorization: 'Bearer ' + localStorage.getItem('token')
+            //         }
+            //     });
+            // }
             return state.channelSocket;
         },
         getUserSocket: state => () => {
-            console.log('new user socket');
             if (state.userSocket === null || !state.userSocket.connected) {
                 state.userSocket = io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users', {
                     extraHeaders: {

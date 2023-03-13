@@ -33,7 +33,13 @@
 </template>
 
 <script>
+import {store} from "@/stores/store";
+import io from "socket.io-client";
+import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from "@/consts";
+
 export default {
+  name: 'App',
+  store,
   data() {
     return {
       // hover: false,
@@ -42,7 +48,15 @@ export default {
     }
   },
   created() {
-
+    const socket = this.$store.getters.getUserSocket();
+    console.log('app vue created');
+    if (!socket) {
+      this.$store.commit('setUserSocket', io('http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users', {
+        extraHeaders: {
+          Authorization: 'Bearer ' + localStorage.getItem('token')
+        }
+      }));
+    }
   },
   methods: {
     search() {
@@ -55,7 +69,4 @@ export default {
 </script>
 
 <style>
-.v-main {
-  background-color: background;
-}
 </style>

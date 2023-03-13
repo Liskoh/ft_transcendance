@@ -123,6 +123,7 @@ export default defineComponent({
   created() {
     const socket: Socket = this.$store.getters.getUserSocket();
 
+    socket.removeAllListeners();
     //emits:
     socket.emit('getMe');
     socket.emit('getFriends');
@@ -150,7 +151,6 @@ export default defineComponent({
     });
 
     socket.on('friends', (data: any) => {
-      // console.log(JSON.stringify(data));
       const friends: User[] = [];
       for (const friend of data) {
         friends.push(friend);
@@ -160,7 +160,6 @@ export default defineComponent({
     });
 
     socket.on('blockedUsers', (data: any) => {
-      // console.log(JSON.stringify(data));
       const blockedUsers: User[] = [];
       for (const blockedUser of data) {
         blockedUsers.push(blockedUser);
@@ -253,8 +252,6 @@ export default defineComponent({
     },
 
     async fetchAvatar(login: string): Promise<any> {
-      // console.log('fetching avatar');
-      console.log('fetching avatar', JSON.stringify(this.$store.getters.getMe()));
       try {
         const input = `http://${VUE_APP_WEB_HOST}:${VUE_APP_BACK_PORT}/users/avatar/${login}`;
         // console.log(input);

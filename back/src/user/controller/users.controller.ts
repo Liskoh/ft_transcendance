@@ -60,8 +60,7 @@ export class UsersController {
 
             return res.status(HttpStatus.OK).send(toReturn);
         } catch (error) {
-            console.log(error);
-            res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(`Error while getting profile`);
+            res.status(HttpStatus.NOT_FOUND).send(`User ${nickname} not found`);
         }
     }
 
