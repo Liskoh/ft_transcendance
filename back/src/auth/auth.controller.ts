@@ -52,11 +52,6 @@ export default class AuthController {
         return this.authService.login(login);
     }
 
-    @Post('auth')
-    createAuth(@Body() createAuthDto: CreateAuthDto) {
-        createAuthDto.client_id = "test";
-    }
-
     @Get('intra')
     async connectIntra(@Req() req) {
         try {

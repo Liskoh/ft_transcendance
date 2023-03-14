@@ -36,7 +36,6 @@ export class JwtMiddleware implements NestMiddleware {
         } catch (err) {
             throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
         }
-        console.log("first");
         if (!decoded) {
             throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
         }
@@ -44,7 +43,6 @@ export class JwtMiddleware implements NestMiddleware {
         if (!login) {
             throw new HttpException('Invalid token', HttpStatus.UNAUTHORIZED);
         }
-        console.log("second");
         try {
             req.user = await this.userService.getUserByLogin(login);
             next();
