@@ -133,6 +133,13 @@
       </v-dialog>
 
     </v-row>
+    <v-snackbar :timeout="snackbar.timeout" :color="snackbar.color" v-model="snackbar.show"
+                :style="{ top: snackbar.position.top, right: snackbar.position.right }">
+      {{ snackbar.message }}
+      <!--      <v-btn icon @click="snackbar.show = false">-->
+      <!--        <v-icon>mdi-close-circle</v-icon>-->
+      <!--      </v-btn>-->
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -156,10 +163,16 @@ import {Message} from "@/models/message.model";
 
 export default defineComponent({
   name: 'SettingsView',
+  props: {
+    snackbar: {
+      type: Object,
+      required: true
+    }
+  },
   data() {
     return {
       newNickname: '',
-      selectedFile: null,
+      selectedFile: [],
       avatarUrl: '',
       modalVisible: false,
       showLevel: false,
@@ -176,11 +189,15 @@ export default defineComponent({
     socket.emit('getBlockedUsers');
 
     socket.on('userSuccess', (data: any) => {
-      // this.$refs.notyf.showNotification(data, 'success');
+      this.snackbar.message = data.message;
+      this.snackbar.color = 'success';
+      this.snackbar.show = true;
     });
 
     socket.on('userError', (data: any) => {
-      // this.$refs.notyf.showNotification(data, 'error');
+      this.snackbar.message = data.message;
+      this.snackbar.color = 'error';
+      this.snackbar.show = true;
     });
 
     socket.on('me', (data: any) => {
@@ -257,9 +274,10 @@ export default defineComponent({
       }
     },
 
-    handleFileInputChange(event: any)  {
+    handleFileInputChange(event: any) {
       if (event.target.files.length > 0) {
-        this.selectedFile = event.target.files[0];
+        this.selectedFile = [];
+        this.selectedFile.push(event.target.files[0]);
       } else {
         this.selectedFile = null;
       }
@@ -268,7 +286,7 @@ export default defineComponent({
     async removeFriend(login: string) {
       const socket: Socket = this.$store.getters.getUserSocket();
 
-     await socket.emit('unfollowAsFriend', {
+      await socket.emit('unfollowAsFriend', {
         login: login
       });
     },
@@ -283,34 +301,44 @@ export default defineComponent({
 
     async uploadFile() {
       console.log('uploadFile ' + JSON.stringify(this.selectedFile));
-      if (this.selectedFile !== null) {
-        const formData = new FormData();
-        const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/upload';
-        formData.append('photo', this.selectedFile);
+      const selected = this.selectedFile[0];
 
-        const token = localStorage.getItem('token');
-        const options = {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + localStorage.getItem('token')
-          },
-          body: formData
-        };
+      if (!selected) {
+        this.snackbar.message = 'No file selected!';
+        this.snackbar.color = 'error';
+        this.snackbar.show = true;
+        return;
+      }
+      const formData = new FormData();
+      const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/upload';
+      formData.append('photo', selected);
 
-        try {
-          const response = await fetch(input, options);
+      const token = localStorage.getItem('token');
+      const options = {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + localStorage.getItem('token')
+        },
+        body: formData
+      };
 
-          if (response.ok) {
-            // this.$refs.notyf.showNotification('File uploaded successfully!', 'success');
-            this.avatarUrl = await this.fetchAvatar(this.$store.getters.getMe().login);
-          } else {
-            // const message = await response.json().message;
-            // console.log(message);
-            // this.$refs.notyf.showNotification(message, 'error');
-          }
-        } catch (error) {
-          // this.$refs.notyf.showNotification(error, 'error');
+      try {
+        const response = await fetch(input, options);
+
+        if (response.ok) {
+          this.avatarUrl = await this.fetchAvatar(this.$store.getters.getMe().login);
+          this.snackbar.message = 'File uploaded successfully!';
+          this.snackbar.color = 'success';
+          this.snackbar.show = true;
+        } else {
+          this.snackbar.message = response.statusText;
+          this.snackbar.color = 'error';
+          this.snackbar.show = true;
         }
+      } catch (error) {
+        this.snackbar.message = error;
+        this.snackbar.color = 'error';
+        this.snackbar.show = true;
       }
     },
 
