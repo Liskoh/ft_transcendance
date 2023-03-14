@@ -126,7 +126,6 @@ export default defineComponent({
       } else {
         this.imSpectator = true;
         console.log('Spectator');
-        // socket.emit('player_join', {id: nbrPlayer});
       }
     });
 
@@ -225,16 +224,6 @@ body {
   align-items: center;
 }
 
-/*.board {*/
-/*  position: relative;*/
-/*  height: 85vh;*/
-/*  width: 80vw;*/
-/*  background: #000000;*/
-/*  border: solid 5px #ffffff;*/
-/*  border-radius: 2px;*/
-/*}*/
-
-/*//cente*/
 .board {
   position: absolute;
   top: 50%;
@@ -246,18 +235,6 @@ body {
   border: solid 5px #ffffff;
   border-radius: 2px;
 }
-
-/*.ball {*/
-/*  position: absolute;*/
-/*  width: 2%;*/
-/*  height: 0;*/
-/*  padding-bottom: 2%;*/
-/*  border-radius: 50%;*/
-/*  top: 50%;*/
-/*  left: 50%;*/
-/*  transform: translate(-50%, -50%);*/
-/*  background: #ffffff;*/
-/*}*/
 
 .ball {
   position: absolute;

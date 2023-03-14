@@ -59,12 +59,12 @@
           <v-card-text>
             <v-list>
               <v-list-item v-for="friend in friends" :key="friend.login">
-                <!--                <v-list-item-content>-->
-                <v-list-item-title>{{ friend.nickname }}</v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ friend.status }}
-                </v-list-item-subtitle>
-                <!--                </v-list-item-content>-->
+<!--                <v-list-item-content>-->
+                  <v-list-item-title @click="showModal()">{{ friend.nickname }}</v-list-item-title>
+                  <v-list-item-subtitle>
+                    {{ friend.status }}
+                  </v-list-item-subtitle>
+<!--                </v-list-item-content>-->
                 <v-list-item-action>
                   <v-btn color="error" @click="removeFriend(friend.nickname)">Remove</v-btn>
                 </v-list-item-action>
@@ -90,6 +90,48 @@
           </v-card-text>
         </v-card>
       </v-col>
+
+      <v-dialog v-model="modalVisible">
+        <v-card color="grey-darken-3">
+          <v-card-title>Choose an action</v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item @click="viewProfile">
+                <v-list-item-title>
+                  View profile page
+                  <v-icon>mdi-account</v-icon>
+                  <v-list-item-subtitle>View this user's profile page</v-list-item-subtitle>
+                </v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="showLevel = true">
+                <v-list-item-title>
+                  Duel on pong
+                  <v-icon>mdi-controller</v-icon>
+                  <v-list-item-subtitle>Play a game of pong with this user</v-list-item-subtitle>
+                </v-list-item-title>
+                <v-dialog v-model="showLevel" max-width="500">
+                  <v-card>
+                    <v-card-title class="headline">Choose level</v-card-title>
+                    <v-card-text>
+                      <v-radio-group v-model="selectedLevel" row>
+                        <v-radio label="Easy" value="easy"></v-radio>
+                        <v-radio label="Medium" value="medium"></v-radio>
+                        <v-radio label="Hard" value="hard"></v-radio>
+                      </v-radio-group>
+                    </v-card-text>
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn color="green darken-1" text @click="showLevel = false">Cancel</v-btn>
+                      <v-btn color="green darken-1" text @click="duelOnPong(selectedLevel); showLevel = false">Duel</v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+
     </v-row>
     <v-snackbar :timeout="snackbar.timeout" :color="snackbar.color" v-model="snackbar.show"
                 :style="{ top: snackbar.position.top, right: snackbar.position.right }">
@@ -117,6 +159,7 @@ import {Socket} from 'socket.io-client';
 import {VUE_APP_BACK_PORT, VUE_APP_WEB_HOST} from '@/consts';
 import type {User} from '@/models/user.model';
 import login from "@/views/LoginView.vue";
+import {Message} from "@/models/message.model";
 
 export default defineComponent({
   name: 'SettingsView',
@@ -131,6 +174,9 @@ export default defineComponent({
       newNickname: '',
       selectedFile: [],
       avatarUrl: '',
+      modalVisible: false,
+      showLevel: false,
+      selectedLevel: 'easy',
     }
   },
   created() {
@@ -188,6 +234,23 @@ export default defineComponent({
   },
 
   methods: {
+    showModal() {
+      // this.selectedNickname = message.nickname;
+      this.modalVisible = true;
+    },
+    viewProfile() {
+      this.$router.push({name: 'profile', params: {nickname: this.selectedNickname}});
+      this.modalVisible = false;
+    },
+    async duelOnPong(level: string) {
+      const socket: Socket = this.$store.getters.getChannelSocket();
+      await socket.emit('duel', {
+        login: this.selectedNickname,
+        gameLevel: level
+      });
+      ////console.log('duel on pong ' + this.selectedNickname);
+      this.modalVisible = false;
+    },
     async myProfile() {
       const user: User = this.$store.getters.getMe();
       if (!user)
