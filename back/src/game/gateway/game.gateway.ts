@@ -99,7 +99,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const dto: UuidDto = new UuidDto(data);
             await validateOrReject(dto);
 
-            if (!this.gameService.canJoinGame(socket)){
+            if (!this.gameService.canJoinGame(socket)) {
                 await sendErrorToClient(socket, 'gameError', 'You are already in a game');
                 return;
             }
@@ -127,6 +127,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             });
             console.log(mappedGames);
             socket.emit('games', mappedGames);
+
+            socket.emit('onGame', {
+                onGame: !this.gameService.canJoinGame(socket),
+            });
+
         } catch (error) {
             await sendErrorToClient(socket, 'gameError', error);
         }
@@ -171,7 +176,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         const ballPosition = {
             top: boardPosition.height / 2 - boardPosition.height / 100,
-            left: boardPosition.width / 2 - boardPosition.width  / 100,
+            left: boardPosition.width / 2 - boardPosition.width / 100,
             width: boardPosition.width * 2 / 100,
             height: boardPosition.height * 2 / 100
         }
@@ -268,54 +273,55 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('joinQueue')
     async onJoinQueue(client: Socket, data: any): Promise<any> {
-        console.log('joinQueue');
-        let user: User = await getUserBySocket(client, this.usersService, usersMap);
         try {
+            console.log('joinQueue');
+            let user: User = await getUserBySocket(client, this.usersService, usersMap);
+
+            if (!this.gameService.canJoinGame(client)) {
+                client.emit('sendOnPong');
+                return;
+            }
+
             await this.gameService.joinQueue(client);
+
+            console.log('client ' + user.nickname + ' joined the queue');
+            if (this.gameService.getQueue().length >= 2) {
+                const firstSocket: Socket = this.gameService.getQueue()[0];
+                const secondSocket: Socket = this.gameService.getQueue()[1];
+                const firstUser: User = await getUserBySocket(firstSocket, this.usersService, usersMap);
+                const secondUser: User = await getUserBySocket(secondSocket, this.usersService, usersMap);
+
+                console.log('the queue is full with ' + firstSocket.id + ' and ' + secondSocket.id);
+                console.log('starting game');
+                this.gameService.clearQueue();
+
+                const firstPlayer: Player = this.initSinglePlayer(firstSocket, firstUser, true);
+                const secondPlayer: Player = this.initSinglePlayer(secondSocket, secondUser, false);
+                const ball: Ball = this.initBall(firstPlayer, secondPlayer);
+
+                console.log('player1Coord: ' + JSON.stringify(firstPlayer.coord));
+                console.log('player1Size : ' + JSON.stringify(firstPlayer.size));
+                console.log('player2Coord: ' + JSON.stringify(secondPlayer.coord));
+                console.log('player2Size : ' + JSON.stringify(secondPlayer.size));
+                console.log('ballCoord: ' + JSON.stringify(ball.coord));
+                console.log('ballSize : ' + JSON.stringify(ball.size));
+
+
+                const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService, GameLevel.MEDIUM);
+
+                await this.gameService.startGame(game);
+
+                if (firstSocket && firstSocket.connected) {
+                    firstSocket.emit('sendOnPong');
+                }
+
+                if (secondSocket && secondSocket.connected) {
+                    secondSocket.emit('sendOnPong');
+                }
+            }
         } catch (error) {
             await sendErrorToClient(client, 'joinQueueError', error.message);
             return;
-        }
-
-        if (!this.gameService.canJoinGame(client)) {
-            client.emit('gameError', "You are already in game go on /pong");
-            return;
-        }
-
-        console.log('client ' + user.nickname + ' joined the queue');
-        if (this.gameService.getQueue().length >= 2) {
-            const firstSocket: Socket = this.gameService.getQueue()[0];
-            const secondSocket: Socket = this.gameService.getQueue()[1];
-            const firstUser: User = await getUserBySocket(firstSocket, this.usersService, usersMap);
-            const secondUser: User = await getUserBySocket(secondSocket, this.usersService, usersMap);
-
-            console.log('the queue is full with ' + firstSocket.id + ' and ' + secondSocket.id);
-            console.log('starting game');
-            this.gameService.clearQueue();
-
-            const firstPlayer: Player = this.initSinglePlayer(firstSocket, firstUser, true);
-            const secondPlayer: Player = this.initSinglePlayer(secondSocket, secondUser, false);
-            const ball: Ball = this.initBall(firstPlayer, secondPlayer);
-
-            console.log('player1Coord: ' + JSON.stringify(firstPlayer.coord));
-            console.log('player1Size : ' + JSON.stringify(firstPlayer.size));
-            console.log('player2Coord: ' + JSON.stringify(secondPlayer.coord));
-            console.log('player2Size : ' + JSON.stringify(secondPlayer.size));
-            console.log('ballCoord: ' + JSON.stringify(ball.coord));
-            console.log('ballSize : ' + JSON.stringify(ball.size));
-
-
-            const game: Game = new Game(firstPlayer, secondPlayer, ball, this.gameService, GameLevel.MEDIUM);
-
-            await this.gameService.startGame(game);
-
-            if (firstSocket && firstSocket.connected) {
-                firstSocket.emit('sendOnPong');
-            }
-
-            if (secondSocket && secondSocket.connected) {
-                secondSocket.emit('sendOnPong');
-            }
         }
     }
 

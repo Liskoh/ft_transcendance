@@ -21,6 +21,7 @@ export const store = createStore({
         channelSocket: <Socket | unknown>null,
         userSocket: <Socket | unknown>null,
         pongSocket: <Socket | unknown>null,
+        onGame: <boolean>false,
     },
     getters: {
         getJoinedChannels: state => state.joinedChannels,
@@ -82,6 +83,8 @@ export const store = createStore({
         getChannelById: state => (id: number) => {
             return state.joinedChannels.find(channel => channel.id === id);
         },
+
+        isOnGame: state => state.onGame,
     },
     actions: {
         connectUserSocket() {
@@ -132,5 +135,8 @@ export const store = createStore({
             state.blockedUsers = blockedUsers;
         },
 
+        setOnGame(state, onGame) {
+            state.onGame = onGame;
+        },
     }
 });
