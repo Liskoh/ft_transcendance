@@ -75,14 +75,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
     async handleDisconnect(socket: Socket): Promise<any> {
-        await tryHandleDisconnect(socket, usersMap, 'game');
         try {
             this.gameService.removeSpectator(socket);
 
             if (this.gameService.leaveQueue(socket))
                 console.log(socket.id + " ===>  leaved the queue");
+
+            const user: User = await getUserBySocket(socket, this.usersService, usersMap);
+
+            for (const duel of this.gameService.getWaitingDuelsForUser(user))
+                this.gameService.removeDuel(duel);
+
         } catch (error) {
         }
+        await tryHandleDisconnect(socket, usersMap, 'game');
     }
 
     @SubscribeMessage('spectate')

@@ -201,6 +201,10 @@ export class GameService {
         );
     }
 
+    removeDuel(duel: Duel) {
+        this.duels.splice(this.duels.indexOf(duel), 1);
+    }
+
     /**
      * return if a duel exist or not
      * @param {User} user
@@ -423,10 +427,11 @@ export class GameService {
 
     leaveQueue(socket: Socket): boolean {
         if (!this.isOnQueue(socket)) {
-            throw new HttpException(
-                'user not in queue',
-                HttpStatus.BAD_REQUEST
-            );
+            // throw new HttpException(
+            //     'user not in queue',
+            //     HttpStatus.BAD_REQUEST
+            // );
+            return false;
         }
 
         this.queueIds = this.queueIds.filter(s => s.id !== socket.id);
