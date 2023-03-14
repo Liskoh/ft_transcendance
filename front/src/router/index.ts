@@ -56,7 +56,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
     const token: string | null = localStorage.getItem('token');
-    let ret: boolean = false;
+    let ret: boolean = true;
     const input: string = 'http://' + VUE_APP_WEB_HOST + ':' + VUE_APP_BACK_PORT + '/users/verify';
     const options = {
         method: 'GET',
@@ -67,8 +67,7 @@ router.beforeEach(async (to, from, next) => {
 
     try {
         const response = await fetch(input, options);
-        if (response.ok)
-            ret = true;
+        ret = response.ok;
     } catch (error) {}
 
     if (!ret) {
@@ -78,6 +77,6 @@ router.beforeEach(async (to, from, next) => {
         }
     }
     next();
-})
+});
 
 export default router

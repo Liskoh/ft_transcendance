@@ -1,6 +1,6 @@
 <template>
   <v-container fluid>
-    <notification ref="notyf" />
+    <notification ref="notyf"/>
     <v-row>
       <v-col cols="12" md="6">
         <v-card color="primary">
@@ -27,7 +27,7 @@
           </v-card-text>
         </v-card>
         <v-card color="grey-darken-3" v-for="duel in currentDuels" :key="duel.from" class="my-4">
-          <v-card-title>From {{duel.from}}</v-card-title>
+          <v-card-title>From {{ duel.from }}</v-card-title>
           <v-card-actions>
             <v-btn color="green" @click="acceptDuel(duel.from)">ACCEPT</v-btn>
           </v-card-actions>
@@ -36,11 +36,13 @@
       <v-col cols="12" md="6">
         <v-card color="primary">
           <v-card-text>
-            <v-btn color="success darken-2" @click="joinQueue">JOIN QUEUE</v-btn>
+            <v-btn color="success darken-2" @click="joinQueue">
+              {{ onGame ? 'RESUME GAME' : 'JOIN QUEUE' }}
+            </v-btn>
           </v-card-text>
         </v-card>
         <v-card color="grey-darken-3" v-for="game in currentGames" :key="game.uuid" class="my-4">
-          <v-card-title>{{game.firstNickname}} Vs. {{game.secondNickname}}</v-card-title>
+          <v-card-title>{{ game.firstNickname }} Vs. {{ game.secondNickname }}</v-card-title>
           <v-card-actions>
             <v-btn color="success darken-2" @click="spectate(game.uuid)">SPECTATE</v-btn>
           </v-card-actions>
@@ -54,12 +56,11 @@
 </template>
 
 
-
-
 <script lang="ts">
-import { defineComponent } from 'vue';
-import { Duel } from "@/models/duel.model";
+import {defineComponent} from 'vue';
+import {Duel} from "@/models/duel.model";
 import {Game} from "@/models/game.model";
+import {mapState} from "vuex";
 
 export default defineComponent({
   data() {
@@ -84,6 +85,7 @@ export default defineComponent({
   // },
   created() {
     const socket = this.$store.getters.getPongSocket();
+    socket.removeAllListeners();
 
     socket.emit('getDuels');
     socket.emit('getGames');
@@ -91,6 +93,11 @@ export default defineComponent({
     socket.on('duels', (data: any) => {
       console.log('duels', data);
       this.currentDuels = data;
+    });
+
+    socket.on('onGame', (data: any) => {
+      const isOnGame: boolean = data.onGame;
+      this.$store.commit('setOnGame', isOnGame);
     });
 
     // const duels: Duel[] = [
@@ -140,8 +147,13 @@ export default defineComponent({
     });
 
   },
+  computed: {
+    ...mapState({
+      onGame: (state: any) => state.onGame,
+    }),
+  },
   methods: {
-    createDuel(level) {
+    createDuel(level: string) {
       const socket = this.$store.getters.getPongSocket();
       socket.emit('createDuel', {
         login: this.nickname,
@@ -150,7 +162,7 @@ export default defineComponent({
     },
     acceptDuel(from: string) {
       const socket = this.$store.getters.getPongSocket();
-      socket.emit('acceptDuel', { login: from });
+      socket.emit('acceptDuel', {login: from});
     },
     joinQueue() {
       this.snackbar.message = 'Message de notification';

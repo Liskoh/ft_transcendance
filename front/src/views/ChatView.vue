@@ -159,8 +159,12 @@
         </v-dialog>
       </v-col>
     </v-row>
-    <v-snackbar v-model="snackbar.show" :timeout="snackbar.timeout" :color="snackbar.color">
+    <v-snackbar :timeout="snackbar.timeout" :color="snackbar.color" v-model="snackbar.show"
+                :style="{ top: snackbar.position.top, right: snackbar.position.right }">
       {{ snackbar.message }}
+<!--      <v-btn icon @click="snackbar.show = false">-->
+<!--        <v-icon>mdi-close-circle</v-icon>-->
+<!--      </v-btn>-->
     </v-snackbar>
   </v-container>
 </template>
@@ -182,6 +186,41 @@ import {Channel} from "@/models/channel.model";
 export default {
   name: "Chat",
   store,
+  props: {
+    snackbar: {
+      type: Object,
+      required: true
+    }
+  },
+  data() {
+    return {
+      currentChannelMessages() {
+        return [];
+      },
+      selectedChannel: <Channel | unknown>null,
+      newMessage: "",
+      showAvailables: false,
+      showJoined: true,
+      showDm: true,
+      showPasswordModal: false,
+      password: "",
+      showCreateModal: false,
+      modalVisible: false,
+      newChannelName: "",
+      newChannelPassword: "",
+      newChannelType: "PUBLIC",
+      channelTypes: ["PUBLIC", "PRIVATE"],
+      selectedNickname: null,
+      showLevel: false,
+      selectedLevel: 'easy',
+      // snackbar: {
+      //   show: false,
+      //   message: '',
+      //   timeout: 3000,
+      //   color: 'error'
+      // }
+    };
+  },
   created() {
     let socket: Socket = this.$store.getters.getChannelSocket();
 
@@ -291,36 +330,6 @@ export default {
   //   this.$store.commit('setChannelSocket', socket);
   //   next();
   // },
-  data() {
-    return {
-      currentChannelMessages() {
-        return [];
-      },
-      selectedChannel: <Channel | unknown>null,
-      newMessage: "",
-      showAvailables: false,
-      showJoined: true,
-      showDm: true,
-      showPasswordModal: false,
-      password: "",
-      showCreateModal: false,
-      modalVisible: false,
-      newChannelName: "",
-      newChannelPassword: "",
-      newChannelType: "PUBLIC",
-      channelTypes: ["PUBLIC", "PRIVATE"],
-      selectedNickname: null,
-      showLevel: false,
-      selectedLevel: 'easy',
-      snackbar: {
-        show: false,
-        message: '',
-        timeout: 3000,
-        color: 'error'
-      }
-    };
-  },
-
   computed: {
     ...mapState({
       joinedChannels: state => state.joinedChannels,

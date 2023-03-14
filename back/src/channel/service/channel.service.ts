@@ -76,6 +76,12 @@ export class ChannelService {
      */
     async createDirectMessageChannel(user1: User, user2: User, channels: Channel[]): Promise<Channel> {
 
+        if (this.usersService.isSameUser(user1, user2))
+            throw new HttpException(
+                'You can\'t create a DM with yourself',
+                HttpStatus.FORBIDDEN
+            );
+
         let channel = this.getDirectChannel(user1, user2, channels);
 
         if (channel)
@@ -602,7 +608,7 @@ export class ChannelService {
         const filteredMessages = messages.filter(m =>
             !user.blockedList.includes(m.user.id));
 
-        return filteredMessages.reverse();
+        return filteredMessages;
     }
 
     /*

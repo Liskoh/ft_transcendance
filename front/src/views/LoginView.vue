@@ -51,7 +51,7 @@ export default defineComponent({
 
     const token = localStorage.getItem("token");
 
-    if (token) {
+    if (token && !code) {
       this.$router.push("/settings");
       return;
     }
